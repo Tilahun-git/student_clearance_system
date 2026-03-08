@@ -1,69 +1,70 @@
-import NextAuth,{AuthOptions} from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
-import { prisma } from "@/lib/prisma"
-import bcrypt from "bcryptjs"
+import NextAuth, { AuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
-export const authOptions:AuthOptions = {
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
         email: {},
-        password: {}
+        password: {},
       },
       async authorize(credentials) {
-
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing credentials")
+          throw new Error("Missing credentials");
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        })
+          where: { email: credentials.email },
+          include: {
+            roles: {
+              include: { role: true },
+            },
+          },
+        });
 
-        if (!user) {
-          throw new Error("User not found")
-        }
+        if (!user) throw new Error("User not found");
 
-        const isValid = await bcrypt.compare(
-          credentials.password,
-          user.password
-        )
+        const isValid = await bcrypt.compare(credentials.password, user.password);
+        if (!isValid) throw new Error("Invalid password");
 
-        if (!isValid) {
-          throw new Error("Invalid password")
-        }
-
-        return user
-      }
-    })
+        return user;
+      },
+    }),
   ],
 
-  session: {
-    strategy: "jwt"
-  },
+  session: { strategy: "jwt" },
 
   callbacks: {
     async jwt({ token, user }) {
-
       if (user) {
-        token.role = user.role
-      }
+        if (!user.email) throw new Error("User email is null");
 
-      return token
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+          include: {
+            roles: {
+              include: { role: true },
+            },
+          },
+        });
+
+        token.roles = dbUser?.roles.map((ur) => ur.role.name) || [];
+      }
+      return token;
     },
 
     async session({ session, token }) {
-
       if (session.user) {
-        session.user.role = token.role as "STUDENT"|| "ADMIN"
+        session.user.roles = token.roles || [];
       }
+      return session;
+    },
+  },
+};
 
-      return session
-    }
-  }
-}
+const handler = NextAuth(authOptions);
 
-const handler = NextAuth(authOptions)
-
-export { handler as GET, handler as POST }
+export { handler as GET, handler as POST };

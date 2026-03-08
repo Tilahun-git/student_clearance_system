@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {roleRedirect} from '@/lib/roles'
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,20 +13,26 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+    const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
     const res = await signIn("credentials", { redirect: false, email, password });
-
     if (res?.error) return setError(res.error || "Email or password is incorrect");
 
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
 
-    if (session?.user?.role === "ADMIN") router.push("/admin");
-    else router.push("/student");
+    const userRoles: string[] = session?.user?.roles || [session?.user?.role];
+
+    if (userRoles.length === 1) {
+      router.push(roleRedirect[userRoles[0]] || "/");
+    } else {
+      setAvailableRoles(userRoles);
+    }
   };
 
   return (
@@ -74,6 +81,25 @@ export default function LoginPage() {
             Login
           </button>
         </form>
+
+         {availableRoles.length > 1 && (
+          <div className="mt-6">
+            <p className="text-gray-700 mb-2 text-center font-medium">
+              Select role to continue:
+            </p>
+            <div className="flex flex-col gap-2 items-center">
+              {availableRoles.map((role) => (
+                <button
+                  key={role}
+                  onClick={() => router.push(roleRedirect[role] || "/")}
+                  className="w-full max-w-xs bg-blue-700 text-white py-2 rounded hover:bg-blue-500 transition"
+                >
+                  {role}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <p className="text-center mt-6 text-gray-600">
           Don't have an account?{" "}

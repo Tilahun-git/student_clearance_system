@@ -1,7 +1,6 @@
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-
 }
 
 generator client {
@@ -9,15 +8,38 @@ generator client {
 }
 
 model User {
-  id        String    @id @default(cuid())
-  email     String    @unique
+  id        String     @id @default(cuid())
+  email     String     @unique
   password  String
-  role      Role      @default(STUDENT)
-  createdAt DateTime @default(now())
-
+  roles     UserRole[]
+  createdAt DateTime   @default(now())
 }
 
-enum Role {
+model Role {
+  id    String     @id @default(cuid())
+  name  RoleType   @unique
+  users UserRole[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id])
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@id([userId, roleId])
+}
+
+enum RoleType {
   STUDENT
   ADMIN
+  DEPARTMENT_HEAD
+  REGISTRAR
+  LIBRARY
+  FINANCE
+  DORMITORY
+  CAFETERIA
+  ICT
+  SECURITY
 }
