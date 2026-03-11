@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { Home, Users, Building2, Settings, FileText } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminDashboard() {
   const users = [
@@ -13,7 +14,6 @@ export default function AdminDashboard() {
   return (
     <div className="flex min-h-screen bg-gray-100">
 
-      {/* Sidebar */}
       <aside className="w-64 bg-blue-900 text-white flex flex-col">
         <div className="flex flex-col items-center py-6 border-b border-blue-700">
           <Image
@@ -43,9 +43,9 @@ export default function AdminDashboard() {
       <main className="flex-1 flex flex-col">
 
         {/* Header */}
-        <header className="bg-green-200 p-4 flex justify-between items-center shadow">
+        <header className="bg-green-200 p-4 flex justify-between items-center shadow ">
 
-          <h1 className="text-lg font-bold text-blue-900">
+          <h1 className="text-lg text-center font-bold text-blue-900">
             WDU STUDENT CLEARANCE SYSTEM
           </h1>
 
@@ -61,10 +61,6 @@ export default function AdminDashboard() {
         {/* Content */}
         <div className="p-6 space-y-6">
 
-          <h2 className="text-center font-semibold text-blue-800">
-            ADMIN DASHBOARD
-          </h2>
-
           {/* Stats */}
           <div className="grid grid-cols-4 gap-4">
 
@@ -75,15 +71,17 @@ export default function AdminDashboard() {
 
           </div>
 
-          {/* User Management */}
           <div className="bg-white rounded-xl shadow p-4">
 
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-semibold">User Management</h3>
 
-              <button className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm hover:bg-blue-700">
+              <Link
+                href="/admin/create-user"
+                className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm hover:bg-blue-700 inline-block text-center"
+              >
                 Create User
-              </button>
+              </Link>
             </div>
 
             <table className="w-full text-sm">

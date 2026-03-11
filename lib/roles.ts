@@ -1,6 +1,7 @@
 export const roleRedirect: Record<string, string> = {
   ADMIN: "/admin",
   STUDENT: "/student",
+  ADVISOR: "/advisor",
   DEPARTMENT_HEAD: "/department-head",
   REGISTRAR: "/registrar",
   LIBRARY: "/library",
@@ -10,3 +11,4 @@ export const roleRedirect: Record<string, string> = {
   ICT: "/ict",
   SECURITY: "/security",
 };
+

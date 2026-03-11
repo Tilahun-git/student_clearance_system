@@ -3,7 +3,7 @@ import React from "react";
 
 const NotFoundPage = () => {
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-r from-yellow-200 via-white to-yellow-200 px-6 text-center">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-linear-to-r from-yellow-200 via-white to-yellow-200 px-6 text-center">
       
       <h1 className="text-9xl font-extrabold text-yellow-500 mb-6 drop-shadow-lg">
         404
@@ -18,7 +18,7 @@ const NotFoundPage = () => {
       </p>
       
       <Link
-        href="/student"
+        href="/"
         className="bg-yellow-500 hover:bg-yellow-400 text-black font-bold px-6 py-3 rounded-full shadow-md transition-all duration-300"
       >
         Go Back Home

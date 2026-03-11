@@ -1,6 +1,5 @@
 import DashBoardNavbar from '@/components/layout/DashBoardNavbar'
 import DowloadSection from '@/components/layout/DowloadSection'
-import Footer from '@/components/layout/Footer'
 import Header from '@/components/layout/Header'
 const StudentDashboard = () => {
   return (
@@ -9,6 +8,7 @@ const StudentDashboard = () => {
       <Header/>
       <DowloadSection/>
       {/* <Footer/> */}
+      <h1>student page</h1>
     </div>
   )
 }

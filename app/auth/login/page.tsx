@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import {roleRedirect} from '@/lib/roles'
+import { roleRedirect } from "@/lib/roles";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -13,23 +13,35 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-    const [availableRoles, setAvailableRoles] = useState<string[]>([]);
-
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const res = await signIn("credentials", { redirect: false, email, password });
-    if (res?.error) return setError(res.error || "Email or password is incorrect");
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    if (res?.error) {
+      setError(res.error || "Email or password is incorrect");
+      return;
+    }
 
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
 
-    const userRoles: string[] = session?.user?.roles || [session?.user?.role];
+    const userRoles: string[] = session?.user?.roles || [];
+
+    if (userRoles.length === 0) {
+      setError("No roles assigned. Contact admin.");
+      return;
+    }
 
     if (userRoles.length === 1) {
-      router.push(roleRedirect[userRoles[0]] || "/");
+      router.push(roleRedirect[userRoles[0]] || "/login");
     } else {
       setAvailableRoles(userRoles);
     }
@@ -39,10 +51,18 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
         <div className="flex justify-center mb-6">
-         <Image src="/wldu_logo.jpg" alt="University Logo" width={80} height={80}  className="rounded-full shadow-md" />
+          <Image
+            src="/wldu_logo.jpg"
+            alt="University Logo"
+            width={80}
+            height={80}
+            className="rounded-full shadow-md"
+          />
         </div>
 
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Login</h2>
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
+          Login
+        </h2>
 
         {error && <p className="text-red-500 text-center mb-4">{error}</p>}
 
@@ -57,22 +77,21 @@ export default function LoginPage() {
           />
 
           <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
-          />
-
-          <span
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-3 cursor-pointer text-gray-500"
-          >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </span>
-        </div>
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
+            />
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-3 cursor-pointer text-gray-500"
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div>
 
           <button
             type="submit"
@@ -82,7 +101,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-         {availableRoles.length > 1 && (
+        {availableRoles.length > 1 && (
           <div className="mt-6">
             <p className="text-gray-700 mb-2 text-center font-medium">
               Select role to continue:
@@ -91,7 +110,7 @@ export default function LoginPage() {
               {availableRoles.map((role) => (
                 <button
                   key={role}
-                  onClick={() => router.push(roleRedirect[role] || "/")}
+                  onClick={() => router.push(roleRedirect[role] || "/login")}
                   className="w-full max-w-xs bg-blue-700 text-white py-2 rounded hover:bg-blue-500 transition"
                 >
                   {role}
@@ -100,16 +119,6 @@ export default function LoginPage() {
             </div>
           </div>
         )}
-
-        <p className="text-center mt-6 text-gray-600">
-          Don't have an account?{" "}
-          <span
-            onClick={() => router.push("/auth/register")}
-            className="text-green-800 font-semibold hover:underline cursor-pointer"
-          >
-            Register here
-          </span>
-        </p>
       </div>
     </div>
   );

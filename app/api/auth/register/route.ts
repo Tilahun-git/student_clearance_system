@@ -13,19 +13,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if user exists
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return NextResponse.json({ error: "User already exists" }, { status: 400 });
     }
-
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Default role if none selected
     const selectedRoles = Array.isArray(roles) && roles.length > 0 ? roles : ["STUDENT"];
 
-    // Ensure all roles exist in Role table
     const roleRecords = [];
     for (const roleName of selectedRoles) {
       const role = await prisma.role.upsert({
@@ -36,7 +31,6 @@ export async function POST(req: Request) {
       roleRecords.push(role);
     }
 
-    // Create user and link roles
     const user = await prisma.user.create({
       data: {
         email,
