@@ -1,14 +1,14 @@
 export const roleRedirect: Record<string, string> = {
-  ADMIN: "/admin",
-  STUDENT: "/student",
-  ADVISOR: "/advisor",
-  DEPARTMENT_HEAD: "/department-head",
-  REGISTRAR: "/registrar",
-  LIBRARY: "/library",
+  ADMIN: "/admin/dashboard",
+  STUDENT: "/student/dashboard",
+  ADVISOR: "/advisor/dashboard",
+  DEPARTMENT_HEAD: "/department-head/dashboard",
+  REGISTRAR: "/registrar/dashboard",
+  LIBRARY: "/library/dashboard",
   FINANCE: "/finance",
   DORMITORY: "/dormitory",
   CAFETERIA: "/cafeteria",
-  ICT: "/ict",
-  SECURITY: "/security",
+  STUDENT_DEAN: "/student-dean",
+  FACULTY_DEAN: "/faculty-dean",
 };
 

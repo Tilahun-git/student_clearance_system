@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { roleRedirect } from "@/lib/roles";
 
@@ -50,6 +51,8 @@ export default function LoginPage() {
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
+        
+        {/* Logo */}
         <div className="flex justify-center mb-6">
           <Image
             src="/wldu_logo.jpg"
@@ -60,13 +63,20 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* Title */}
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
           Login
         </h2>
 
-        {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+        {/* Error */}
+        {error && (
+          <p className="text-red-500 text-center mb-4">{error}</p>
+        )}
 
+        {/* Login Form */}
         <form onSubmit={handleLogin} className="flex flex-col gap-4">
+          
+          {/* Email */}
           <input
             type="email"
             placeholder="Email"
@@ -76,6 +86,7 @@ export default function LoginPage() {
             className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
           />
 
+          {/* Password */}
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
@@ -85,6 +96,7 @@ export default function LoginPage() {
               required
               className="w-full border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
             />
+
             <span
               onClick={() => setShowPassword(!showPassword)}
               className="absolute right-3 top-3 cursor-pointer text-gray-500"
@@ -93,6 +105,7 @@ export default function LoginPage() {
             </span>
           </div>
 
+          {/* Login Button */}
           <button
             type="submit"
             className="bg-blue-900 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
@@ -101,16 +114,20 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Role Selection */}
         {availableRoles.length > 1 && (
           <div className="mt-6">
             <p className="text-gray-700 mb-2 text-center font-medium">
               Select role to continue:
             </p>
+
             <div className="flex flex-col gap-2 items-center">
               {availableRoles.map((role) => (
                 <button
                   key={role}
-                  onClick={() => router.push(roleRedirect[role] || "/login")}
+                  onClick={() =>
+                    router.push(roleRedirect[role] || "/login")
+                  }
                   className="w-full max-w-xs bg-blue-700 text-white py-2 rounded hover:bg-blue-500 transition"
                 >
                   {role}
@@ -119,6 +136,20 @@ export default function LoginPage() {
             </div>
           </div>
         )}
+
+        {/* Register Link */}
+        <div className="mt-6 text-center text-gray-700">
+          <p>
+            Don't have an account?{" "}
+            <Link
+              href="/auth/register"
+              className="text-blue-900 font-semibold hover:underline"
+            >
+              Register here
+            </Link>
+          </p>
+        </div>
+
       </div>
     </div>
   );

@@ -1,26 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
 
 model User {
-  id        String     @id @default(cuid())
-  email     String     @unique
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
   password  String
+  createdAt DateTime @default(now())
+
   roles     UserRole[]
-  createdAt DateTime   @default(now())
+
+  // If this user is a student, link to student profile
+  studentProfile Student?
+
+  // If this user is an advisor, these are the students they advise
+  advisorStudents Student[] @relation("AdvisorStudents")
+
+  // If this user is a department head, these are the departments they manage
+  departmentsHeaded Department[] @relation("DepartmentHead")
 }
 
+// --------------------
+// Role table
+// --------------------
 model Role {
-  id    String     @id @default(cuid())
-  name  RoleType   @unique
+  id    String @id @default(uuid())
+  name  String @unique
+
   users UserRole[]
 }
 
+// --------------------
+// UserRole (many-to-many junction)
+// --------------------
 model UserRole {
   userId String
   roleId String
@@ -31,6 +50,64 @@ model UserRole {
   @@id([userId, roleId])
 }
 
+// --------------------
+// Department table
+// --------------------
+model Department {
+  id     String @id @default(uuid())
+  name   String
+
+  // User assigned as head of this department (optional)
+  headId String?   
+  head   User? @relation("DepartmentHead", fields: [headId], references: [id])
+
+  students Student[]
+}
+
+// --------------------
+// Student table
+// --------------------
+model Student {
+  id           String @id @default(uuid())
+  userId       String @unique
+  advisorId    String
+  departmentId String
+
+  user       User       @relation(fields: [userId], references: [id])
+  advisor    User       @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+
+  // Clearance requests submitted by this student
+  clearances ClearanceRequest[]
+}
+
+// --------------------
+// ClearanceRequest table
+// --------------------
+model ClearanceRequest {
+  id        String   @id @default(uuid())
+  studentId String
+  createdAt DateTime @default(now())
+
+  advisorStatus   String @default("pending")
+  deptStatus      String @default("waiting")
+  libraryStatus   String @default("waiting")
+  financeStatus   String @default("waiting")
+  registrarStatus String @default("waiting")
+
+  school         String?
+  department     String?
+  program        String?
+  reason         String?
+  academicYear   String?
+  semester       String?
+
+  student Student @relation(fields: [studentId], references: [id])
+}
+
+// --------------------
+// Roles Enum
+// --------------------
 enum RoleType {
   STUDENT
   ADMIN

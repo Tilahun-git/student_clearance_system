@@ -14,12 +14,12 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen w-screen">
-      <Image
+      {/* <Image
         src={bg}
         alt="University Head Office"
         fill
         className="object-cover"
-      />
+      /> */}
       <div className="absolute inset-0 bg-black/50 -z-10"></div>
 
       <nav className="sticky top-0 z-30 bg-white/20 dark:bg-slate-900/30 backdrop-blur-md shadow-md px-6 py-4 flex justify-between items-center">

@@ -31,9 +31,9 @@ export const authOptions: AuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        // Return object compatible with NextAuth.User
         return {
           id: user.id,
+          name:user.name,
           email: user.email,
           roles: user.roles.map((ur) => ur.role.name), 
         } as Partial<DefaultUser> & { roles: string[] };

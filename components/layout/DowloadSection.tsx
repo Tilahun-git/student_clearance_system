@@ -9,6 +9,23 @@ const DownloadSection = () => {
         Clearance Progress
       </h1>
 
+
+      <Link
+        href="/student/clearance/request"
+        className="
+          inline-flex items-center justify-center
+          px-6 py-3
+          bg-blue-600 hover:bg-blue-700
+          text-white font-semibold
+          rounded-xl
+          shadow-md hover:shadow-lg
+          transition-all duration-200
+          focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2
+        "
+      >
+        Request Clearance
+      </Link>
+
       <Link
         href="/dashboard"
         className="bg-yellow-500 hover:bg-yellow-400 text-black font-semibold px-6 py-3 rounded-full shadow-md transition-all duration-300"
