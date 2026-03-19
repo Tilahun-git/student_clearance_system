@@ -2,10 +2,10 @@
 
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import { useEffect, useState } from "react";
-import { fetchRequests, approveRequest, ClearanceRequest } from "@/lib/fetchRequests";
+import { fetchRequests, updateRequest, ClearanceApprovalRequest, ApprovalStatusEnum } from "@/lib/fetchRequests";
 
 export default function AdvisorDashboard() {
-  const [requests, setRequests] = useState<ClearanceRequest[]>([]);
+  const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch requests on mount
@@ -24,9 +24,9 @@ export default function AdvisorDashboard() {
   }, []);
 
   // Approve request and refresh
-  async function approve(id: string) {
+  async function approve(approvalId: string) {
     try {
-      await approveRequest(id);
+      await updateRequest(approvalId, ApprovalStatusEnum.APPROVED);
       const updated = await fetchRequests();
       setRequests(updated);
     } catch (err) {
@@ -39,7 +39,6 @@ export default function AdvisorDashboard() {
       <DashBoardNavbar />
 
       <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6 mt-6">
-
         <h1 className="text-2xl font-bold text-gray-800 mb-4">Pending Clearance Requests</h1>
 
         {loading ? (
@@ -62,17 +61,21 @@ export default function AdvisorDashboard() {
               <tbody>
                 {requests.map((r) => (
                   <tr key={r.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="p-3 font-medium">{r.student.user.name}</td>
-                    <td className="p-3">{new Date(r.createdAt).toLocaleDateString()}</td>
+                    <td className="p-3 font-medium">{r.clearanceRequest.student.user.name}</td>
+                    <td className="p-3">{new Date(r.clearanceRequest.createdAt).toLocaleDateString()}</td>
                     <td className="p-3">
-                      <span className={`px-2 py-1 rounded-full ${
-                        r.advisorStatus === "pending" ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"
-                      }`}>
-                        {r.advisorStatus}
+                      <span
+                        className={`px-2 py-1 rounded-full ${
+                          r.status === ApprovalStatusEnum.PENDING
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}
+                      >
+                        {r.status}
                       </span>
                     </td>
                     <td className="p-3">
-                      {r.advisorStatus === "pending" && (
+                      {r.status === ApprovalStatusEnum.PENDING && (
                         <button
                           onClick={() => approve(r.id)}
                           className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"

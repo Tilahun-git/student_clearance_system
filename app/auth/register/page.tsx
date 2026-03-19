@@ -5,28 +5,38 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
 
-import { roleRedirect } from "@/lib/roles";
+import { RoleType } from "@prisma/client";
 
 interface UserForm {
-  name:string;
+  name: string;
   email: string;
   password: string;
-  roles: string[];
+  roles: RoleType[]; 
 }
 
-export default function RegisterPage() {
+export default function AdminRegisterPage() {
   const router = useRouter();
-  const AVAILABLE_ROLES = Object.keys(roleRedirect); 
+
+  // Only Admin can assign roles other than STUDENT
+  const AVAILABLE_ROLES = [
+    RoleType.ADVISOR,
+    RoleType.DEPARTMENT_HEAD,
+    RoleType.FINANCE,
+    RoleType.LIBRARY,
+    RoleType.REGISTRAR,
+    RoleType.ADMIN,
+  ];
 
   const [user, setUser] = useState<UserForm>({
-    name:"",
+    name: "",
     email: "",
     password: "",
     roles: [],
   });
+
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
-  const toggleRole = (role: string) => {
+  const toggleRole = (role: RoleType) => {
     setUser((prev) => ({
       ...prev,
       roles: prev.roles.includes(role)
@@ -36,14 +46,19 @@ export default function RegisterPage() {
   };
 
   const clearForm = () => {
-    setUser({ name:"", email: "", password: "", roles: [] });
+    setUser({ name: "", email: "", password: "", roles: [] });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (user.roles.length === 0) {
+      toast.error("Please select at least one role");
+      return;
+    }
+
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/admin/create-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(user),
@@ -56,19 +71,17 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success("Registered successfully! Redirecting...");
-
-      clearForm(); 
+      toast.success("User registered successfully!");
+      clearForm();
 
       setTimeout(() => router.push("/auth/login"), 2000);
-
     } catch (error) {
       toast.error("Server error. Please try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
+    <div className="flex items-center justify-center min-h-screen bg-gray-200 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
         <div className="flex justify-center mb-6">
           <Image
@@ -81,13 +94,13 @@ export default function RegisterPage() {
         </div>
 
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
-          Register
+          Register User
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-             <input
+          <input
             type="text"
-            placeholder="name"
+            placeholder="Name"
             value={user.name}
             onChange={(e) =>
               setUser((prev) => ({ ...prev, name: e.target.value }))
@@ -95,6 +108,7 @@ export default function RegisterPage() {
             required
             className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
           />
+
           <input
             type="email"
             placeholder="Email"
@@ -124,7 +138,9 @@ export default function RegisterPage() {
               className="w-full border border-gray-300 p-3 rounded-xl text-left bg-white flex justify-between items-center"
             >
               <span>
-                {user.roles.length > 0 ? user.roles.join(", ") : "Choose roles"}
+                {user.roles.length > 0
+                  ? user.roles.join(", ")
+                  : "Choose roles"}
               </span>
               <svg
                 className="w-4 h-4"
@@ -138,7 +154,7 @@ export default function RegisterPage() {
             </button>
 
             {showRoleDropdown && (
-              <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-xl shadow-md mt-1 max-h-30 overflow-y-auto p-2">
+              <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-xl shadow-md mt-1 max-h-32 overflow-y-auto p-2">
                 {AVAILABLE_ROLES.map((role) => (
                   <label
                     key={role}
@@ -158,21 +174,11 @@ export default function RegisterPage() {
 
           <button
             type="submit"
-            className="bg-gray-600 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl transition-colors"
+            className="bg-gray-700 hover:bg-gray-800 text-black font-semibold py-3 rounded-xl transition-colors"
           >
-            Register
+            Register User
           </button>
         </form>
-
-        <p className="text-center mt-6 text-gray-600">
-          Already have an account?{" "}
-          <span
-            onClick={() => router.push("/auth/login")}
-            className="text-blue-800 font-semibold hover:underline cursor-pointer"
-          >
-            Login here
-          </span>
-        </p>
       </div>
     </div>
   );

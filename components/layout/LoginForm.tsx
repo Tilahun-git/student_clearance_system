@@ -1,35 +1,44 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { MdClose } from "react-icons/md"
-import { signIn } from "next-auth/react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { MdClose } from "react-icons/md";
+import { signIn } from "next-auth/react";
 
 interface Props {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
+// Role to route mapping
+const roleRedirect: Record<string, string> = {
+  ADMIN: "/admin",
+  REGISTRAR: "/registrar",
+  DEPARTMENT_HEAD: "/department-head",
+  ADVISOR: "/advisor",
+  STUDENT: "/student",
+};
+
 export default function LoginModal({ isOpen, onClose }: Props) {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   const resetForm = () => {
-    setEmail("")
-    setPassword("")
-    setError("")
-  }
+    setEmail("");
+    setPassword("");
+    setError("");
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError("")
+    e.preventDefault();
+    setLoading(true);
+    setError("");
 
     try {
       // NextAuth credentials login
@@ -37,35 +46,42 @@ export default function LoginModal({ isOpen, onClose }: Props) {
         redirect: false,
         email,
         password,
-      })
+      });
 
       if (!res || res.error) {
-        setError("Email or password is incorrect")
-        setPassword("")
-        setLoading(false)
-        return
+        setError("Email or password is incorrect");
+        setPassword("");
+        setLoading(false);
+        return;
       }
 
-      // Fetch session to get role
-      const sessionRes = await fetch("/api/auth/session")
-      const sessionData = await sessionRes.json()
+      // Fetch session to get roles
+      const sessionRes = await fetch("/api/auth/session");
+      const sessionData = await sessionRes.json();
 
-      const role = sessionData?.user?.role
-      if (role === "ADMIN") {
-        router.push("/admin")
-      } else {
-        router.push("/student")
+      const roles: string[] = sessionData?.user?.roles || [];
+
+      if (roles.length === 0) {
+        setError("No roles assigned to this account");
+        setLoading(false);
+        return;
       }
 
-      resetForm()
-      onClose()
-      setLoading(false)
+      // Redirect based on role priority
+      // Priority: ADMIN > REGISTRAR > DEPARTMENT_HEAD > ADVISOR > STUDENT
+      const priority = ["ADMIN", "REGISTRAR", "DEPARTMENT_HEAD", "ADVISOR", "STUDENT"];
+      const redirectRole = priority.find((r) => roles.includes(r)) || "STUDENT";
+      router.push(roleRedirect[redirectRole]);
+
+      resetForm();
+      onClose();
+      setLoading(false);
     } catch (err) {
-      console.error("Login error:", err)
-      setError("Something went wrong. Please try again.")
-      setLoading(false)
+      console.error("Login error:", err);
+      setError("Something went wrong. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -74,8 +90,8 @@ export default function LoginModal({ isOpen, onClose }: Props) {
         <button
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
           onClick={() => {
-            resetForm()
-            onClose()
+            resetForm();
+            onClose();
           }}
         >
           <MdClose size={24} />
@@ -117,5 +133,5 @@ export default function LoginModal({ isOpen, onClose }: Props) {
         </form>
       </div>
     </div>
-  )
+  );
 }

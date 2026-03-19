@@ -3,19 +3,20 @@
 import { useState } from "react";
 import Image from "next/image";
 import LogoutButton from "../UI/LogoutButton";
-import userImg from "../../public/studentImage.jpg";
 import { useSession } from "next-auth/react";
 
 export default function ProfileSection() {
   const { data: session, status } = useSession();
   const [showLogout, setShowLogout] = useState(false);
 
-  if (status === "loading") return null;
-  if (!session?.user) return null;
+  if (status === "loading" || !session?.user) return null;
 
-  const name = session.user.name || "User ";
-    const email = session.user.email || "Email ";
+  const name = session.user.name || "User";
+  const email = session.user.email || "Email";
+  const role = session.user.roles?.join(", ") || "";
+  const profileImage = "/studentImage.jpg"; 
 
+  // const profileImage = session.user.image || "/studentImage.jpg"; // fallback image
 
   return (
     <div className="relative flex items-center gap-4">
@@ -24,9 +25,11 @@ export default function ProfileSection() {
           {name}
         </p>
 
-        <p className="text-xs text-gray-500">
-          {email}
-        </p>
+        <p className="text-xs text-gray-500">{email}</p>
+
+        {role && (
+          <p className="text-xs text-gray-400 italic">{role}</p>
+        )}
       </div>
 
       <div
@@ -34,7 +37,7 @@ export default function ProfileSection() {
         onClick={() => setShowLogout((prev) => !prev)}
       >
         <Image
-          src={userImg}
+          src={profileImage}
           alt="User profile"
           width={55}
           height={55}

@@ -15,8 +15,8 @@ const DownloadSection = () => {
         className="
           inline-flex items-center justify-center
           px-6 py-3
-          bg-blue-600 hover:bg-blue-700
-          text-white font-semibold
+          bg-gray-400 hover:bg-slate-700
+          text-black font-semibold
           rounded-xl
           shadow-md hover:shadow-lg
           transition-all duration-200

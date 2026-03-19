@@ -1,134 +1,156 @@
 "use client";
 
-import Image from "next/image";
-import { Home, Users, Building2, Settings, FileText } from "lucide-react";
 import Link from "next/link";
+import { Users, Building2, School, FileText } from "lucide-react";
+import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
+import AdminHeader from "@/components/layout/AdminHeader";
 
 export default function AdminDashboard() {
-  const users = [
-    { id: "U123", name: "Alemu Henok", role: "Admin", status: "Active" },
-    { id: "U124", name: "Abebe Minaye", role: "Registrar", status: "Active" },
-    { id: "U125", name: "Fasil Demeke", role: "Advisor", status: "Active" },
-  ];
-
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 via-blue-50 to-indigo-100 flex flex-col">
+      
+      <DashBoardNavbar />
 
-      <aside className="w-64 bg-blue-900 text-white flex flex-col">
-        <div className="flex flex-col items-center py-6 border-b border-blue-700">
-          <Image
-            src="/wldu_logo.jpg"
-            alt="Woldia University"
-            width={70}
-            height={70}
-            className="rounded-full"
-          />
-          <h2 className="mt-2 font-bold text-sm text-center">
-            WOLDIA UNIVERSITY
-          </h2>
+      <main className="flex-1 p-5 md:p-8 space-y-8">
+
+        <AdminHeader />
+
+        <div className="grid grid-cols-3 gap-4">
+
+          <Link
+            href="/admin/manage-faculty/add-faculty"
+            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
+          >
+            <div className="p-3 bg-blue-100  text-blue-600 rounded-lg group-hover:scale-105 transition">
+              <Building2 size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">
+                Add Faculty
+              </h3>
+              <p className="text-xs text-gray-500">
+                Create faculty
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/manage-faculty/add-school"
+            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
+          >
+            <div className="p-3 bg-green-100 text-green-600 rounded-lg group-hover:scale-105 transition">
+              <School size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">
+                Add School
+              </h3>
+              <p className="text-xs text-gray-500">
+                Under faculty
+              </p>
+            </div>
+          </Link>
+
+          <Link
+            href="/admin/manage-faculty/add-department"
+            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
+          >
+            <div className="p-3 bg-purple-100 text-purple-600 rounded-lg group-hover:scale-105 transition">
+              <FileText size={18} />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">
+                Add Department
+              </h3>
+              <p className="text-xs text-gray-500">
+                Under school
+              </p>
+            </div>
+          </Link>
+
         </div>
 
-        <nav className="flex flex-col gap-3 p-4 text-sm">
+        {/* 👥 User Table */}
+        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-gray-200 p-6">
 
-          <SidebarItem icon={<Home size={18} />} label="Home" />
-          <SidebarItem icon={<Users size={18} />} label="Students" />
-          <SidebarItem icon={<Building2 size={18} />} label="Departments" />
-          <SidebarItem icon={<Settings size={18} />} label="Settings" />
-          <SidebarItem icon={<FileText size={18} />} label="Reports" />
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
+            
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+              <Users size={18} />
+              Users
+            </h2>
 
-        </nav>
-      </aside>
-
-      {/* Main */}
-      <main className="flex-1 flex flex-col">
-
-        {/* Header */}
-        <header className="bg-green-200 p-4 flex justify-between items-center shadow ">
-
-          <h1 className="text-lg text-center font-bold text-blue-900">
-            WDU STUDENT CLEARANCE SYSTEM
-          </h1>
-
-          <div className="flex items-center gap-3">
-            <span className="text-sm">Admin</span>
-            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold">
-              A
-            </div>
-          </div>
-
-        </header>
-
-        {/* Content */}
-        <div className="p-6 space-y-6">
-
-          {/* Stats */}
-          <div className="grid grid-cols-4 gap-4">
-
-            <StatCard title="Total students" value="5432" />
-            <StatCard title="Active clearance requests" value="320" />
-            <StatCard title="Departments" value="10" />
-            <StatCard title="System users" value="45" />
+            <Link
+              href="/admin/create-user"
+              className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium shadow hover:opacity-90 transition w-full md:w-auto text-center"
+            >
+              + Create User
+            </Link>
 
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
-
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold">User Management</h3>
-
-              <Link
-                href="/admin/create-user"
-                className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm hover:bg-blue-700 inline-block text-center"
-              >
-                Create User
-              </Link>
-            </div>
-
+          {/* Table */}
+          <div className="overflow-x-auto">
             <table className="w-full text-sm">
 
               <thead>
-                <tr className="border-b text-gray-600">
-                  <th className="text-left py-2">ID</th>
-                  <th className="text-left">Name</th>
-                  <th className="text-left">Role</th>
+                <tr className="text-left text-gray-500 border-b">
+                  <th className="py-3">ID</th>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
                   <th>Status</th>
-                  <th>Actions</th>
+                  <th className="text-center">Actions</th>
                 </tr>
               </thead>
 
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
 
-                {users.map((user) => (
-                  <tr key={user.id} className="border-b">
+                {[1, 2, 3].map((item) => (
+                  <tr
+                    key={item}
+                    className="hover:bg-gray-50 transition"
+                  >
+                    <td className="py-4 text-gray-600">#00{item}</td>
 
-                    <td className="py-2">{user.id}</td>
-                    <td>{user.name}</td>
-                    <td>{user.role}</td>
+                    <td className="font-medium text-gray-800">
+                      John Doe
+                    </td>
 
-                    <td className="text-center">
-                      <span className="bg-green-200 text-green-700 px-3 py-1 rounded-full text-xs">
-                        {user.status}
+                    <td className="text-gray-600">
+                      john@email.com
+                    </td>
+
+                    <td>
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
+                        STUDENT
                       </span>
                     </td>
 
-                    <td className="flex gap-2 justify-center py-2">
+                    <td>
+                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
+                        Active
+                      </span>
+                    </td>
 
-                      <button className="bg-pink-500 text-white px-3 py-1 rounded-full text-xs">
-                        Deactivate
-                      </button>
+                    {/* 🎯 Better Action Button Layout */}
+                    <td className="text-center">
+                      <div className="flex justify-center items-center gap-2 flex-wrap">
 
-                      <button className="bg-green-500 text-white px-3 py-1 rounded-full text-xs">
-                        Activate
-                      </button>
+                        <button className="px-3 py-1 text-xs rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">
+                          Deactivate
+                        </button>
 
-                      <button className="bg-blue-500 text-white px-3 py-1 rounded-full text-xs">
-                        Update
-                      </button>
+                        <button className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white hover:bg-blue-600 transition">
+                          Edit
+                        </button>
 
-                      <button className="bg-red-500 text-white px-3 py-1 rounded-full text-xs">
-                        Delete
-                      </button>
+                        <button className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600 transition">
+                          Delete
+                        </button>
 
+                      </div>
                     </td>
 
                   </tr>
@@ -137,36 +159,14 @@ export default function AdminDashboard() {
               </tbody>
 
             </table>
-
           </div>
 
         </div>
 
-        {/* Footer */}
-        <footer className="bg-gray-300 text-center text-xs py-3 mt-auto">
-          © 2026 Woldia University - Student Clearance System
-        </footer>
-
       </main>
 
-    </div>
-  );
-}
+  
 
-function SidebarItem({ icon, label }: any) {
-  return (
-    <div className="flex items-center gap-3 hover:bg-blue-700 p-2 rounded cursor-pointer">
-      {icon}
-      <span>{label}</span>
-    </div>
-  );
-}
-
-function StatCard({ title, value }: any) {
-  return (
-    <div className="bg-green-100 border-l-4 border-blue-500 p-4 rounded shadow text-center">
-      <p className="text-xs text-gray-600">{title}</p>
-      <p className="text-xl font-bold">{value}</p>
     </div>
   );
 }

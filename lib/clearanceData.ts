@@ -1,32 +1,31 @@
+// /lib/clearanceData.ts
+
+export const faculties = [
+  { id: "f1", name: "Faculty of Engineering" },
+  { id: "f2", name: "Faculty of Business" },
+  { id: "f3", name: "Faculty of Health Sciences" },
+  { id: "f4", name: "Faculty of Arts & Humanities" },
+];
 
 export const schools = [
-  { id: "school1", name: "School of Computing" },
-  { id: "school2", name: "School of Engineering" },
-  { id: "school3", name: "School of Business" },
-  { id: "school4", name: "School of Health Sciences" },
-  { id: "school5", name: "School of Arts & Humanities" },
+  { id: "s1", name: "School of Computing", facultyId: "f1" },
+  { id: "s2", name: "School of Engineering", facultyId: "f1" },
+  { id: "s3", name: "School of Business", facultyId: "f2" },
+  { id: "s4", name: "School of Health Sciences", facultyId: "f3" },
+  { id: "s5", name: "School of Arts & Humanities", facultyId: "f4" },
 ];
 
 export const departments = [
-  { id: "dep1", name: "Software Engineering", schoolId: "school1" },
-  { id: "dep2", name: "Computer Science", schoolId: "school1" },
-  { id: "dep3", name: "Information Systems", schoolId: "school1" },
-
-  { id: "dep4", name: "Mechanical Engineering", schoolId: "school2" },
-  { id: "dep5", name: "Civil Engineering", schoolId: "school2" },
-  { id: "dep6", name: "Electrical Engineering", schoolId: "school2" },
-
-  { id: "dep7", name: "Accounting", schoolId: "school3" },
-  { id: "dep8", name: "Finance", schoolId: "school3" },
-  { id: "dep9", name: "Marketing", schoolId: "school3" },
-
-  { id: "dep10", name: "Nursing", schoolId: "school4" },
-  { id: "dep11", name: "Public Health", schoolId: "school4" },
-  { id: "dep12", name: "Pharmacy", schoolId: "school4" },
-
-  { id: "dep13", name: "History", schoolId: "school5" },
-  { id: "dep14", name: "Philosophy", schoolId: "school5" },
-  { id: "dep15", name: "Literature", schoolId: "school5" },
+  { id: "d1", name: "Software Engineering", schoolId: "s1" },
+  { id: "d2", name: "Computer Science", schoolId: "s1" },
+  { id: "d3", name: "Mechanical Engineering", schoolId: "s2" },
+  { id: "d4", name: "Civil Engineering", schoolId: "s2" },
+  { id: "d5", name: "Accounting", schoolId: "s3" },
+  { id: "d6", name: "Finance", schoolId: "s3" },
+  { id: "d7", name: "Nursing", schoolId: "s4" },
+  { id: "d8", name: "Pharmacy", schoolId: "s4" },
+  { id: "d9", name: "History", schoolId: "s5" },
+  { id: "d10", name: "Literature", schoolId: "s5" },
 ];
 
 export const reasons = [
@@ -35,5 +34,4 @@ export const reasons = [
   { id: "r3", name: "Transfer" },
   { id: "r4", name: "Temporary Leave" },
   { id: "r5", name: "Academic Dismissal" },
-  { id: "r6", name: "Graduation Ceremony Clearance" },
 ];
