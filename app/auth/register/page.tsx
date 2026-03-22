@@ -4,20 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
-
 import { RoleType } from "@prisma/client";
+import { FaChevronDown } from "react-icons/fa";
+import Link from 'next/link'
 
 interface UserForm {
   name: string;
   email: string;
   password: string;
-  roles: RoleType[]; 
+  roles: RoleType[];
 }
 
 export default function AdminRegisterPage() {
   const router = useRouter();
 
-  // Only Admin can assign roles other than STUDENT
   const AVAILABLE_ROLES = [
     RoleType.ADVISOR,
     RoleType.DEPARTMENT_HEAD,
@@ -52,16 +52,21 @@ export default function AdminRegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (user.roles.length === 0) {
-      toast.error("Please select at least one role");
-      return;
-    }
+    const finalRoles =
+      user.roles.length === 0
+        ? [RoleType.STUDENT]
+        : user.roles;
 
     try {
       const res = await fetch("/api/admin/create-user", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(user),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...user,
+          roles: finalRoles,
+        }),
       });
 
       const data = await res.json();
@@ -74,15 +79,17 @@ export default function AdminRegisterPage() {
       toast.success("User registered successfully!");
       clearForm();
 
-      setTimeout(() => router.push("/auth/login"), 2000);
-    } catch (error) {
+      setTimeout(() => {
+        router.push("/auth/login");
+      }, 1500);
+    } catch {
       toast.error("Server error. Please try again.");
     }
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-200 px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
+    <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
+      <div className="w-full max-w-md text-black bg-white rounded-2xl shadow-lg p-8">
         <div className="flex justify-center mb-6">
           <Image
             src="/wldu_logo.jpg"
@@ -93,11 +100,12 @@ export default function AdminRegisterPage() {
           />
         </div>
 
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
           Register User
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+
           <input
             type="text"
             placeholder="Name"
@@ -106,18 +114,17 @@ export default function AdminRegisterPage() {
               setUser((prev) => ({ ...prev, name: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
+            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
           />
-
           <input
             type="email"
-            placeholder="Email"
+            placeholder="Email Address"
             value={user.email}
             onChange={(e) =>
               setUser((prev) => ({ ...prev, email: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
+            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
           />
 
           <input
@@ -128,56 +135,66 @@ export default function AdminRegisterPage() {
               setUser((prev) => ({ ...prev, password: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
+            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
           />
 
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowRoleDropdown((prev) => !prev)}
-              className="w-full border border-gray-300 p-3 rounded-xl text-left bg-white flex justify-between items-center"
+              className="w-full border border-gray-300 p-3 rounded-xl flex justify-between items-center bg-white hover:bg-gray-50 transition"
             >
-              <span>
+              <span className="text-gray-700 text-sm">
                 {user.roles.length > 0
                   ? user.roles.join(", ")
-                  : "Choose roles"}
+                  : "Select roles "}
               </span>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                viewBox="0 0 24 24"
-              >
-                <path d="M19 9l-7 7-7-7" />
-              </svg>
+
+              <FaChevronDown className="text-gray-500 text-xs" />
             </button>
 
-            {showRoleDropdown && (
-              <div className="absolute z-10 w-full bg-white border border-gray-300 rounded-xl shadow-md mt-1 max-h-32 overflow-y-auto p-2">
-                {AVAILABLE_ROLES.map((role) => (
-                  <label
-                    key={role}
-                    className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={user.roles.includes(role)}
-                      onChange={() => toggleRole(role)}
-                    />
+          {showRoleDropdown && (
+            <div className="absolute top-full z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-md max-h-16 overflow-y-auto">
+
+              {AVAILABLE_ROLES.map((role) => (
+                <label
+                  key={role}
+                  className="flex items-center gap-2 px-2 py-1 text-xs cursor-pointer hover:bg-gray-100"
+                >
+                  <input
+                    type="checkbox"
+                    checked={user.roles.includes(role)}
+                    onChange={() => toggleRole(role)}
+                    className="accent-blue-900 w-3 h-3"
+                  />
+
+                  <span className="text-gray-700">
                     {role}
-                  </label>
-                ))}
-              </div>
-            )}
+                  </span>
+                </label>
+              ))}
+
+            </div>
+          )}
           </div>
 
           <button
             type="submit"
-            className="bg-gray-700 hover:bg-gray-800 text-black font-semibold py-3 rounded-xl transition-colors"
+            className="bg-blue-900 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
           >
             Register User
           </button>
+        <div className="mt-6 text-center text-gray-700">
+          <p>
+            Already have an account?{" "}
+            <Link
+              href="/auth/login"
+              className="text-blue-900 font-semibold hover:underline"
+            >
+              Login here
+            </Link>
+          </p>
+        </div>
         </form>
       </div>
     </div>

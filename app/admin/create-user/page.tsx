@@ -17,7 +17,6 @@ interface UserForm {
 export default function AdminRegisterPage() {
   const router = useRouter();
 
-  // Only Admin can assign roles other than STUDENT
   const AVAILABLE_ROLES = [
     RoleType.ADVISOR,
     RoleType.DEPARTMENT_HEAD,

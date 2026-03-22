@@ -43,7 +43,6 @@ export default function AddDepartment() {
         className="w-full max-w-md bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-8 space-y-6"
       >
         
-        {/* Header */}
         <div className="text-center space-y-1">
           <div className="flex justify-center">
             <div className="p-3 bg-purple-100 text-purple-600 rounded-xl">
@@ -57,8 +56,6 @@ export default function AddDepartment() {
             Assign a department under a school
           </p>
         </div>
-
-        {/* Select School */}
         <div>
           <label className="text-sm text-gray-600 font-medium">
             Select School
@@ -78,7 +75,6 @@ export default function AddDepartment() {
           </select>
         </div>
 
-        {/* Department Name */}
         <div>
           <label className="text-sm text-gray-600 font-medium">
             Department Name
@@ -91,8 +87,6 @@ export default function AddDepartment() {
             className="w-full mt-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500 transition"
           />
         </div>
-
-        {/* Submit */}
         <button
           type="submit"
           className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-purple-600 to-indigo-600 text-black py-2.5 rounded-xl font-medium shadow-md hover:opacity-90 transition"

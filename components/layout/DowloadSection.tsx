@@ -1,4 +1,3 @@
-import React from "react";
 import Link from "next/link";
 
 const DownloadSection = () => {
@@ -8,8 +7,6 @@ const DownloadSection = () => {
       <h1 className="text-xl md:text-2xl font-bold text-gray-800">
         Clearance Progress
       </h1>
-
-
       <Link
         href="/student/clearance/request"
         className="

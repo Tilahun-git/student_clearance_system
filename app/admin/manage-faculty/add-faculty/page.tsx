@@ -32,7 +32,6 @@ export default function AddFaculty() {
         className="w-full max-w-md bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-8 space-y-6"
       >
         
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
@@ -48,8 +47,6 @@ export default function AddFaculty() {
             Create a new faculty in the system
           </p>
         </div>
-
-        {/* Input */}
         <div>
           <label className="text-sm text-gray-600 font-medium">
             Faculty Name
@@ -63,8 +60,6 @@ export default function AddFaculty() {
             className="w-full mt-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
           />
         </div>
-
-        {/* Button */}
         <button
           type="submit"
           className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-blue-600 to-indigo-600 text-black py-2.5 rounded-xl font-medium shadow-md hover:opacity-90 transition active:scale-[0.98]"

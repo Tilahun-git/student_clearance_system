@@ -4,14 +4,16 @@ export const ApprovalStatusEnum = {
   REJECTED: "REJECTED",
 } as const;
 
-export type ApprovalStatusType = typeof ApprovalStatusEnum[keyof typeof ApprovalStatusEnum];
+export type ApprovalStatusType =
+  (typeof ApprovalStatusEnum)[keyof typeof ApprovalStatusEnum];
 
 export interface ClearanceApprovalRequest {
-  id: string; // Approval record ID
+  id: string;
   clearanceRequest: {
     id: string;
     student: {
       id: string;
+      studentId: string;
       user: {
         name: string;
         email: string;
@@ -26,7 +28,6 @@ export interface ClearanceApprovalRequest {
   comment?: string;
 }
 
-
 export async function fetchRequests(): Promise<ClearanceApprovalRequest[]> {
   const res = await fetch("/api/clearance/advisor/request");
 
@@ -37,19 +38,22 @@ export async function fetchRequests(): Promise<ClearanceApprovalRequest[]> {
   return res.json();
 }
 
-
 export async function updateRequest(
   approvalId: string,
   status: ApprovalStatusType,
   comment?: string
-): Promise<void> {
+): Promise<any> {
   const res = await fetch("/api/clearance/advisor/request", {
     method: "PATCH",
-    body: JSON.stringify({ approvalId, status, comment }), 
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ approvalId, status, comment }),
   });
 
   if (!res.ok) {
-    throw new Error(`Failed to update request: ${res.statusText}`);
+    throw new Error(`Failed to update request`);
   }
+
+  return res.json();
 }

@@ -2,21 +2,25 @@ import "../globals.css";
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import Footer from "@/components/layout/Footer";
 
-export default function RootLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen flex flex-col bg-gray-50">
-        <main className="flex-1">
-          {children}
-        </main>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      
+      {/* Navbar */}
+      <DashBoardNavbar />
 
-        <Footer />
+      {/* Main Content */}
+      <main className="flex-1">
+        {children}
+      </main>
 
-      </body>
-    </html>
+      {/* Footer */}
+      <Footer />
+
+    </div>
   );
 }

@@ -1,5 +1,5 @@
+"use client";
 import { useEffect, useState } from "react";
-
 interface ClearanceStatus {
   currentStatus: string;
   departmentsApproved: number;

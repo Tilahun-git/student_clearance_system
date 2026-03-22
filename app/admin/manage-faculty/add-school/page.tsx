@@ -42,8 +42,6 @@ export default function AddSchool() {
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-8 space-y-6"
       >
-        
-        {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center">
             <div className="p-3 bg-green-100 text-green-600 rounded-xl">
@@ -60,7 +58,6 @@ export default function AddSchool() {
           </p>
         </div>
 
-        {/* Faculty Select */}
         <div>
           <label className="text-sm text-gray-600 font-medium">
             Select Faculty
@@ -81,7 +78,6 @@ export default function AddSchool() {
           </select>
         </div>
 
-        {/* School Name */}
         <div>
           <label className="text-sm text-gray-600 font-medium">
             School Name
@@ -96,7 +92,6 @@ export default function AddSchool() {
           />
         </div>
 
-        {/* Submit */}
         <button
           type="submit"
           className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-green-600 to-emerald-600 text-black py-2.5 rounded-xl font-medium shadow-md hover:opacity-90 transition active:scale-[0.98]"

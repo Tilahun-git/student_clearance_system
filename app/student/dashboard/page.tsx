@@ -1,5 +1,3 @@
-"use client";
-
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import Header from "@/components/layout/Header";
 import DowloadSection from "@/components/layout/DowloadSection";
@@ -7,23 +5,23 @@ import Link from "next/link";
 
 export default function StudentDashboard() {
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-slate-50">
 
-      {/* Navbar */}
       <DashBoardNavbar />
-
-      {/* Header */}
       <Header />
 
-      <div className="max-w-6xl mx-auto p-6 grid md:grid-cols-2 gap-6">
+      {/* MAIN CONTENT */}
+      <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-2 gap-8">
 
-        <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col justify-between">
+        {/* CARD 1 */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
+
           <div>
-            <h2 className="text-xl font-semibold text-gray-800">
+            <h2 className="text-xl font-semibold text-slate-800">
               Request Clearance
             </h2>
 
-            <p className="text-gray-500 mt-2">
+            <p className="text-slate-600 mt-3 leading-relaxed">
               Start your clearance process by submitting a clearance request.
               You will select your faculty, school, and department, and your request
               will be reviewed by advisors and relevant university offices.
@@ -32,33 +30,43 @@ export default function StudentDashboard() {
 
           <Link
             href="/student/clearance/request"
-            className="mt-4 bg-gray-500 hover:bg-slate-400 text-black px-5 py-2 rounded-lg text-center"
+            className="mt-6 inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
           >
             Start Clearance Request
           </Link>
+
         </div>
 
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-800">
-            Clearance Status
-          </h2>
+        {/* CARD 2 */}
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
 
-          <p className="text-gray-500 mt-2">
-            Track the progress of your clearance approvals. You can see which offices have
-            approved or rejected your request, and any comments provided.
-          </p>
+          <div>
+            <h2 className="text-xl font-semibold text-slate-800">
+              Clearance Status
+            </h2>
 
-          {/* <Link
+            <p className="text-slate-600 mt-3 leading-relaxed">
+              Track the progress of your clearance approvals. You can see which offices have
+              approved or rejected your request, and any comments provided.
+            </p>
+          </div>
+
+          {/* You can enable later */}
+          {/* 
+          <Link
             href="/student/clearance/status"
-            className="inline-block mt-4 bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg"
+            className="mt-6 inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
           >
             View Status
-          </Link> */}
+          </Link>
+          */}
+
         </div>
 
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 pb-10">
+      {/* DOWNLOAD SECTION */}
+      <div className="max-w-6xl mx-auto px-6 pb-12">
         <DowloadSection />
       </div>
 

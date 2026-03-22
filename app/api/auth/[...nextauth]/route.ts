@@ -77,7 +77,7 @@ export const authOptions: AuthOptions = {
           email: user.email,
           roles,
           studentId: roles.includes(RoleType.STUDENT)
-            ? user.studentProfile?.id
+            ? user.studentProfile?.studentId
             : undefined,
         };
 

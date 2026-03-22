@@ -3,19 +3,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
 
+// ✅ Staff roles ONLY (exclude STUDENT)
+type StaffRole = Exclude<RoleType, "STUDENT">;
+
 export async function POST(req: Request) {
   try {
-    const {
-      name,
-      email,
-      password,
-      roles,
-      studentId,
-      program,
-      year,
-      departmentId,
-      advisorId,
-    } = await req.json();
+    const { name, email, password,roles,} = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -23,87 +16,63 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    // ✅ Check existing user
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "User already exists" },
+    const existingUser = await prisma.user.findUnique({ where: { email }, });
+      if (existingUser) {
+       return NextResponse.json(
+        { error: "Account already exists" },
         { status: 400 }
       );
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
-
+    const validRoles = Object.values(RoleType);
     const selectedRoles: RoleType[] =
       Array.isArray(roles) && roles.length > 0
-        ? roles.filter((r: string) =>
-            Object.values(RoleType).includes(r as RoleType)
+        ? roles.filter((role: string) =>
+            validRoles.includes(role as RoleType)
           )
-        : [RoleType.STUDENT];
+        : [RoleType.STUDENT]; 
+    const staffRoles: StaffRole[] = selectedRoles.filter((role): role is StaffRole => role !== RoleType.STUDENT);
 
-    const roleRecords = [];
-    for (const roleName of selectedRoles) {
-      const role = await prisma.role.upsert({
-        where: { name: roleName },
-        update: {},
-        create: { name: roleName },
-      });
-      roleRecords.push(role);
-    }
+    const roleRecords = await prisma.role.findMany({
+      where: {
+        name: {
+          in: selectedRoles,
+        },
+      },
+    });
 
-    // 🔥 CREATE USER
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
-
         roles: {
           create: roleRecords.map((role) => ({
-            role: { connect: { id: role.id } },
+            role: {
+              connect: { id: role.id },
+            },
           })),
         },
-
-        studentProfile: selectedRoles.includes(RoleType.STUDENT)
-          ? {
-              create: {
-                studentId, // 🔥 REQUIRED
-                program: program || "Undeclared",
-                year: year || 1,
-                departmentId,
-                advisorId, // ⚠️ must be Staff.id
-              },
-            }
-          : undefined,
-
         staffProfile:
-          selectedRoles.includes(RoleType.ADVISOR) ||
-          selectedRoles.includes(RoleType.DEPARTMENT_HEAD) ||
-          selectedRoles.includes(RoleType.FINANCE) ||
-          selectedRoles.includes(RoleType.LIBRARY) ||
-          selectedRoles.includes(RoleType.REGISTRAR)
-            ? {
+          staffRoles.length > 0 ? {
                 create: {
-                  departmentId: departmentId || null,
+                  departmentId: null,
                 },
               }
             : undefined,
       },
 
       include: {
-        roles: { include: { role: true } },
-        studentProfile: true,
+        roles: {
+          include: { role: true },
+        },
         staffProfile: true,
       },
     });
 
     return NextResponse.json(
       {
-        message: "User created successfully",
+        message: "User account created successfully",
         user,
       },
       { status: 201 }
@@ -111,7 +80,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "Server error, unable to register user" },
+      { error: "Server error, unable to create user" },
       { status: 500 }
     );
   }

@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { Users, Building2, School, FileText } from "lucide-react";
-import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import AdminHeader from "@/components/layout/AdminHeader";
 
 export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 via-blue-50 to-indigo-100 flex flex-col">
       
-      <DashBoardNavbar />
-
       <main className="flex-1 p-5 md:p-8 space-y-8">
 
         <AdminHeader />
@@ -70,7 +67,6 @@ export default function AdminDashboard() {
 
         </div>
 
-        {/* 👥 User Table */}
         <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-gray-200 p-6">
 
           {/* Header */}
@@ -90,7 +86,6 @@ export default function AdminDashboard() {
 
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
 
@@ -134,7 +129,6 @@ export default function AdminDashboard() {
                       </span>
                     </td>
 
-                    {/* 🎯 Better Action Button Layout */}
                     <td className="text-center">
                       <div className="flex justify-center items-center gap-2 flex-wrap">
 
@@ -164,9 +158,6 @@ export default function AdminDashboard() {
         </div>
 
       </main>
-
-  
-
     </div>
   );
 }

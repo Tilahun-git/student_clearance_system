@@ -2,25 +2,52 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { RoleType, ApprovalStatus } from "@prisma/client";
+import { RoleType, ApprovalStatus, ClearanceStatus } from "@prisma/client";
 
-// -------------------------
-// GET: Fetch pending requests for this advisor
-// -------------------------
+function isParallelRole(role: RoleType) {
+  return role === RoleType.LIBRARY || role === RoleType.FINANCE;
+}
+
+// ======================= GET =======================
+
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   try {
-    // Fetch pending clearance approvals for this advisor
-    const pendingApprovals = await prisma.clearanceApproval.findMany({
-      where: {
-        role: { name: RoleType.ADVISOR },
-        status: ApprovalStatus.PENDING,
-        clearanceRequest: {
-          student: {
-            advisorId: session.user.id,
+    const session = await getServerSession(authOptions);
+
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const staff = await prisma.staff.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: { role: true },
+            },
           },
+        },
+      },
+    });
+
+    if (!staff) {
+      return NextResponse.json({ error: "Staff not found" }, { status: 403 });
+    }
+
+    // ✅ ALL roles (FIX)
+    const roleNames = staff.user.roles.map((r) => r.role.name);
+
+    const approvals = await prisma.clearanceApproval.findMany({
+      where: {
+        role: {
+          name: { in: roleNames }, // ✅ multi-role
+        },
+        status: ApprovalStatus.PENDING,
+
+        clearanceRequest: {
+          currentStep: { in: roleNames }, // ✅ CRITICAL FIX
+          status: { not: ClearanceStatus.REJECTED },
         },
       },
       include: {
@@ -31,67 +58,154 @@ export async function GET() {
             },
           },
         },
-        staff: true,
         role: true,
-      },
-      orderBy: {
-        clearanceRequest: { createdAt: "desc" },
       },
     });
 
-    return NextResponse.json(pendingApprovals);
+    return NextResponse.json(approvals);
+
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to fetch requests" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch requests" },
+      { status: 500 }
+    );
   }
 }
+// ======================= PATCH =======================
 
-// -------------------------
-// PATCH: Approve or reject a request as advisor
-// -------------------------
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
   try {
-    const { approvalId, status, comment } = await req.json();
+    const session = await getServerSession(authOptions);
 
-    // Validate status
-    if (!["PENDING", "APPROVED", "REJECTED"].includes(status)) {
-      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Fetch the approval
+    const staff = await prisma.staff.findUnique({
+      where: { userId: session.user.id },
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: { role: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!staff) {
+      return NextResponse.json({ error: "Staff not found" }, { status: 403 });
+    }
+
+    const roleNames = staff.user.roles.map((r) => r.role.name);
+
+    const { approvalId, status, comment } = await req.json();
+
     const approval = await prisma.clearanceApproval.findUnique({
       where: { id: approvalId },
       include: {
-        clearanceRequest: { include: { student: true } },
+        role: true,
+        clearanceRequest: {
+          include: {
+            approvals: {
+              include: { role: true },
+            },
+          },
+        },
       },
     });
 
     if (!approval) {
-      return NextResponse.json({ error: "Approval not found" }, { status: 404 });
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    // Ensure this staff/advisor owns this approval
-    if (approval.clearanceRequest.student.advisorId !== session.user.id) {
+    const request = approval.clearanceRequest;
+
+    // 🔒 ensure user has THIS role
+    if (!roleNames.includes(approval.role.name)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // Update approval
     const updated = await prisma.clearanceApproval.update({
       where: { id: approvalId },
       data: {
-        status: status as ApprovalStatus,
-        comment: comment ?? undefined,
-        staffId: session.user.id, // assign the advisor
+        status,
+        comment,
+        staffId: staff.id,
         approvedAt: status === "APPROVED" ? new Date() : null,
       },
     });
 
-    return NextResponse.json(updated);
+    // ❌ reject = stop everything
+    if (status === "REJECTED") {
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: { status: ClearanceStatus.REJECTED },
+      });
+
+      return NextResponse.json({ message: "Rejected" });
+    }
+
+    // 🔥 workflow (based on THIS approval role)
+    let nextStep: RoleType | null = null;
+
+    if (approval.role.name === RoleType.ADVISOR) {
+      nextStep = RoleType.DEPARTMENT_HEAD;
+    }
+
+    else if (approval.role.name === RoleType.DEPARTMENT_HEAD) {
+      nextStep = RoleType.LIBRARY;
+    }
+
+    else if (
+      approval.role.name === RoleType.LIBRARY ||
+      approval.role.name === RoleType.FINANCE
+    ) {
+      const parallel = request.approvals.filter(
+        (a) =>
+          a.role.name === RoleType.LIBRARY ||
+          a.role.name === RoleType.FINANCE
+      );
+
+      const allApproved = parallel.every(
+        (a) =>
+          a.status === ApprovalStatus.APPROVED ||
+          a.id === approvalId
+      );
+
+      if (allApproved) {
+        nextStep = RoleType.REGISTRAR;
+      }
+    }
+
+    else if (approval.role.name === RoleType.REGISTRAR) {
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: { status: ClearanceStatus.APPROVED },
+      });
+
+      return NextResponse.json({ message: "Completed" });
+    }
+
+    if (nextStep) {
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: {
+          currentStep: nextStep,
+          status: ClearanceStatus.IN_PROGRESS,
+        },
+      });
+    }
+
+    return NextResponse.json({ message: "Updated" });
+
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Failed to update request" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Server error" },
+      { status: 500 }
+    );
   }
 }

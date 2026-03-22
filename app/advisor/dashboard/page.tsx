@@ -1,96 +1,185 @@
 "use client";
 
-import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import { useEffect, useState } from "react";
-import { fetchRequests, updateRequest, ClearanceApprovalRequest, ApprovalStatusEnum } from "@/lib/fetchRequests";
+import toast from "react-hot-toast";
+import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
+import {
+  fetchRequests,
+  updateRequest,
+  ClearanceApprovalRequest,
+  ApprovalStatusEnum,
+} from "@/lib/fetchRequests";
+import Header from "@/components/layout/Header";
 
 export default function AdvisorDashboard() {
   const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch requests on mount
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [comment, setComment] = useState("");
+
   useEffect(() => {
-    async function loadRequests() {
-      try {
-        const data = await fetchRequests();
-        setRequests(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadRequests();
+    const interval = setInterval(loadRequests, 5000);
+    return () => clearInterval(interval);
   }, []);
 
-  // Approve request and refresh
-  async function approve(approvalId: string) {
+  async function loadRequests() {
     try {
-      await updateRequest(approvalId, ApprovalStatusEnum.APPROVED);
-      const updated = await fetchRequests();
-      setRequests(updated);
-    } catch (err) {
-      console.error(err);
+      const data = await fetchRequests();
+      setRequests(data);
+    } catch {
+      toast.error("Failed to load requests");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function approve(id: string) {
+    try {
+      await updateRequest(id, ApprovalStatusEnum.APPROVED);
+      toast.success("Request approved");
+      loadRequests();
+    } catch {
+      toast.error("Error approving request");
+    }
+  }
+
+  function openReject(id: string) {
+    setRejectingId(id);
+    setComment("");
+  }
+
+  async function submitReject() {
+    if (!comment.trim()) {
+      return toast.error("Please enter a rejection reason");
+    }
+
+    try {
+      await updateRequest(
+        rejectingId!,
+        ApprovalStatusEnum.REJECTED,
+        comment
+      );
+      toast.success("Request rejected");
+      setRejectingId(null);
+      loadRequests();
+    } catch {
+      toast.error("Error rejecting request");
     }
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-200">
       <DashBoardNavbar />
 
-      <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-6 mt-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-4">Pending Clearance Requests</h1>
+      <div className="max-w-6xl mx-auto mt-8 px-4">
+        <div className="bg-white/90 backdrop-blur rounded-2xl shadow-xl p-6  border-gray-100">
+          <Header />
 
-        {loading ? (
-          <div className="text-center py-10 text-gray-500">Loading...</div>
-        ) : requests.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            No pending clearance requests 🎉
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-gray-200 text-gray-700">
-                  <th className="p-3 rounded-tl-lg">Student</th>
-                  <th className="p-3">Date</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 rounded-tr-lg">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {requests.map((r) => (
-                  <tr key={r.id} className="border-b hover:bg-gray-50 transition">
-                    <td className="p-3 font-medium">{r.clearanceRequest.student.user.name}</td>
-                    <td className="p-3">{new Date(r.clearanceRequest.createdAt).toLocaleDateString()}</td>
-                    <td className="p-3">
-                      <span
-                        className={`px-2 py-1 rounded-full ${
-                          r.status === ApprovalStatusEnum.PENDING
-                            ? "bg-yellow-100 text-yellow-700"
-                            : "bg-green-100 text-green-700"
-                        }`}
+          <div className="mt-6">
+            {loading ? (
+              <div className="flex justify-center items-center py-10">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-gray-900" />
+              </div>
+            ) : requests.length === 0 ? (
+              <div className="text-center py-10 text-gray-500 text-lg">
+                🎉 No requests at the moment
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Student Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Student ID
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {requests.map((request) => (
+                      <tr
+                        key={request.id}
+                        className="hover:bg-gray-50 transition"
                       >
-                        {r.status}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      {r.status === ApprovalStatusEnum.PENDING && (
-                        <button
-                          onClick={() => approve(r.id)}
-                          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition"
-                        >
-                          Approve
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-semibold text-gray-800">
+                            {request.clearanceRequest.student.user.name}
+                          </div>
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {request.clearanceRequest.student.studentId}
+                        </td>
+
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <div className="flex justify-end gap-3">
+                            <button
+                              onClick={() => approve(request.id)}
+                              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-300 text-black shadow hover:bg-green-700 active:scale-95 transition"
+                            >
+                              Approve
+                            </button>
+
+                            <button
+                              onClick={() => openReject(request.id)}
+                              className="px-4 py-2 text-sm font-medium rounded-lg bg-red-500 text-white shadow hover:bg-red-600 active:scale-95 transition"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
+      {rejectingId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95">
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              Reject Request
+            </h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Please provide a clear reason for rejection.
+            </p>
+
+            <textarea
+              placeholder="Type your reason here..."
+              className="w-full h-28 p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-400 focus:outline-none resize-none text-sm"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => setRejectingId(null)}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 hover:bg-gray-200 transition"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={submitReject}
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 shadow active:scale-95 transition"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

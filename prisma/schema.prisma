@@ -146,6 +146,9 @@ model ClearanceRequest {
   schoolId     String?
   departmentId String?
 
+  currentStep RoleType @default(ADVISOR) 
+
+
   status ClearanceStatus @default(PENDING)
 
   student    Student     @relation(fields: [studentId], references: [id])

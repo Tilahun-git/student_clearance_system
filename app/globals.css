@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* CSS Variables */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -9,6 +10,33 @@
   :root {
     --background: #0f172a;
     --foreground: #f1f5f9;
+  }
+}
+
+/* Apply base styles */
+html, body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, Arial, Helvetica, sans-serif;
+}
+
+/* Reusable Tailwind component styles */
+@layer components {
+
+  .input {
+    @apply w-full px-3 py-2.5 border border-gray-300 rounded-xl bg-white transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-gray-600 mb-1;
+  }
+
+  .section-title {
+    @apply text-base font-semibold text-gray-700 mb-3;
+  }
+
+  .divider {
+    @apply h-px bg-gray-200;
   }
 }
 /* 
