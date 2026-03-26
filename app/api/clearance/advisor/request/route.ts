@@ -8,8 +8,6 @@ function isParallelRole(role: RoleType) {
   return role === RoleType.LIBRARY || role === RoleType.FINANCE;
 }
 
-// ======================= GET =======================
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -35,18 +33,17 @@ export async function GET() {
       return NextResponse.json({ error: "Staff not found" }, { status: 403 });
     }
 
-    // ✅ ALL roles (FIX)
     const roleNames = staff.user.roles.map((r) => r.role.name);
 
     const approvals = await prisma.clearanceApproval.findMany({
       where: {
         role: {
-          name: { in: roleNames }, // ✅ multi-role
+          name: { in: roleNames },
         },
         status: ApprovalStatus.PENDING,
 
         clearanceRequest: {
-          currentStep: { in: roleNames }, // ✅ CRITICAL FIX
+          currentStep: { in: roleNames }, 
           status: { not: ClearanceStatus.REJECTED },
         },
       },
@@ -72,7 +69,6 @@ export async function GET() {
     );
   }
 }
-// ======================= PATCH =======================
 
 export async function PATCH(req: Request) {
   try {
@@ -123,7 +119,6 @@ export async function PATCH(req: Request) {
 
     const request = approval.clearanceRequest;
 
-    // 🔒 ensure user has THIS role
     if (!roleNames.includes(approval.role.name)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
@@ -138,7 +133,6 @@ export async function PATCH(req: Request) {
       },
     });
 
-    // ❌ reject = stop everything
     if (status === "REJECTED") {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
@@ -148,7 +142,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Rejected" });
     }
 
-    // 🔥 workflow (based on THIS approval role)
     let nextStep: RoleType | null = null;
 
     if (approval.role.name === RoleType.ADVISOR) {

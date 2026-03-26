@@ -10,10 +10,8 @@ export default function StudentDashboard() {
       <DashBoardNavbar />
       <Header />
 
-      {/* MAIN CONTENT */}
       <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-2 gap-8">
 
-        {/* CARD 1 */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
 
           <div>
@@ -37,7 +35,6 @@ export default function StudentDashboard() {
 
         </div>
 
-        {/* CARD 2 */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
 
           <div>
@@ -51,7 +48,6 @@ export default function StudentDashboard() {
             </p>
           </div>
 
-          {/* You can enable later */}
           {/* 
           <Link
             href="/student/clearance/status"
@@ -64,8 +60,6 @@ export default function StudentDashboard() {
         </div>
 
       </div>
-
-      {/* DOWNLOAD SECTION */}
       <div className="max-w-6xl mx-auto px-6 pb-12">
         <DowloadSection />
       </div>
