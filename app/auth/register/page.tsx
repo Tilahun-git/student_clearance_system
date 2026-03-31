@@ -25,6 +25,7 @@ export default function AdminRegisterPage() {
     RoleType.LIBRARY,
     RoleType.REGISTRAR,
     RoleType.ADMIN,
+    RoleType.STUDENT,
   ];
 
   const [user, setUser] = useState<UserForm>({

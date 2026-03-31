@@ -59,6 +59,8 @@ export async function GET() {
       },
     });
 
+
+    console.log("All requests : ",approvals)
     return NextResponse.json(approvals);
 
   } catch (err) {

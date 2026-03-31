@@ -84,7 +84,6 @@ export default function AdvisorDashboard() {
               </div>
             ) : requests.length === 0 ? (
               <div className="text-center py-10 text-gray-500 text-lg">
-                🎉 No requests at the moment
               </div>
             ) : (
               <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">

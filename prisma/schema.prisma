@@ -63,20 +63,25 @@ model UserRole {
 
 model Student {
   id     String @id @default(uuid())
-  userId String @unique
+  userId String? @unique
 
   studentId String @unique 
 
 
   program String
   year    Int
+  
+
+  firstName  String
+  middleName String?
+  lastName   String
 
   departmentId String
-  advisorId    String
+  advisorId    String?
 
-  user       User       @relation(fields: [userId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
   department Department @relation(fields: [departmentId], references: [id])
-  advisor    Staff      @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  advisor    Staff?      @relation("AdvisorStudents", fields: [advisorId], references: [id])
 
   clearanceRequests ClearanceRequest[]
   certificates      ClearanceCertificate[]

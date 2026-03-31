@@ -36,8 +36,14 @@ const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
     semester: "",
   });
 
+
+
+console.log("Student ID :",session?.user.studentId)
+
+  
   useEffect(() => {
     if (session?.user?.studentId) {
+
       setForm((prev) => ({
         ...prev,
         studentId: session.user.studentId || "",

@@ -3,12 +3,11 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
 
-// ✅ Staff roles ONLY (exclude STUDENT)
-type StaffRole = Exclude<RoleType, "STUDENT">;
+
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password,roles,} = await req.json();
+    const { name, email, password, roles, studentId } = await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -16,22 +15,26 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const existingUser = await prisma.user.findUnique({ where: { email }, });
-      if (existingUser) {
-       return NextResponse.json(
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (existingUser) {
+      return NextResponse.json(
         { error: "Account already exists" },
         { status: 400 }
       );
     }
+
     const hashedPassword = await bcrypt.hash(password, 10);
-    const validRoles = Object.values(RoleType);
+
     const selectedRoles: RoleType[] =
       Array.isArray(roles) && roles.length > 0
-        ? roles.filter((role: string) =>
-            validRoles.includes(role as RoleType)
-          )
-        : [RoleType.STUDENT]; 
-    const staffRoles: StaffRole[] = selectedRoles.filter((role): role is StaffRole => role !== RoleType.STUDENT);
+        ? roles
+        : [RoleType.STUDENT];
+
+    const isStudent = selectedRoles.includes(RoleType.STUDENT);
 
     const roleRecords = await prisma.role.findMany({
       where: {
@@ -46,33 +49,52 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
+
         roles: {
           create: roleRecords.map((role) => ({
-            role: {
-              connect: { id: role.id },
-            },
+            role: { connect: { id: role.id } },
           })),
         },
-        staffProfile:
-          staffRoles.length > 0 ? {
-                create: {
-                  departmentId: null,
-                },
-              }
-            : undefined,
-      },
-
-      include: {
-        roles: {
-          include: { role: true },
-        },
-        staffProfile: true,
       },
     });
 
+    if (isStudent) {
+      if (!studentId) {
+        return NextResponse.json(
+          { error: "studentId is required for student account" },
+          { status: 400 }
+        );
+      }
+
+      const student = await prisma.student.findUnique({
+        where: { studentId }, 
+      });
+
+      if (!student) {
+        return NextResponse.json(
+          { error: "Student not found" },
+          { status: 404 }
+        );
+      }
+
+      if (student.userId) {
+        return NextResponse.json(
+          { error: "Student already has an account" },
+          { status: 400 }
+        );
+      }
+
+      await prisma.student.update({
+        where: { studentId }, 
+        data: {
+          userId: user.id, 
+        },
+      });
+    }
+
     return NextResponse.json(
       {
-        message: "User account created successfully",
+        message: "User created and linked successfully",
         user,
       },
       { status: 201 }
@@ -80,7 +102,7 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error(error);
     return NextResponse.json(
-      { error: "Server error, unable to create user" },
+      { error: "Server error" },
       { status: 500 }
     );
   }

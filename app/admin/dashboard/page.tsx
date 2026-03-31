@@ -1,160 +1,169 @@
 "use client";
 
 import Link from "next/link";
-import { Users, Building2, School, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Users } from "lucide-react";
 import AdminHeader from "@/components/layout/AdminHeader";
 
+type Student = {
+  id: string;
+  studentId: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  program: string;
+  year: number;
+  userId?: string;
+  advisorId?: string; 
+  advisor?: { user?: { name: string } };
+  department?: { name: string };
+};
+
 export default function AdminDashboard() {
+  const [students, setStudents] = useState<Student[]>([]);
+
+  useEffect(() => {
+    fetch("/api/students")
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to fetch students");
+        return res.json();
+      })
+      .then(setStudents)
+      .catch(() => console.error("Failed to load students"));
+  }, []);
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-50 via-blue-50 to-indigo-100 flex flex-col">
-      
-      <main className="flex-1 p-5 md:p-8 space-y-8">
+    <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200">
+      <main className="max-w-7xl mx-auto px-6 py-10 space-y-8">
 
         <AdminHeader />
 
-        <div className="grid grid-cols-3 gap-4">
-
-          <Link
-            href="/admin/manage-faculty/add-faculty"
-            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
-          >
-            <div className="p-3 bg-blue-100  text-blue-600 rounded-lg group-hover:scale-105 transition">
-              <Building2 size={18} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">
-                Add Faculty
-              </h3>
-              <p className="text-xs text-gray-500">
-                Create faculty
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/manage-faculty/add-school"
-            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
-          >
-            <div className="p-3 bg-green-100 text-green-600 rounded-lg group-hover:scale-105 transition">
-              <School size={18} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">
-                Add School
-              </h3>
-              <p className="text-xs text-gray-500">
-                Under faculty
-              </p>
-            </div>
-          </Link>
-
-          <Link
-            href="/admin/manage-faculty/add-department"
-            className="group bg-white rounded-xl p-4 shadow-md hover:shadow-lg hover:-translate-y-1 transition flex items-center gap-3"
-          >
-            <div className="p-3 bg-purple-100 text-purple-600 rounded-lg group-hover:scale-105 transition">
-              <FileText size={18} />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-800">
-                Add Department
-              </h3>
-              <p className="text-xs text-gray-500">
-                Under school
-              </p>
-            </div>
-          </Link>
-
+        <div className="bg-white rounded-2xl shadow-md border p-6 flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Users size={22} />
+            Student Management
+          </h2>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-md rounded-2xl shadow-md border border-gray-200 p-6">
-
-          {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-5">
-            
-            <h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-              <Users size={18} />
-              Users
-            </h2>
-
-            <Link
-              href="/admin/create-user"
-              className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-5 py-2 rounded-xl text-sm font-medium shadow hover:opacity-90 transition w-full md:w-auto text-center"
-            >
-              + Create User
-            </Link>
-
-          </div>
-
+        <div className="bg-white rounded-2xl shadow-md border overflow-hidden">
           <div className="overflow-x-auto">
+
             <table className="w-full text-sm">
 
-              <thead>
-                <tr className="text-left text-gray-500 border-b">
-                  <th className="py-3">ID</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th className="text-center">Actions</th>
+              <thead className="bg-gray-50 border-b">
+                <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
+                  <th className="px-6 py-4">Student ID</th>
+                  <th className="px-6 py-4">Name</th>
+                  <th className="px-6 py-4">Year</th>
+                  <th className="px-6 py-4">Department</th>
+                  <th className="px-6 py-4">Account Status</th>
+                  <th className="px-6 py-4">Advisor Status</th>
+                  <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
 
-                {[1, 2, 3].map((item) => (
-                  <tr
-                    key={item}
-                    className="hover:bg-gray-50 transition"
-                  >
-                    <td className="py-4 text-gray-600">#00{item}</td>
+                {students.map((s) => {
+                  const hasAccount = !!s.userId;
+                  const hasAdvisor = !!s.advisorId; 
 
-                    <td className="font-medium text-gray-800">
-                      John Doe
-                    </td>
+                  return (
+                    <tr key={s.id} className="hover:bg-gray-50 transition">
 
-                    <td className="text-gray-600">
-                      john@email.com
-                    </td>
+                      <td className="px-6 py-4 font-medium text-gray-700">
+                        {s.studentId}
+                      </td>
 
-                    <td>
-                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700">
-                        STUDENT
-                      </span>
-                    </td>
+                      <td className="px-6 py-4">
+                        <div className="font-semibold text-gray-900">
+                          {s.firstName} {s.middleName} {s.lastName}
+                        </div>
+                      </td>
 
-                    <td>
-                      <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                        Active
-                      </span>
-                    </td>
+                      <td className="px-6 py-4 text-gray-700">
+                        Year {s.year}
+                      </td>
 
-                    <td className="text-center">
-                      <div className="flex justify-center items-center gap-2 flex-wrap">
+                      <td className="px-6 py-4 text-gray-700">
+                        {s.department?.name || "-"}
+                      </td>
 
-                        <button className="px-3 py-1 text-xs rounded-md bg-yellow-500 text-white hover:bg-yellow-600 transition">
-                          Deactivate
-                        </button>
+                      <td className="px-6 py-4">
+                        {hasAccount ? (
+                          <span className="px-3 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">
+                            Account Created
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full">
+                            Pending Account
+                          </span>
+                        )}
+                      </td>
 
-                        <button className="px-3 py-1 text-xs rounded-md bg-blue-500 text-white hover:bg-blue-600 transition">
-                          Edit
-                        </button>
+                      <td className="px-6 py-4">
+                        {hasAdvisor ? (
+                          <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+                            Advisor Assigned
+                          </span>
+                        ) : (
+                          <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
+                            No Advisor
+                          </span>
+                        )}
+                      </td>
 
-                        <button className="px-3 py-1 text-xs rounded-md bg-red-500 text-white hover:bg-red-600 transition">
-                          Delete
-                        </button>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-center gap-2">
 
-                      </div>
-                    </td>
+                          <Link
+                            href={
+                              hasAccount
+                                ? "#"
+                                : `/admin/create-student-account?studentId=${s.studentId}`
+                            }
+                            onClick={(e) => hasAccount && e.preventDefault()}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition
+                              ${
+                                hasAccount
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-blue-600 text-white hover:bg-blue-700"
+                              }
+                            `}
+                          >
+                            {hasAccount ? "Created" : "Create"}
+                          </Link>
 
-                  </tr>
-                ))}
+                          <Link
+                            href={
+                              hasAdvisor
+                                ? "#"
+                                : `/admin/assign-advisor?studentId=${s.studentId}`
+                            }
+                            onClick={(e) => hasAdvisor && e.preventDefault()}
+                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition
+                              ${
+                                hasAdvisor
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-emerald-600 text-white hover:bg-emerald-700"
+                              }
+                            `}
+                          >
+                            {hasAdvisor ? "Already Assigned" : "Assign Advisor"}
+                          </Link>
+
+                        </div>
+                      </td>
+
+                    </tr>
+                  );
+                })}
 
               </tbody>
 
             </table>
-          </div>
 
+          </div>
         </div>
 
       </main>
