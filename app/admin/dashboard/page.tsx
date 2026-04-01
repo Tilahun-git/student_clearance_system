@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { Users ,UserPlus} from "lucide-react";
 import AdminHeader from "@/components/layout/AdminHeader";
 
 type Student = {
@@ -38,11 +38,21 @@ export default function AdminDashboard() {
 
         <AdminHeader />
 
-        <div className="bg-white rounded-2xl shadow-md border p-6 flex justify-between items-center">
+       <div className="bg-white rounded-2xl shadow-md border p-6 flex justify-between items-center">
+  
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <Users size={22} />
             Student Management
           </h2>
+
+         <Link
+          href="/admin/create-user"
+          className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-xl shadow-sm hover:bg-indigo-700 transition-all duration-200"
+        >
+          <UserPlus size={18} />
+          Add User
+        </Link>
+
         </div>
 
         <div className="bg-white rounded-2xl shadow-md border overflow-hidden">
@@ -50,7 +60,7 @@ export default function AdminDashboard() {
 
             <table className="w-full text-sm">
 
-              <thead className="bg-gray-50 border-b">
+              <thead className="bg-gray-50 font-bold border-b">
                 <tr className="text-left text-xs uppercase text-gray-600 tracking-wider">
                   <th className="px-6 py-4">Student ID</th>
                   <th className="px-6 py-4">Name</th>

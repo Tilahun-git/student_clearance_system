@@ -6,13 +6,12 @@ import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import {
   fetchRequests,
   updateRequest,
-  ClearanceApprovalRequest,
-  ApprovalStatusEnum,
 } from "@/lib/fetchRequests";
+import {ApprovalStatusEnum,ClearanceApprovalRequest} from '@/lib/clearanceData'
 import Header from "@/components/layout/Header";
 
 export default function AdvisorDashboard() {
-  const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]);
+  const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]); 
   const [loading, setLoading] = useState(true);
 
   const [rejectingId, setRejectingId] = useState<string | null>(null);
@@ -20,16 +19,25 @@ export default function AdvisorDashboard() {
 
   useEffect(() => {
     loadRequests();
-    const interval = setInterval(loadRequests, 5000);
-    return () => clearInterval(interval);
   }, []);
 
   async function loadRequests() {
     try {
-      const data = await fetchRequests();
-      setRequests(data);
-    } catch {
-      toast.error("Failed to load requests");
+      const data  = await fetchRequests();
+
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid response from server");
+    }
+
+      console.log("Requests for the advisor : ", data);
+
+      setRequests(data );
+    } catch (error: any) {
+      console.error("Frontend error:", error.message);
+
+      toast.error(error.message || "Failed to load requests");
+
+      setRequests([]);
     } finally {
       setLoading(false);
     }
@@ -40,8 +48,8 @@ export default function AdvisorDashboard() {
       await updateRequest(id, ApprovalStatusEnum.APPROVED);
       toast.success("Request approved");
       loadRequests();
-    } catch {
-      toast.error("Error approving request");
+    } catch (error: any) {
+      toast.error(error.message || "Error approving request");
     }
   }
 
@@ -64,8 +72,8 @@ export default function AdvisorDashboard() {
       toast.success("Request rejected");
       setRejectingId(null);
       loadRequests();
-    } catch {
-      toast.error("Error rejecting request");
+    } catch (error: any) {
+      toast.error(error.message || "Error rejecting request");
     }
   }
 
@@ -84,6 +92,7 @@ export default function AdvisorDashboard() {
               </div>
             ) : requests.length === 0 ? (
               <div className="text-center py-10 text-gray-500 text-lg">
+                <h1>No requests received yet</h1>
               </div>
             ) : (
               <div className="overflow-hidden rounded-xl border border-gray-200 shadow-sm">
@@ -110,12 +119,14 @@ export default function AdvisorDashboard() {
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-semibold text-gray-800">
-                            {request.clearanceRequest.student.user.name}
+                            {
+                              request.clearanceRequest?.student?.user?.name || "No Name"
+                            }
                           </div>
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {request.clearanceRequest.student.studentId}
+                          {request.clearanceRequest?.student?.studentId || "N/A"}
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -144,8 +155,9 @@ export default function AdvisorDashboard() {
           </div>
         </div>
       </div>
+
       {rejectingId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center text-black bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 animate-in fade-in zoom-in-95">
             <h2 className="text-xl font-semibold text-gray-800 mb-2">
               Reject Request

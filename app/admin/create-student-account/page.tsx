@@ -25,7 +25,7 @@ export default function CreateStudentAccount() {
     }
 
     try {
-      const res = await fetch("/api/admin/create-user", {
+      const res = await fetch("/api/admin/create-student-user", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -43,7 +43,7 @@ export default function CreateStudentAccount() {
         return toast.error(data.error);
       }
 
-      toast.success("Account created successfully");
+      toast.success(data.message);
 
       setTimeout(() => {
         router.push("/admin/dashboard");

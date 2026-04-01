@@ -1,41 +1,17 @@
-export const ApprovalStatusEnum = {
-  PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
-} as const;
+import { ClearanceApprovalRequest,ApprovalStatusType } from "./clearanceData";
 
-export type ApprovalStatusType =
-  (typeof ApprovalStatusEnum)[keyof typeof ApprovalStatusEnum];
 
-export interface ClearanceApprovalRequest {
-  id: string;
-  clearanceRequest: {
-    id: string;
-    student: {
-      id: string;
-      studentId: string;
-      user: {
-        name: string;
-        email: string;
-      };
-    };
-    reason?: string;
-    academicYear?: string;
-    semester?: string;
-    createdAt: string;
-  };
-  status: ApprovalStatusType;
-  comment?: string;
-}
 
 export async function fetchRequests(): Promise<ClearanceApprovalRequest[]> {
   const res = await fetch("/api/clearance/advisor/request");
 
+  const data = await res.json();
+
   if (!res.ok) {
-    throw new Error("Failed to fetch clearance requests");
+    throw new Error(data.error || "Failed to fetch clearance requests");
   }
 
-  return res.json();
+  return data;
 }
 
 export async function updateRequest(
@@ -51,9 +27,11 @@ export async function updateRequest(
     body: JSON.stringify({ approvalId, status, comment }),
   });
 
+  const data = await res.json();
+
   if (!res.ok) {
-    throw new Error(`Failed to update request`);
+    throw new Error(data.error || "Failed to update request");
   }
 
-  return res.json();
+  return data;
 }

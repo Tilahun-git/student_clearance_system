@@ -53,9 +53,20 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    const roles = await prisma.role.findMany();
-console.log("ROLES FROM PRISMA:", roles);
+const dbRoles = await prisma.role.findMany({
+  where: {
+    name: {
+      in: [
+        RoleType.ADVISOR,
+        RoleType.DEPARTMENT_HEAD,
+        RoleType.SCHOOL_DEAN,
+        RoleType.LIBRARY,
+        RoleType.FINANCE,
+        RoleType.REGISTRAR,
+      ],
+    },
+  },
+});
 
    const clearance = await prisma.clearanceRequest.create({
     data: {
@@ -69,16 +80,15 @@ console.log("ROLES FROM PRISMA:", roles);
 
     currentStep: RoleType.ADVISOR,
 
-    approvals: {
-      create: [
-        { role: { connect: { name: RoleType.ADVISOR } } },
-        { role: { connect: { name: RoleType.DEPARTMENT_HEAD } } },
-
-        { role: { connect: { name: RoleType.FINANCE } } },
-
-        { role: { connect: { name: RoleType.REGISTRAR } } },
-      ],
+approvals: {
+  create: dbRoles.map((role) => ({
+    role: {
+      connect: {
+        id: role.id, 
+      },
     },
+  })),
+},
   },
 });
 

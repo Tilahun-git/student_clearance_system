@@ -2,19 +2,22 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { RoleType, ApprovalStatus, ClearanceStatus } from "@prisma/client";
+import {
+  RoleType,
+  ApprovalStatus,
+  ClearanceStatus,
+} from "@prisma/client";
+
 
 function isParallelRole(role: RoleType) {
   return role === RoleType.LIBRARY || role === RoleType.FINANCE;
 }
 
-// ======================= GET =======================
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -32,7 +35,10 @@ export async function GET() {
     });
 
     if (!staff) {
-      return NextResponse.json({ error: "Staff not found" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Staff not found" },
+        { status: 403 }
+      );
     }
 
     const roleNames = staff.user.roles.map((r) => r.role.name);
@@ -45,7 +51,7 @@ export async function GET() {
         status: ApprovalStatus.PENDING,
 
         clearanceRequest: {
-          currentStep: { in: roleNames }, 
+          currentStep: { in: roleNames },
           status: { not: ClearanceStatus.REJECTED },
         },
       },
@@ -59,25 +65,46 @@ export async function GET() {
         },
         role: true,
       },
+      orderBy: {
+        clearanceRequest: {
+          createdAt: "desc",
+        },
+      },
     });
 
-    return NextResponse.json(approvals);
+    const formatted = approvals.map((a) => ({
+      id: a.id,
+      status: a.status,
+      comment: a.comment,
 
-  } catch (err) {
-    console.error(err);
+      clearanceRequest: {
+        id: a.clearanceRequest.id,
+        reason: a.clearanceRequest.reason,
+        academicYear: a.clearanceRequest.academicYear,
+        semester: a.clearanceRequest.semester,
+        createdAt: a.clearanceRequest.createdAt,
+
+        student: a.clearanceRequest.student,
+      },
+    }));
+
+    return NextResponse.json(formatted);
+  } catch (err: any) {
+    console.error("GET ERROR:", err);
+
     return NextResponse.json(
-      { error: "Failed to fetch requests" },
+      { error: err.message || "Failed to fetch requests" },
       { status: 500 }
     );
   }
 }
-// ======================= PATCH =======================
+
 
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -95,7 +122,10 @@ export async function PATCH(req: Request) {
     });
 
     if (!staff) {
-      return NextResponse.json({ error: "Staff not found" }, { status: 403 });
+      return NextResponse.json(
+        { error: "Staff not found" },
+        { status: 403 }
+      );
     }
 
     const roleNames = staff.user.roles.map((r) => r.role.name);
@@ -111,6 +141,7 @@ export async function PATCH(req: Request) {
             approvals: {
               include: { role: true },
             },
+            student: true,
           },
         },
       },
@@ -122,12 +153,11 @@ export async function PATCH(req: Request) {
 
     const request = approval.clearanceRequest;
 
-    // 🔒 ensure user has THIS role
     if (!roleNames.includes(approval.role.name)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const updated = await prisma.clearanceApproval.update({
+    await prisma.clearanceApproval.update({
       where: { id: approvalId },
       data: {
         status,
@@ -140,13 +170,17 @@ export async function PATCH(req: Request) {
     if (status === "REJECTED") {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
-        data: { status: ClearanceStatus.REJECTED },
+        data: {
+          status: ClearanceStatus.REJECTED,
+        },
       });
 
-      return NextResponse.json({ message: "Rejected" });
+      return NextResponse.json({
+        message: "Request rejected successfully",
+      });
     }
 
-    // 🔥 workflow (based on THIS approval role)
+
     let nextStep: RoleType | null = null;
 
     if (approval.role.name === RoleType.ADVISOR) {
@@ -154,17 +188,16 @@ export async function PATCH(req: Request) {
     }
 
     else if (approval.role.name === RoleType.DEPARTMENT_HEAD) {
+      nextStep = RoleType.ADMIN; 
+    }
+
+    else if (approval.role.name === RoleType.ADMIN) {
       nextStep = RoleType.LIBRARY;
     }
 
-    else if (
-      approval.role.name === RoleType.LIBRARY ||
-      approval.role.name === RoleType.FINANCE
-    ) {
-      const parallel = request.approvals.filter(
-        (a) =>
-          a.role.name === RoleType.LIBRARY ||
-          a.role.name === RoleType.FINANCE
+    else if (isParallelRole(approval.role.name)) {
+      const parallel = request.approvals.filter((a) =>
+        isParallelRole(a.role.name)
       );
 
       const allApproved = parallel.every(
@@ -181,10 +214,14 @@ export async function PATCH(req: Request) {
     else if (approval.role.name === RoleType.REGISTRAR) {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
-        data: { status: ClearanceStatus.APPROVED },
+        data: {
+          status: ClearanceStatus.APPROVED,
+        },
       });
 
-      return NextResponse.json({ message: "Completed" });
+      return NextResponse.json({
+        message: "Clearance completed 🎉",
+      });
     }
 
     if (nextStep) {
@@ -197,12 +234,14 @@ export async function PATCH(req: Request) {
       });
     }
 
-    return NextResponse.json({ message: "Updated" });
+    return NextResponse.json({
+      message: "Approval processed successfully",
+    });
+  } catch (err: any) {
+    console.error("PATCH ERROR:", err);
 
-  } catch (err) {
-    console.error(err);
     return NextResponse.json(
-      { error: "Server error" },
+      { error: err.message || "Server error" },
       { status: 500 }
     );
   }

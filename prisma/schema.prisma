@@ -15,6 +15,7 @@ enum RoleType {
   LIBRARY
   REGISTRAR
   ADMIN
+  SCHOOL_DEAN
 }
 
 enum ClearanceStatus {

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-// Fake / static data for testing purposes
 export const GET = async () => {
   const status = {
     currentStatus: "Pending",

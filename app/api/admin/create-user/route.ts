@@ -1,48 +1,29 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
-
-
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, roles, studentId } = await req.json();
-
-    if (!name || !email || !password) {
-      return NextResponse.json(
-        { error: "Name, Email and Password are required" },
-        { status: 400 }
-      );
-    }
-
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: "Account already exists" },
-        { status: 400 }
-      );
-    }
+    const body = await req.json();
+    const { name, email, password, roles } = body;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const selectedRoles: RoleType[] =
-      Array.isArray(roles) && roles.length > 0
-        ? roles
-        : [RoleType.STUDENT];
-
-    const isStudent = selectedRoles.includes(RoleType.STUDENT);
+    console.log("ROLES FROM FRONTEND:", roles);
 
     const roleRecords = await prisma.role.findMany({
       where: {
-        name: {
-          in: selectedRoles,
-        },
+        name: { in: roles },
       },
     });
+
+    if (roleRecords.length !== roles.length) {
+      return NextResponse.json(
+        { error: "One or more roles are invalid or not seeded in DB" },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.create({
       data: {
@@ -52,57 +33,38 @@ export async function POST(req: Request) {
 
         roles: {
           create: roleRecords.map((role) => ({
-            role: { connect: { id: role.id } },
+            roleId: role.id,
           })),
+        },
+      },
+      include: {
+        roles: {
+          include: {
+            role: true,
+          },
         },
       },
     });
 
-    if (isStudent) {
-      if (!studentId) {
-        return NextResponse.json(
-          { error: "studentId is required for student account" },
-          { status: 400 }
-        );
-      }
+    const isStaff = roles.some((r: RoleType) => r !== RoleType.STUDENT);
 
-      const student = await prisma.student.findUnique({
-        where: { studentId }, 
-      });
-
-      if (!student) {
-        return NextResponse.json(
-          { error: "Student not found" },
-          { status: 404 }
-        );
-      }
-
-      if (student.userId) {
-        return NextResponse.json(
-          { error: "Student already has an account" },
-          { status: 400 }
-        );
-      }
-
-      await prisma.student.update({
-        where: { studentId }, 
+    if (isStaff) {
+      await prisma.staff.create({
         data: {
-          userId: user.id, 
+          userId: user.id,
         },
       });
     }
 
+    return NextResponse.json({
+      success: true,
+      user,
+    });
+  } catch (error: any) {
+    console.error("CREATE USER ERROR:", error);
+
     return NextResponse.json(
-      {
-        message: "User created and linked successfully",
-        user,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json(
-      { error: "Server error" },
+      { error: error.message || "Failed to create user" },
       { status: 500 }
     );
   }
