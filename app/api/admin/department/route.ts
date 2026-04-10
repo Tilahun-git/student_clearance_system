@@ -9,7 +9,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    // 🔥 Prevent duplicate under same school
     const existing = await prisma.department.findFirst({
       where: { name, schoolId },
     });

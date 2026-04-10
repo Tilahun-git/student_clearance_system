@@ -9,10 +9,12 @@ export async function POST(req: Request) {
       lastName,
       program,
       year,
+      facultyId,
+      schoolId,
       departmentId,
     } = await req.json();
 
-    if (!studentId || !firstName || !lastName || !departmentId) {
+    if (!studentId || !firstName || !lastName || !departmentId|| facultyId||schoolId) {
       return Response.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -38,6 +40,8 @@ export async function POST(req: Request) {
         lastName,
         program,
         year:Number(year),
+        facultyId,
+        schoolId,
         departmentId,
       },
     });

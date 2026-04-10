@@ -63,26 +63,28 @@ model UserRole {
 }
 
 model Student {
-  id     String @id @default(uuid())
+  id     String  @id @default(uuid())
   userId String? @unique
 
-  studentId String @unique 
-
+  studentId String @unique
 
   program String
   year    Int
-  
 
   firstName  String
   middleName String?
   lastName   String
 
+  facultyId    String?
+  schoolId     String?
   departmentId String
   advisorId    String?
 
-  user       User?       @relation(fields: [userId], references: [id])
+  user       User?      @relation(fields: [userId], references: [id])
+  faculty    Faculty?    @relation(fields: [facultyId], references: [id])
+  school     School?     @relation(fields: [schoolId], references: [id])
   department Department @relation(fields: [departmentId], references: [id])
-  advisor    Staff?      @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  advisor    Staff?     @relation("AdvisorStudents", fields: [advisorId], references: [id])
 
   clearanceRequests ClearanceRequest[]
   certificates      ClearanceCertificate[]
@@ -113,6 +115,7 @@ model Faculty {
   schools           School[]
   staff             Staff[]
   clearanceRequests ClearanceRequest[]
+  students          Student[]
 }
 
 model School {
@@ -125,6 +128,7 @@ model School {
   departments       Department[]
   staff             Staff[]
   clearanceRequests ClearanceRequest[]
+  students          Student[]
 }
 
 model Department {
@@ -152,8 +156,7 @@ model ClearanceRequest {
   schoolId     String?
   departmentId String?
 
-  currentStep RoleType @default(ADVISOR) 
-
+  currentStep RoleType @default(ADVISOR)
 
   status ClearanceStatus @default(PENDING)
 
