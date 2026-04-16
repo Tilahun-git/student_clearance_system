@@ -1,58 +1,43 @@
-import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../../auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { NextResponse } from "next/server";
 import {
   RoleType,
   ApprovalStatus,
   ClearanceStatus,
 } from "@prisma/client";
-
-
-function isParallelRole(role: RoleType) {
-  return role === RoleType.LIBRARY || role === RoleType.FINANCE;
-}
+import { sendNotification } from "@/lib/notify";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const staff = await prisma.staff.findUnique({
-      where: { userId: session.user.id },
-      include: {
-        user: {
-          include: {
-            roles: {
-              include: { role: true },
-            },
-          },
-        },
-      },
+    const advisor = await prisma.staff.findUnique({
+      where: { userId },
     });
 
-    if (!staff) {
+    if (!advisor) {
       return NextResponse.json(
-        { error: "Staff not found" },
+        { error: "Only advisors allowed" },
         { status: 403 }
       );
     }
 
-    const roleNames = staff.user.roles.map((r) => r.role.name);
-
     const approvals = await prisma.clearanceApproval.findMany({
       where: {
-        role: {
-          name: { in: roleNames },
-        },
+        role: { name: RoleType.ADVISOR },
         status: ApprovalStatus.PENDING,
-
         clearanceRequest: {
-          currentStep: { in: roleNames },
-          status: { not: ClearanceStatus.REJECTED },
+          currentStep: RoleType.ADVISOR,
+          student: {
+            advisorId: advisor.id,
+          },
         },
       },
       include: {
@@ -63,7 +48,6 @@ export async function GET() {
             },
           },
         },
-        role: true,
       },
       orderBy: {
         clearanceRequest: {
@@ -76,59 +60,40 @@ export async function GET() {
       id: a.id,
       status: a.status,
       comment: a.comment,
-
       clearanceRequest: {
         id: a.clearanceRequest.id,
         reason: a.clearanceRequest.reason,
         academicYear: a.clearanceRequest.academicYear,
         semester: a.clearanceRequest.semester,
         createdAt: a.clearanceRequest.createdAt,
-
         student: a.clearanceRequest.student,
       },
     }));
 
     return NextResponse.json(formatted);
-  } catch (err: any) {
-    console.error("GET ERROR:", err);
-
+  } catch (error: any) {
     return NextResponse.json(
-      { error: err.message || "Failed to fetch requests" },
+      { error: error.message || "Failed to fetch requests" },
       { status: 500 }
     );
   }
 }
 
-
 export async function PATCH(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user?.id) {
+    if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const staff = await prisma.staff.findUnique({
       where: { userId: session.user.id },
-      include: {
-        user: {
-          include: {
-            roles: {
-              include: { role: true },
-            },
-          },
-        },
-      },
     });
 
     if (!staff) {
-      return NextResponse.json(
-        { error: "Staff not found" },
-        { status: 403 }
-      );
+      return NextResponse.json({ error: "Staff not found" }, { status: 403 });
     }
-
-    const roleNames = staff.user.roles.map((r) => r.role.name);
 
     const { approvalId, status, comment } = await req.json();
 
@@ -138,10 +103,7 @@ export async function PATCH(req: Request) {
         role: true,
         clearanceRequest: {
           include: {
-            approvals: {
-              include: { role: true },
-            },
-            student: true,
+            student: true, 
           },
         },
       },
@@ -149,12 +111,6 @@ export async function PATCH(req: Request) {
 
     if (!approval) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
-    }
-
-    const request = approval.clearanceRequest;
-
-    if (!roleNames.includes(approval.role.name)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     await prisma.clearanceApproval.update({
@@ -167,6 +123,11 @@ export async function PATCH(req: Request) {
       },
     });
 
+    const request = approval.clearanceRequest;
+    const student = await prisma.student.findUnique({
+    where: { id: request.studentId },
+    include: { user: true },
+  });
     if (status === "REJECTED") {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
@@ -175,9 +136,12 @@ export async function PATCH(req: Request) {
         },
       });
 
-      return NextResponse.json({
-        message: "Request rejected successfully",
+      await sendNotification({
+        userId: student!.userId!,
+        message: `Requst is Rejected by ${approval.role.name}: ${comment}`,
       });
+
+      return NextResponse.json({ message: "Rejected" });
     }
 
 
@@ -185,43 +149,46 @@ export async function PATCH(req: Request) {
 
     if (approval.role.name === RoleType.ADVISOR) {
       nextStep = RoleType.DEPARTMENT_HEAD;
-    }
-
+    } 
     else if (approval.role.name === RoleType.DEPARTMENT_HEAD) {
-      nextStep = RoleType.ADMIN; 
-    }
-
-    else if (approval.role.name === RoleType.ADMIN) {
+      nextStep = RoleType.SCHOOL_DEAN;
+    } 
+    else if (approval.role.name === RoleType.SCHOOL_DEAN) {
       nextStep = RoleType.LIBRARY;
-    }
+    } 
+    else if (
+      approval.role.name === RoleType.LIBRARY ||
+      approval.role.name === RoleType.FINANCE
+    ) {
+      const approvals = await prisma.clearanceApproval.findMany({
+        where: {
+          clearanceRequestId: request.id,
+          role: {
+            name: { in: [RoleType.LIBRARY, RoleType.FINANCE] },
+          },
+        },
+      });
 
-    else if (isParallelRole(approval.role.name)) {
-      const parallel = request.approvals.filter((a) =>
-        isParallelRole(a.role.name)
-      );
-
-      const allApproved = parallel.every(
-        (a) =>
-          a.status === ApprovalStatus.APPROVED ||
-          a.id === approvalId
+      const allApproved = approvals.every(
+        (a) => a.status === ApprovalStatus.APPROVED
       );
 
       if (allApproved) {
         nextStep = RoleType.REGISTRAR;
       }
-    }
-
+    } 
     else if (approval.role.name === RoleType.REGISTRAR) {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
-        data: {
-          status: ClearanceStatus.APPROVED,
-        },
+        data: { status: ClearanceStatus.APPROVED },
       });
 
-      return NextResponse.json({
-        message: "Clearance completed 🎉",
+      await sendNotification({
+        userId: student!.userId!,
+        message: "🎉 Your clearance is fully approved!",
       });
+
+      return NextResponse.json({ message: "Completed" });
     }
 
     if (nextStep) {
@@ -232,17 +199,38 @@ export async function PATCH(req: Request) {
           status: ClearanceStatus.IN_PROGRESS,
         },
       });
+
+     const nextStaff = await prisma.staff.findMany({
+      where: {
+        user: {
+          roles: {
+            some: {
+              role: {
+                name: nextStep,
+              },
+            },
+          },
+        },
+      },
+    });
+
+      for (const s of nextStaff) {
+        await sendNotification({
+          userId: s.userId,
+          message: `New clearance request waiting for ${nextStep}`,
+        });
+      }
     }
 
-    return NextResponse.json({
-      message: "Approval processed successfully",
+    await sendNotification({
+      userId: student!.userId!,
+      message: `Approved by ${approval.role.name}`,
     });
-  } catch (err: any) {
-    console.error("PATCH ERROR:", err);
 
-    return NextResponse.json(
-      { error: err.message || "Server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ message: "Updated" });
+
+  } catch (error) {
+    console.error("PATCH ERROR:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }

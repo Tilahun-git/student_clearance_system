@@ -27,10 +27,10 @@ export async function fetchApprovals() {
   const res = await fetch("/api/clearance/approve");
 
   if (!res.ok) throw new Error("Failed to fetch");
+  console.log(res)
 
   return res.json();
 }
-
 
 export async function updateApproval(
   approvalId: string,

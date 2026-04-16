@@ -1,6 +1,7 @@
 import Image from "next/image";
 import logo from "../../public/wldu_logo.jpg";
 import ProfileSection from "./ProfileSection";
+import NotificationBell from "../UI/NotificationBell";
 
 const DashBoardNavbar = () => {
   return (
@@ -19,6 +20,7 @@ const DashBoardNavbar = () => {
       <h1 className="text-lg md:text-xl font-bold tracking-wide text-gray-800 dark:text-white">
         WDU STUDENT CLEARANCE SYSTEM
       </h1>
+      <NotificationBell/>
       <ProfileSection />
     </nav>
   );

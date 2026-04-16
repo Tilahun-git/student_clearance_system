@@ -16,8 +16,6 @@ export default function ProfileSection() {
   const role = session.user.roles?.join(", ") || "";
   const profileImage = "/studentImage.jpg"; 
 
-  // const profileImage = session.user.image || "/studentImage.jpg"; // fallback image
-
   return (
     <div className="relative flex items-center gap-4">
       <div className="flex flex-col items-end leading-tight text-right">

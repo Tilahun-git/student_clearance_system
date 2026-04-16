@@ -26,6 +26,7 @@ export default function DepartmentHead() {
     try {
       const data = await fetchApprovals();
       setRequests(data);
+      console.log("Requests for the dept head : ",requests)
     } catch {
       toast.error("Failed to load requests");
     } finally {
@@ -76,7 +77,7 @@ export default function DepartmentHead() {
 
         {loading ? (
           <p className="text-center text-gray-500">Loading...</p>
-        ) : requests.length === 0 ? (
+        ) : requests.length !== 0 ? (
           <p className="text-center text-gray-500">
             No pending approvals 🎉
           </p>

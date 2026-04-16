@@ -3,6 +3,8 @@ import "./globals.css";
 import { Poppins } from "next/font/google";
 import Providers from "./providers";
 import { Toaster } from "react-hot-toast";
+import SocketProvider from "@/components/layout/SocketProvider";
+
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "300", "500", "700"],
@@ -16,14 +18,23 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className={poppins.className}>
       <body>
-        <Providers>{children}</Providers>
-           <Toaster
+        <Providers>
+          
+          <SocketProvider>
+
+            {children}
+
+          </SocketProvider>
+
+        </Providers>
+
+        <Toaster
           position="top-right"
           toastOptions={{
             duration: 3000,

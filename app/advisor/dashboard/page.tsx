@@ -2,6 +2,10 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { socket } from "@/lib/socket";
+import { useSession } from "next-auth/react";
+
+
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import {
   fetchRequests,
@@ -10,7 +14,10 @@ import {
 import {ApprovalStatusEnum,ClearanceApprovalRequest} from '@/lib/clearanceData'
 import Header from "@/components/layout/Header";
 
+
 export default function AdvisorDashboard() {
+
+
   const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]); 
   const [loading, setLoading] = useState(true);
 

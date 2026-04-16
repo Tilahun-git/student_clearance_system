@@ -14,7 +14,9 @@ export async function POST(req: Request) {
       departmentId,
     } = await req.json();
 
-    if (!studentId || !firstName || !lastName || !departmentId|| facultyId||schoolId) {
+
+
+    if (!studentId || !firstName || !lastName || !departmentId || !facultyId || !schoolId) {
       return Response.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -31,20 +33,19 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
-    const student = await prisma.student.create({
-      data: {
-        studentId,
-        firstName,
-        middleName: middleName || null,
-        lastName,
-        program,
-        year:Number(year),
-        facultyId,
-        schoolId,
-        departmentId,
-      },
-    });
+   const student = await prisma.student.create({
+  data: {
+    studentId: studentId,
+    firstName: firstName,
+    middleName: middleName || null,
+    lastName: lastName,
+    program: program,
+    year: Number(year),
+    facultyId: facultyId,
+    schoolId: schoolId,
+    departmentId: departmentId,
+  },
+});
 
     return Response.json(
       {

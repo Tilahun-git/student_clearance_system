@@ -27,6 +27,7 @@ export default function Home() {
             alt="University Logo"
             width={45}
             height={45}
+            style={{height:"auto"}}
             className="rounded-md"
           />
           <span className="font-semibold text-lg text-slate-800 hidden sm:block">
@@ -74,7 +75,6 @@ export default function Home() {
           </button>
 
         </div>
-
       </main>
     </div>
   )

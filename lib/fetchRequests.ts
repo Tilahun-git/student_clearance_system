@@ -3,7 +3,7 @@ import { ClearanceApprovalRequest,ApprovalStatusType } from "./clearanceData";
 
 
 export async function fetchRequests(): Promise<ClearanceApprovalRequest[]> {
-  const res = await fetch("/api/clearance/advisor/request");
+  const res = await fetch("/api/clearance/approve");
 
   const data = await res.json();
 
@@ -19,7 +19,7 @@ export async function updateRequest(
   status: ApprovalStatusType,
   comment?: string
 ): Promise<any> {
-  const res = await fetch("/api/clearance/advisor/request", {
+  const res = await fetch("/api/clearance/approve", {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
