@@ -13,7 +13,6 @@ export async function PATCH(req: Request) {
 
     const { notificationId, markAll } = await req.json();
 
-    // ✅ CASE 1 — Mark ALL as read
     if (markAll) {
       await prisma.notification.updateMany({
         where: {
@@ -28,7 +27,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "All notifications marked as read" });
     }
 
-    // ✅ CASE 2 — Mark single notification
     if (!notificationId) {
       return NextResponse.json(
         { error: "Notification ID required" },

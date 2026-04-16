@@ -65,14 +65,12 @@ export default function NotificationBell() {
   return (
     <div className="relative">
       
-      {/* 🔔 MODERN BELL BUTTON */}
       <button
         onClick={() => setOpen(!open)}
         className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition"
       >
         <Bell className="w-5 h-5 text-gray-700" />
 
-        {/* 🔴 BADGE */}
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow">
             {unread}
@@ -80,11 +78,9 @@ export default function NotificationBell() {
         )}
       </button>
 
-      {/* 📦 DROPDOWN PANEL */}
       {open && (
         <div className="absolute right-0 mt-3 w-96 bg-white text-black border rounded-xl shadow-2xl z-50 overflow-hidden">
 
-          {/* 🔝 HEADER */}
           <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50">
             <h3 className="text-sm font-semibold text-gray-700">
               Notifications
@@ -111,7 +107,6 @@ export default function NotificationBell() {
             )}
           </div>
 
-          {/* 📜 LIST */}
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 && (
               <p className="p-4 text-sm text-gray-500">
@@ -131,13 +126,10 @@ export default function NotificationBell() {
                     body: JSON.stringify({ notificationId: n.id }),
                   });
 
-                  // ✅ CLOSE DROPDOWN FIRST (IMPORTANT UX FIX)
                   setOpen(false);
 
-                  // ✅ OPEN MODAL
                   setSelectedId(n.id);
 
-                  // ✅ UPDATE UI
                   setNotifications((prev) =>
                     prev.map((item) =>
                       item.id === n.id
@@ -167,7 +159,6 @@ export default function NotificationBell() {
         </div>
       )}
 
-      {/* 🪟 MODAL */}
       {selectedId && (
         <NotificationModal
           notificationId={selectedId}

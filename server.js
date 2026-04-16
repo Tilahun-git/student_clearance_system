@@ -17,11 +17,9 @@ app.prepare().then(() => {
     },
   });
 
-  // 🔥 SOCKET LOGIC
   io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    // Join user room
     socket.on("join", (userId) => {
       socket.join(userId);
     });
@@ -31,7 +29,7 @@ app.prepare().then(() => {
     });
   });
 
-  global.io = io; // make accessible everywhere
+  global.io = io;
 
   httpServer.listen(3000, () => {
     console.log("Server running on http://localhost:3000");

@@ -30,7 +30,6 @@ export default function NotificationModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       
-      {/* ✨ Animated Card */}
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -39,7 +38,6 @@ export default function NotificationModal({
         className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl p-6"
       >
 
-        {/* ❌ Close Button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 text-gray-400 hover:text-black transition"
@@ -47,7 +45,6 @@ export default function NotificationModal({
           <X size={20} />
         </button>
 
-        {/* 🔔 Header */}
         <div className="mb-4">
           <h2 className="text-xl font-semibold text-gray-800">
             Notification
@@ -57,14 +54,12 @@ export default function NotificationModal({
           </p>
         </div>
 
-        {/* 📄 Message */}
         <div className="bg-gray-50 p-4 rounded-lg border">
           <p className="text-sm text-gray-700 leading-relaxed">
             {data.notification.message}
           </p>
         </div>
 
-        {/* ⚠️ Rejection Reason */}
         {data.extraData?.comment && (
           <div className="mt-4 p-4 rounded-lg border border-red-200 bg-red-50">
             <p className="text-sm font-semibold text-red-600 mb-1">
@@ -76,7 +71,6 @@ export default function NotificationModal({
           </div>
         )}
 
-        {/* 🎯 Actions */}
         <div className="mt-6 flex justify-end gap-2">
           <button
             onClick={onClose}
