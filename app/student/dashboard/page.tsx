@@ -5,65 +5,78 @@ import Link from "next/link";
 
 export default function StudentDashboard() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100">
 
       <DashBoardNavbar />
       <Header />
 
-      <div className="max-w-6xl mx-auto px-6 py-10 grid md:grid-cols-2 gap-8">
+      <main className="max-w-6xl mx-auto px-6 py-10 space-y-10">
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
+        <section className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition p-8">
 
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">
-              Request Clearance
-            </h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
 
-            <p className="text-slate-600 mt-3 leading-relaxed">
-              Start your clearance process by submitting a clearance request.
-              You will select your faculty, school, and department, and your request
-              will be reviewed by advisors and relevant university offices.
-            </p>
+            <div className="space-y-2">
+              <h2 className="text-xl font-semibold text-slate-900">
+                Clearance Request
+              </h2>
+
+              <p className="text-sm text-slate-600 leading-relaxed max-w-xl">
+                Start your clearance process. Your request will be reviewed by
+                departments, advisors, and university offices in a structured approval flow.
+              </p>
+            </div>
+
+            <Link
+              href="/student/clearance/request"
+              className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium shadow-sm transition"
+            >
+              Start Clearance
+            </Link>
+
           </div>
+        </section>
 
-          <Link
-            href="/student/clearance/request"
-            className="mt-6 inline-flex items-center justify-center bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
-          >
-            Start Clearance Request
-          </Link>
+        <section className="grid md:grid-cols-2 gap-6">
 
-        </div>
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition p-6">
 
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col justify-between hover:shadow-xl transition">
-
-          <div>
-            <h2 className="text-xl font-semibold text-slate-800">
+            <h3 className="text-lg font-semibold text-slate-900">
               Clearance Status
-            </h2>
+            </h3>
 
-            <p className="text-slate-600 mt-3 leading-relaxed">
-              Track the progress of your clearance approvals. You can see which offices have
-              approved or rejected your request, and any comments provided.
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+              Track approval progress and view feedback from departments.
             </p>
+
+            <Link
+              href="/student/clearance/status"
+              className="mt-5 inline-flex text-sm font-medium text-emerald-700 hover:text-emerald-800"
+            >
+              View Status →
+            </Link>
+
           </div>
 
-          {/* 
-          <Link
-            href="/student/clearance/status"
-            className="mt-6 inline-flex items-center justify-center bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-medium transition shadow-sm"
-          >
-            View Status
-          </Link>
-          */}
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-md transition p-6">
 
-        </div>
+            <h3 className="text-lg font-semibold text-slate-900">
+              Documents
+            </h3>
 
-      </div>
-      <div className="max-w-6xl mx-auto px-6 pb-12">
-        <DowloadSection />
-      </div>
+            <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+              Download clearance forms, receipts, and official documents.
+            </p>
 
+            <div className="mt-5">
+              <DowloadSection />
+            </div>
+
+          </div>
+
+        </section>
+
+      </main>
     </div>
   );
 }

@@ -7,6 +7,8 @@ import {
   ApprovalStatus,
   ClearanceStatus,
 } from "@prisma/client";
+import { Staff } from "@prisma/client";
+
 import { sendNotification } from "@/lib/notify";
 
 export async function GET() {
@@ -200,19 +202,73 @@ export async function PATCH(req: Request) {
         },
       });
 
-     const nextStaff = await prisma.staff.findMany({
-      where: {
-        user: {
-          roles: {
-            some: {
-              role: {
-                name: nextStep,
-              },
+
+let nextStaff: Staff[] = [];
+if (nextStep === RoleType.DEPARTMENT_HEAD) {
+  nextStaff = await prisma.staff.findMany({
+    where: {
+      departmentId: request.departmentId,
+      user: {
+        roles: {
+          some: {
+            role: {
+              name: RoleType.DEPARTMENT_HEAD,
             },
           },
         },
       },
-    });
+    },
+  });
+}
+
+else if (nextStep === RoleType.SCHOOL_DEAN) {
+  nextStaff = await prisma.staff.findMany({
+    where: {
+      schoolId: request.schoolId,
+      user: {
+        roles: {
+          some: {
+            role: {
+              name: RoleType.SCHOOL_DEAN,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+else if (nextStep === RoleType.LIBRARY || RoleType.FINANCE) {
+  nextStaff = await prisma.staff.findMany({
+    where: {
+      user: {
+        roles: {
+          some: {
+            role: {
+              name: nextStep,
+            },
+          },
+        },
+      },
+    },
+  });
+}
+
+else if (nextStep === RoleType.REGISTRAR) {
+  nextStaff = await prisma.staff.findMany({
+    where: {
+      user: {
+        roles: {
+          some: {
+            role: {
+              name: RoleType.REGISTRAR,
+            },
+          },
+        },
+      },
+    },
+  });
+}
 
       for (const s of nextStaff) {
         await sendNotification({

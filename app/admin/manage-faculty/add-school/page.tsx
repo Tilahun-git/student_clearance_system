@@ -6,8 +6,11 @@ import { School, Save } from "lucide-react";
 
 export default function AddSchool() {
   const [faculties, setFaculties] = useState<any[]>([]);
+  const [deans, setDeans] = useState<any[]>([]);
+
   const [name, setName] = useState("");
   const [facultyId, setFacultyId] = useState("");
+  const [deanId, setDeanId] = useState("");
 
   useEffect(() => {
     fetch("/api/faculty")
@@ -16,90 +19,102 @@ export default function AddSchool() {
       .catch(() => toast.error("Failed to load faculties"));
   }, []);
 
+  useEffect(() => {
+    fetch("/api/staff?role=SCHOOL_DEAN")
+      .then(res => res.json())
+      .then(setDeans)
+      .catch(() => toast.error("Failed to load deans"));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/admin/school", {
-      method: "POST",
-      body: JSON.stringify({ name, facultyId }),
-      headers: { "Content-Type": "application/json" },
-    });
+    if (!name || !facultyId || !deanId) {
+      return toast.error("All fields are required");
+    }
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/admin/school", {
+        method: "POST",
+        body: JSON.stringify({ name, facultyId, deanId }),
+        headers: { "Content-Type": "application/json" },
+      });
 
-    if (!res.ok) return toast.error(data.error);
+      const data = await res.json();
 
-    toast.success("School added successfully 🎉");
+      if (!res.ok) {
+        return toast.error(data.error || "Failed to create school");
+      }
 
-    setName("");
-    setFacultyId("");
+      toast.success("School created successfully 🎉");
+
+      setName("");
+      setFacultyId("");
+      setDeanId("");
+
+    } catch {
+      toast.error("Something went wrong");
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-50 to-green-100 p-6">
-      
+    <div className="min-h-screen bg-slate-200 flex items-center justify-center p-6">
       <form
         onSubmit={handleSubmit}
-        className="w-full max-w-md bg-white/80 backdrop-blur-md border border-gray-200 rounded-2xl shadow-lg p-8 space-y-6"
+        className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-300 p-8 space-y-5"
       >
         <div className="text-center space-y-2">
-          <div className="flex justify-center">
-            <div className="p-3 bg-green-100 text-green-600 rounded-xl">
-              <School />
-            </div>
+          <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-xl bg-green-100 text-green-700">
+            <School />
           </div>
 
-          <h2 className="text-xl font-bold text-gray-800">
+          <h2 className="text-xl font-bold text-slate-900">
             Add School
           </h2>
 
-          <p className="text-sm text-gray-500">
-            Assign a school under a faculty
+          <p className="text-sm text-slate-600">
+            Assign school with dean
           </p>
         </div>
 
-        <div>
-          <label className="text-sm text-gray-600 font-medium">
-            Select Faculty
-          </label>
+        <select
+          value={facultyId}
+          onChange={e => setFacultyId(e.target.value)}
+          className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
+        >
+          <option value="">Select faculty</option>
+          {faculties.map(f => (
+            <option key={f.id} value={f.id}>{f.name}</option>
+          ))}
+        </select>
 
-          <select
-            value={facultyId}
-            onChange={e => setFacultyId(e.target.value)}
-            required
-            className="w-full mt-1 px-4 py-2 rounded-xl border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 transition"
-          >
-            <option value="">Choose a faculty</option>
-            {faculties.map((f: any) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        <input
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="School name"
+          className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
+        />
 
-        <div>
-          <label className="text-sm text-gray-600 font-medium">
-            School Name
-          </label>
-
-          <input
-            placeholder="e.g. School of Computing"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            className="w-full mt-1 px-4 py-2 rounded-xl border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 transition"
-          />
-        </div>
+        <select
+          value={deanId}
+          onChange={e => setDeanId(e.target.value)}
+          className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
+        >
+          <option value="">Select dean</option>
+          {deans.map(d => (
+            <option key={d.id} value={d.id}>
+              {d.user?.name}
+            </option>
+          ))}
+        </select>
 
         <button
           type="submit"
-          className="w-full flex items-center justify-center gap-2 bg-linear-to-r from-green-600 to-emerald-600 text-black py-2.5 rounded-xl font-medium shadow-md hover:opacity-90 transition active:scale-[0.98]"
+          className="w-full flex justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-xl"
         >
           <Save size={18} />
-          Add School
+          Create School
         </button>
-
       </form>
     </div>
   );

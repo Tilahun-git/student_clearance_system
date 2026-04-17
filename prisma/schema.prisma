@@ -7,20 +7,24 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/* ================= USER ================= */
 model User {
   id             String     @id @default(uuid())
   email          String     @unique
   password       String
   createdAt      DateTime   @default(now())
   name           String
+
   staffProfile   Staff?
   studentProfile Student?
   roles          UserRole[]
 }
 
+/* ================= ROLE ================= */
 model Role {
-  id        String              @id @default(uuid())
-  name      RoleType            @unique
+  id        String   @id @default(uuid())
+  name      RoleType @unique
+
   approvals ClearanceApproval[]
   users     UserRole[]
 }
@@ -28,129 +32,165 @@ model Role {
 model UserRole {
   userId String
   roleId String
-  role   Role   @relation(fields: [roleId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
+
+  role   Role @relation(fields: [roleId], references: [id])
+  user   User @relation(fields: [userId], references: [id])
 
   @@id([userId, roleId])
 }
 
+/* ================= STUDENT ================= */
 model Student {
-  id                String                 @id @default(uuid())
-  userId            String?                @unique
-  advisorId         String?
-  departmentId      String
-  program           String
-  year              Int
-  studentId         String                 @unique
-  firstName         String
-  lastName          String
-  middleName        String?
-  facultyId         String?
-  schoolId          String?
+  id           String @id @default(uuid())
+  userId       String? @unique
+
+  advisorId    String?
+  departmentId String
+  facultyId    String?
+  schoolId     String?
+
+  program      String
+  year         Int
+  studentId    String @unique
+  firstName    String
+  lastName     String
+  middleName   String?
+
   certificates      ClearanceCertificate[]
   clearanceRequests ClearanceRequest[]
-  advisor           Staff?                 @relation("AdvisorStudents", fields: [advisorId], references: [id])
-  department        Department             @relation(fields: [departmentId], references: [id])
-  faculty           Faculty?               @relation(fields: [facultyId], references: [id])
-  school            School?                @relation(fields: [schoolId], references: [id])
-  user              User?                  @relation(fields: [userId], references: [id])
+
+  advisor     Staff?     @relation("AdvisorStudents", fields: [advisorId], references: [id])
+  department  Department @relation(fields: [departmentId], references: [id])
+  faculty     Faculty?   @relation(fields: [facultyId], references: [id])
+  school      School?    @relation(fields: [schoolId], references: [id])
+  user        User?      @relation(fields: [userId], references: [id])
 }
 
 model Staff {
-  id           String              @id @default(uuid())
-  userId       String              @unique
+  id           String @id @default(uuid())
+  userId       String @unique
+
   facultyId    String?
   schoolId     String?
   departmentId String?
+
   approvals    ClearanceApproval[]
-  department   Department?         @relation(fields: [departmentId], references: [id])
-  faculty      Faculty?            @relation(fields: [facultyId], references: [id])
-  school       School?             @relation(fields: [schoolId], references: [id])
-  user         User                @relation(fields: [userId], references: [id])
-  advisees     Student[]           @relation("AdvisorStudents")
+
+  department   Department? @relation(fields: [departmentId], references: [id])
+  faculty      Faculty?    @relation(fields: [facultyId], references: [id])
+  school       School?     @relation(fields: [schoolId], references: [id])
+
+  user         User      @relation(fields: [userId], references: [id])
+
+  advisees     Student[] @relation("AdvisorStudents")
+
+  headOfDepartment Department? @relation("DepartmentHead")
+
+  deanOfSchool     School?     @relation("SchoolDean")
 }
 
 model Faculty {
-  id                String             @id @default(uuid())
+  id                String @id @default(uuid())
   name              String
+
   clearanceRequests ClearanceRequest[]
+
   schools           School[]
   staff             Staff[]
   students          Student[]
 }
 
 model School {
-  id                String             @id @default(uuid())
-  name              String
-  facultyId         String
+  id        String @id @default(uuid())
+  name      String
+  facultyId String
+
+  deanId    String? @unique
+  dean      Staff?  @relation("SchoolDean", fields: [deanId], references: [id])
+
   clearanceRequests ClearanceRequest[]
   departments       Department[]
-  faculty           Faculty            @relation(fields: [facultyId], references: [id])
-  staff             Staff[]
-  students          Student[]
+
+  faculty  Faculty @relation(fields: [facultyId], references: [id])
+  staff    Staff[]
+  students Student[]
 }
 
 model Department {
-  id                String             @id @default(uuid())
-  name              String
-  schoolId          String
+  id        String @id @default(uuid())
+  name      String
+  schoolId  String
+
+  headId    String? @unique
+  head      Staff?  @relation("DepartmentHead", fields: [headId], references: [id])
+
   clearanceRequests ClearanceRequest[]
-  school            School             @relation(fields: [schoolId], references: [id])
-  staff             Staff[]
-  students          Student[]
+
+  school   School @relation(fields: [schoolId], references: [id])
+  staff    Staff[]
+  students Student[]
 }
 
 model ClearanceRequest {
-  id           String                @id @default(uuid())
+  id           String @id @default(uuid())
   studentId    String
-  createdAt    DateTime              @default(now())
+
+  createdAt    DateTime @default(now())
   academicYear String?
   reason       String
   semester     String?
-  status       ClearanceStatus       @default(PENDING)
+
+  status      ClearanceStatus @default(PENDING)
+  currentStep RoleType        @default(ADVISOR)
+
   departmentId String?
   facultyId    String?
   schoolId     String?
-  currentStep  RoleType              @default(ADVISOR)
-  approvals    ClearanceApproval[]
-  certificate  ClearanceCertificate?
-  department   Department?           @relation(fields: [departmentId], references: [id])
-  faculty      Faculty?              @relation(fields: [facultyId], references: [id])
-  school       School?               @relation(fields: [schoolId], references: [id])
-  student      Student               @relation(fields: [studentId], references: [id])
+
+  approvals   ClearanceApproval[]
+  certificate ClearanceCertificate?
+
+  department Department? @relation(fields: [departmentId], references: [id])
+  faculty    Faculty?    @relation(fields: [facultyId], references: [id])
+  school     School?     @relation(fields: [schoolId], references: [id])
+  student    Student     @relation(fields: [studentId], references: [id])
 }
 
 model ClearanceApproval {
-  id                 String           @id @default(uuid())
+  id                 String @id @default(uuid())
   clearanceRequestId String
   roleId             String
   staffId            String?
-  status             ApprovalStatus   @default(PENDING)
-  comment            String?
-  approvedAt         DateTime?
-  clearanceRequest   ClearanceRequest @relation(fields: [clearanceRequestId], references: [id])
-  role               Role             @relation(fields: [roleId], references: [id])
-  staff              Staff?           @relation(fields: [staffId], references: [id])
+
+  status     ApprovalStatus @default(PENDING)
+  comment    String?
+  approvedAt DateTime?
+
+  clearanceRequest ClearanceRequest @relation(fields: [clearanceRequestId], references: [id])
+  role             Role             @relation(fields: [roleId], references: [id])
+  staff            Staff?           @relation(fields: [staffId], references: [id])
 }
 
 model ClearanceCertificate {
-  id        String           @id @default(uuid())
+  id        String @id @default(uuid())
   studentId String
-  requestId String           @unique
+  requestId String @unique
+
   fileUrl   String
   fileName  String
-  issuedAt  DateTime         @default(now())
-  request   ClearanceRequest @relation(fields: [requestId], references: [id])
-  student   Student          @relation(fields: [studentId], references: [id])
+  issuedAt  DateTime @default(now())
+
+  request ClearanceRequest @relation(fields: [requestId], references: [id])
+  student Student          @relation(fields: [studentId], references: [id])
 }
 
 model Notification {
-  id        String   @id @default(uuid())
-  userId    String
-  message   String
-  read      Boolean  @default(false)
-  referenceId String?   
-  createdAt DateTime @default(now())
+  id          String   @id @default(uuid())
+  userId      String
+  message     String
+  read        Boolean  @default(false)
+  referenceId String?
+  createdAt   DateTime @default(now())
 }
 
 enum RoleType {

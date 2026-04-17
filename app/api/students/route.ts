@@ -6,9 +6,10 @@ export async function GET() {
       department: true,
     },
     orderBy: {
-      firstName: "desc",
+      firstName: "asc",
     },
   });
 
+  console.log("fetched students are : ",students)
   return Response.json(students);
 }
