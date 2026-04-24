@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { socket } from "@/lib/socket";
-import { useSession } from "next-auth/react";
-
-
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import {
   fetchRequests,

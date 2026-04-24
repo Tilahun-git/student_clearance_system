@@ -20,26 +20,60 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const advisor = await prisma.staff.findUnique({
+    const staff = await prisma.staff.findUnique({
       where: { userId },
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: { role: true },
+            },
+          },
+        },
+      },
     });
 
-    if (!advisor) {
+    console.log("LOGGED IN STAFF:", staff);
+
+    if (!staff) {
       return NextResponse.json(
-        { error: "Only advisors allowed" },
+        { error: "Staff not found" },
         { status: 403 }
       );
     }
 
+    const userRole = staff.user.roles[0]?.role.name;
+
+    let extraFilter: any = {};
+
+    if (userRole === RoleType.ADVISOR) {
+      extraFilter = {
+        student: {
+          advisorId: staff.id,
+        },
+      };
+    }
+
+    if (userRole === RoleType.DEPARTMENT_HEAD) {
+      extraFilter = {
+        departmentId: staff.departmentId,
+      };
+    }
+
+    if (userRole === RoleType.SCHOOL_DEAN) {
+      extraFilter = {
+        schoolId: staff.schoolId,
+      };
+    }
+    console.log("FETCHING FOR DEPARTMENT:", staff.departmentId);
+
     const approvals = await prisma.clearanceApproval.findMany({
       where: {
-        role: { name: RoleType.ADVISOR },
+        role: { name: userRole }, 
         status: ApprovalStatus.PENDING,
         clearanceRequest: {
-          currentStep: RoleType.ADVISOR,
-          student: {
-            advisorId: advisor.id,
-          },
+          currentStep: userRole, 
+          ...extraFilter,
         },
       },
       include: {
@@ -58,6 +92,7 @@ export async function GET() {
       },
     });
 
+    console.log("DEPT HEAD APPROVALS:", approvals);
     const formatted = approvals.map((a) => ({
       id: a.id,
       status: a.status,
@@ -71,6 +106,8 @@ export async function GET() {
         student: a.clearanceRequest.student,
       },
     }));
+
+    console.log("DEPT HEAD formatted APPROVALS:", formatted);
 
     return NextResponse.json(formatted);
   } catch (error: any) {
@@ -105,7 +142,7 @@ export async function PATCH(req: Request) {
         role: true,
         clearanceRequest: {
           include: {
-            student: true, 
+            student: true,
           },
         },
       },
@@ -114,6 +151,7 @@ export async function PATCH(req: Request) {
     if (!approval) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+    console.log("APPROVAL FOUND:", approval);
 
     await prisma.clearanceApproval.update({
       where: { id: approvalId },
@@ -126,149 +164,166 @@ export async function PATCH(req: Request) {
     });
 
     const request = approval.clearanceRequest;
+
     const student = await prisma.student.findUnique({
-    where: { id: request.studentId },
-    include: { user: true },
-  });
+      where: { id: request.studentId },
+      include: { user: true },
+    });
+
     if (status === "REJECTED") {
       await prisma.clearanceRequest.update({
         where: { id: request.id },
-        data: {
-          status: ClearanceStatus.REJECTED,
-        },
+        data: { status: ClearanceStatus.REJECTED },
       });
 
       await sendNotification({
         userId: student!.userId!,
-        message: `Requst is Rejected by ${approval.role.name}: ${comment}`,
+        message: `Request rejected by ${approval.role.name}: ${comment}`,
       });
 
       return NextResponse.json({ message: "Rejected" });
     }
 
+let nextStep: RoleType | null = null as RoleType | null;
+    switch (approval.role.name) {
+      case RoleType.ADVISOR:
+        nextStep = RoleType.DEPARTMENT_HEAD;
+        break;
 
-    let nextStep: RoleType | null = null;
+      case RoleType.DEPARTMENT_HEAD:
+        nextStep = RoleType.SCHOOL_DEAN;
+        break;
 
-    if (approval.role.name === RoleType.ADVISOR) {
-      nextStep = RoleType.DEPARTMENT_HEAD;
-    } 
-    else if (approval.role.name === RoleType.DEPARTMENT_HEAD) {
-      nextStep = RoleType.SCHOOL_DEAN;
-    } 
-    else if (approval.role.name === RoleType.SCHOOL_DEAN) {
-      nextStep = RoleType.LIBRARY;
-    } 
-    else if (
-      approval.role.name === RoleType.LIBRARY ||
-      approval.role.name === RoleType.FINANCE
-    ) {
-      const approvals = await prisma.clearanceApproval.findMany({
-        where: {
-          clearanceRequestId: request.id,
-          role: {
-            name: { in: [RoleType.LIBRARY, RoleType.FINANCE] },
+      case RoleType.SCHOOL_DEAN:
+        nextStep = RoleType.LIBRARY;
+        break;
+
+      case RoleType.LIBRARY:
+      case RoleType.FINANCE: {
+        const approvals = await prisma.clearanceApproval.findMany({
+          where: {
+            clearanceRequestId: request.id,
+            role: {
+              name: { in: [RoleType.LIBRARY, RoleType.FINANCE] },
+            },
           },
-        },
-      });
+        });
 
-      const allApproved = approvals.every(
-        (a) => a.status === ApprovalStatus.APPROVED
-      );
+        const allApproved = approvals.every(
+          (a) => a.status === ApprovalStatus.APPROVED
+        );
 
-      if (allApproved) {
-        nextStep = RoleType.REGISTRAR;
+        if (allApproved) {
+          nextStep = RoleType.REGISTRAR;
+        }
+        break;
       }
-    } 
-    else if (approval.role.name === RoleType.REGISTRAR) {
-      await prisma.clearanceRequest.update({
-        where: { id: request.id },
-        data: { status: ClearanceStatus.APPROVED },
-      });
 
-      await sendNotification({
-        userId: student!.userId!,
-        message: "🎉 Your clearance is fully approved!",
-      });
+      case RoleType.REGISTRAR:
+        await prisma.clearanceRequest.update({
+          where: { id: request.id },
+          data: { status: ClearanceStatus.APPROVED },
+        });
 
-      return NextResponse.json({ message: "Completed" });
+        await sendNotification({
+          userId: student!.userId!,
+          message: "Your clearance is fully approved!",
+        });
+
+        return NextResponse.json({ message: "Completed" });
     }
 
-    if (nextStep) {
-      await prisma.clearanceRequest.update({
-        where: { id: request.id },
-        data: {
-          currentStep: nextStep,
-          status: ClearanceStatus.IN_PROGRESS,
-        },
-      });
+   
 
+          if (nextStep) {
+        await prisma.clearanceRequest.update({
+          where: { id: request.id },
+          data: {
+            currentStep: nextStep,
+            status: ClearanceStatus.IN_PROGRESS,
+            departmentId: student?.departmentId,
+            schoolId: student?.schoolId,
+            facultyId: student?.facultyId,
+          },
+        });
 
-let nextStaff: Staff[] = [];
+        const nextRole = await prisma.role.findUnique({
+          where: { name: nextStep },
+        });
+
+        if (nextRole) {
+          await prisma.clearanceApproval.create({
+            data: {
+              clearanceRequestId: request.id,
+              roleId: nextRole.id,
+              status: ApprovalStatus.PENDING,
+            },
+          });
+        }
+
+  let nextStaff: Staff[] = [];
+
 if (nextStep === RoleType.DEPARTMENT_HEAD) {
   nextStaff = await prisma.staff.findMany({
     where: {
-      departmentId: request.departmentId,
+      departmentId: student?.departmentId, 
       user: {
         roles: {
           some: {
-            role: {
-              name: RoleType.DEPARTMENT_HEAD,
-            },
+            role: { name: RoleType.DEPARTMENT_HEAD },
           },
         },
       },
     },
   });
-}
-
+} 
 else if (nextStep === RoleType.SCHOOL_DEAN) {
   nextStaff = await prisma.staff.findMany({
     where: {
-      schoolId: request.schoolId,
+      schoolId: student?.schoolId, 
       user: {
         roles: {
           some: {
-            role: {
-              name: RoleType.SCHOOL_DEAN,
-            },
+            role: { name: RoleType.SCHOOL_DEAN },
           },
         },
       },
     },
   });
-}
 
-else if (nextStep === RoleType.LIBRARY || RoleType.FINANCE) {
-  nextStaff = await prisma.staff.findMany({
-    where: {
-      user: {
-        roles: {
-          some: {
-            role: {
-              name: nextStep,
-            },
-          },
-        },
-      },
-    },
-  });
-}
 
-else if (nextStep === RoleType.REGISTRAR) {
-  nextStaff = await prisma.staff.findMany({
-    where: {
-      user: {
-        roles: {
-          some: {
-            role: {
-              name: RoleType.REGISTRAR,
+
+      console.log("Next Step:", nextStep);
+      console.log("Request Dept:", request.departmentId);
+      console.log("Found staff:", nextStaff);
+      } else if (
+        nextStep === RoleType.LIBRARY ||
+        nextStep === RoleType.FINANCE
+      ) {
+        nextStaff = await prisma.staff.findMany({
+          where: {
+            user: {
+              roles: {
+                some: {
+                  role: { name: nextStep },
+                },
+              },
             },
           },
-        },
-      },
-    },
-  });
-}
+        });
+      } else if (nextStep === RoleType.REGISTRAR) {
+        nextStaff = await prisma.staff.findMany({
+          where: {
+            user: {
+              roles: {
+                some: {
+                  role: { name: RoleType.REGISTRAR },
+                },
+              },
+            },
+          },
+        });
+      }
 
       for (const s of nextStaff) {
         await sendNotification({

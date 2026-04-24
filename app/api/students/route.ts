@@ -10,6 +10,5 @@ export async function GET() {
     },
   });
 
-  console.log("fetched students are : ",students)
   return Response.json(students);
 }

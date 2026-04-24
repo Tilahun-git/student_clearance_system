@@ -7,7 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/* ================= USER ================= */
 model User {
   id             String     @id @default(uuid())
   email          String     @unique
@@ -20,7 +19,6 @@ model User {
   roles          UserRole[]
 }
 
-/* ================= ROLE ================= */
 model Role {
   id        String   @id @default(uuid())
   name      RoleType @unique
@@ -39,7 +37,6 @@ model UserRole {
   @@id([userId, roleId])
 }
 
-/* ================= STUDENT ================= */
 model Student {
   id           String @id @default(uuid())
   userId       String? @unique

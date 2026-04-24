@@ -137,8 +137,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ message: "Rejected" });
     }
 
-    // ================= WORKFLOW =================
-
     let nextStep: RoleType | null = null;
 
     if (approval.role.name === RoleType.ADVISOR) {
@@ -151,7 +149,6 @@ export async function PATCH(req: Request) {
       approval.role.name === RoleType.LIBRARY ||
       approval.role.name === RoleType.FINANCE
     ) {
-      // parallel handling
       const approvals = await prisma.clearanceApproval.findMany({
         where: {
           clearanceRequestId: request.id,

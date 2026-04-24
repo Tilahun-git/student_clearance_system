@@ -7,12 +7,11 @@ import {
   Faculty,
   School,
   Department,
-  Reason,
   ClearanceDataResponse
 } from "@/types/clearance";
 
 
-
+import { Reason, Reasons } from "@/lib/clearanceData";
 
 export default function ClearanceRequestPage() {
   const { data: session } = useSession();
@@ -20,10 +19,10 @@ export default function ClearanceRequestPage() {
 const [faculties, setFaculties] = useState<Faculty[]>([]);
 const [schools, setSchools] = useState<School[]>([]);
 const [departments, setDepartments] = useState<Department[]>([]);
-const [reasons, setReasons] = useState<Reason[]>([]);
-
 const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
 const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
+const reasons: readonly Reason[] = Reasons;
+
 
 
   const [form, setForm] = useState({
@@ -35,7 +34,6 @@ const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([])
     academicYear: "",
     semester: "",
   });
-
 
 
 console.log("Student ID :",session?.user.studentId)
@@ -56,13 +54,11 @@ console.log("Student ID :",session?.user.studentId)
       try {
         const res = await fetch("/api/clearance/data");
         const data: ClearanceDataResponse = await res.json();
-
+        
       console.log("fetched data are",data.schools);
-
         setFaculties(data.faculties);
         setSchools(data.schools);
         setDepartments(data.departments);
-        setReasons(data.reasons);
       } catch {
         toast.error("Failed to load data");
       }
@@ -101,10 +97,8 @@ console.log("Student ID :",session?.user.studentId)
     setForm({ ...form, academicYear: value, semester: "" });
     return;
   }
-
       setForm({ ...form, [name]: value });
     }
-
   function clearForm() {
     setForm((prev) => ({
       ...prev,
@@ -128,21 +122,16 @@ console.log("Student ID :",session?.user.studentId)
     `${currentYear}/${currentYear + 1}`,
   ];
 }
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-
     try {
       const res = await fetch("/api/clearance/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-
       const data = await res.json();
-
       if (!res.ok) return toast.error(data.error);
-
       toast.success("Request created successfully");
       clearForm();
     } catch {
@@ -151,7 +140,7 @@ console.log("Student ID :",session?.user.studentId)
   }
 
   return (
-<div className="min-h-screen bg-linear-to-br from-slate-100 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-linear-to-br from-slate-100 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-4xl">
 
         <div className="text-center mb-8">
@@ -265,7 +254,7 @@ console.log("Student ID :",session?.user.studentId)
                     Select Reason
                   </option>
                   {reasons.map(r => (
-                    <option key={r.id} value={r.name} className="text-gray-800">
+                    <option key={r.id} value={r.id} className="text-gray-800">
                       {r.name}
                     </option>
                   ))}

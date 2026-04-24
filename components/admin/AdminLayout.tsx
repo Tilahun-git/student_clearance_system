@@ -91,8 +91,6 @@ export default function AdminLayout() {
             <Menu size={18} />
           </button>
         </div>
-
-        {/* Menu */}
         <nav className="p-3 space-y-1 text-sm">
 
           <SidebarItem
@@ -130,7 +128,6 @@ export default function AdminLayout() {
         </nav>
       </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
       <main
         className={`flex-1 transition-all duration-300
         ${open ? "ml-64" : "ml-20"}`}

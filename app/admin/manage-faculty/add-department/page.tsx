@@ -47,7 +47,6 @@ export default function AddDepartment() {
       }
 
       toast.success("Department created successfully 🎉");
-
       setName("");
       setSchoolId("");
       setHeadId("");

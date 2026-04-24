@@ -20,7 +20,6 @@ export default function LogoutButton() {
         focus:outline-none focus:ring-2 focus:ring-red-400
       "
     >
-      {/* Optional icon */}
       <svg
         xmlns="http://www.w3.org/2000/svg"
         className="h-5 w-5"

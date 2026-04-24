@@ -7,8 +7,7 @@ import logo from "../public/wldu_logo.jpg"
 import { useEffect } from "react"
 
 export default function Home() {
-  const router = useRouter()
-
+const router = useRouter()
 
   useEffect(() => {
     fetch("/api/health");

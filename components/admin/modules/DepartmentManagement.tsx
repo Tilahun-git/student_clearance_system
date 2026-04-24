@@ -15,7 +15,6 @@ export default function DepartmentManagement() {
   return (
     <div className="bg-gray-50 min-h-full p-6 rounded-xl">
 
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-semibold text-gray-900">
           Department Management
@@ -29,12 +28,9 @@ export default function DepartmentManagement() {
         </Link>
       </div>
 
-      {/* TABLE CARD */}
       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
 
         <table className="w-full text-sm">
-
-          {/* HEADER */}
           <thead className="bg-gray-50 text-gray-600 uppercase text-xs tracking-wider">
             <tr>
               <th className="text-left p-4">Department</th>
@@ -42,8 +38,6 @@ export default function DepartmentManagement() {
               <th className="text-left p-4">Head</th>
             </tr>
           </thead>
-
-          {/* BODY */}
           <tbody>
             {departments.map((d) => (
               <tr

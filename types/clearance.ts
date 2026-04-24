@@ -1,4 +1,3 @@
-/* ================= FACULTY ================= */
 export type Faculty = {
   id: string;
   name: string;
@@ -7,7 +6,6 @@ export type Faculty = {
 };
 
 
-/* ================= SCHOOL ================= */
 export type School = {
   id: string;
   name: string;
@@ -22,7 +20,6 @@ export type School = {
 };
 
 
-/* ================= DEPARTMENT ================= */
 export type Department = {
   id: string;
   name: string;
@@ -35,7 +32,6 @@ export type Department = {
 };
 
 
-/* ================= STAFF ================= */
 export type Staff = {
   id: string;
   userId: string;
@@ -48,7 +44,6 @@ export type Staff = {
 };
 
 
-/* ================= USER ================= */
 export type User = {
   id: string;
   name: string;
@@ -62,7 +57,6 @@ export type User = {
 };
 
 
-/* ================= STUDENT ================= */
 export type Student = {
   id: string;
   studentId: string;
@@ -90,7 +84,6 @@ export type Student = {
 };
 
 
-/* ================= CLEARANCE REQUEST ================= */
 export type ClearanceRequest = {
   id: string;
   studentId: string;
@@ -113,7 +106,6 @@ export type ClearanceRequest = {
 };
 
 
-/* ================= RESPONSE TYPE ================= */
 export type ClearanceDataResponse = {
   faculties: Faculty[];
   schools: School[];

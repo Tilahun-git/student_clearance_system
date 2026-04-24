@@ -21,7 +21,6 @@ export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // ✅ Fetch notifications
   const fetchNotifications = async () => {
     try {
       const res = await fetch("/api/notifications");

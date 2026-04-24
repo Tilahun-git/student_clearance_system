@@ -8,7 +8,6 @@ export default function AdminHeader() {
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
 
-        {/* Students */}
         <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border-l-4 border-blue-500">
           <p className="text-gray-500 italic text-sm uppercase tracking-wide">
             Students
@@ -18,7 +17,6 @@ export default function AdminHeader() {
           </h2>
         </div>
 
-        {/* Departments */}
         <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border-l-4 border-purple-500">
           <p className="text-gray-500 italic text-sm uppercase tracking-wide">
             Departments
@@ -28,7 +26,6 @@ export default function AdminHeader() {
           </h2>
         </div>
 
-        {/* Schools */}
         <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border-l-4 border-green-500">
           <p className="text-gray-500 italic text-sm uppercase tracking-wide">
             Schools
@@ -38,7 +35,6 @@ export default function AdminHeader() {
           </h2>
         </div>
 
-        {/* Users */}
         <div className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 p-6 border-l-4 border-indigo-500">
           <p className="text-gray-500 italic text-sm uppercase tracking-wide">
             Users

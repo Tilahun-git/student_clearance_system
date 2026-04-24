@@ -10,7 +10,6 @@ interface Props {
   onClose: () => void;
 }
 
-// Role to route mapping
 const roleRedirect: Record<string, string> = {
   ADMIN: "/admin",
   REGISTRAR: "/registrar",
@@ -41,7 +40,6 @@ export default function LoginModal({ isOpen, onClose }: Props) {
     setError("");
 
     try {
-      // NextAuth credentials login
       const res = await signIn("credentials", {
         redirect: false,
         email,
@@ -55,7 +53,6 @@ export default function LoginModal({ isOpen, onClose }: Props) {
         return;
       }
 
-      // Fetch session to get roles
       const sessionRes = await fetch("/api/auth/session");
       const sessionData = await sessionRes.json();
 
@@ -67,8 +64,6 @@ export default function LoginModal({ isOpen, onClose }: Props) {
         return;
       }
 
-      // Redirect based on role priority
-      // Priority: ADMIN > REGISTRAR > DEPARTMENT_HEAD > ADVISOR > STUDENT
       const priority = ["ADMIN", "REGISTRAR", "DEPARTMENT_HEAD", "ADVISOR", "STUDENT"];
       const redirectRole = priority.find((r) => roles.includes(r)) || "STUDENT";
       router.push(roleRedirect[redirectRole]);
@@ -86,7 +81,6 @@ export default function LoginModal({ isOpen, onClose }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6 relative">
-        {/* Close Button */}
         <button
           className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
           onClick={() => {
@@ -99,7 +93,6 @@ export default function LoginModal({ isOpen, onClose }: Props) {
 
         <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
 
-        {/* Error Message */}
         {error && <p className="text-red-500 mb-3 text-center">{error}</p>}
 
         <form onSubmit={handleLogin} className="flex flex-col gap-4">

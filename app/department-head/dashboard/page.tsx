@@ -25,6 +25,8 @@ export default function DepartmentHead() {
   async function loadRequests() {
     try {
       const data = await fetchApprovals();
+
+      console.log("API RESPONSE:", data);
       setRequests(data);
       console.log("Requests for the dept head : ",requests)
     } catch {
@@ -77,7 +79,7 @@ export default function DepartmentHead() {
 
         {loading ? (
           <p className="text-center text-gray-500">Loading...</p>
-        ) : requests.length !== 0 ? (
+        ) : requests.length === 0 ? (
           <p className="text-center text-gray-500">
             No pending approvals 🎉
           </p>
