@@ -30,7 +30,7 @@ export default function DepartmentHead() {
       setRequests(data);
       console.log("Requests for the dept head : ",requests)
     } catch {
-      toast.error("Failed to load requests");
+      toast.error("Failed to load current requests");
     } finally {
       setLoading(false);
     }

@@ -23,18 +23,22 @@ export async function GET() {
     const staff = await prisma.staff.findUnique({
       where: { userId },
       include: {
-        user: {
-          include: {
-            roles: {
-              include: { role: true },
+       user: {
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          roles: {
+            include: {
+              role: true,
             },
           },
         },
       },
+      },
     });
 
-    console.log("LOGGED IN STAFF:", staff);
-
+console.log("Loggedin staff",JSON.stringify(staff, null, 2));
     if (!staff) {
       return NextResponse.json(
         { error: "Staff not found" },
@@ -67,35 +71,46 @@ export async function GET() {
     }
     console.log("FETCHING FOR DEPARTMENT:", staff.departmentId);
 
+  
     const approvals = await prisma.clearanceApproval.findMany({
-      where: {
-        role: { name: userRole }, 
-        status: ApprovalStatus.PENDING,
-        clearanceRequest: {
-          currentStep: userRole, 
-          ...extraFilter,
-        },
-      },
-      include: {
-        clearanceRequest: {
-          include: {
-            student: {
-              include: { user: true },
-            },
+        where: {
+          role: { name: userRole },
+          status: ApprovalStatus.PENDING,
+          clearanceRequest: {
+            currentStep: userRole,
+            ...extraFilter,
           },
         },
-      },
-      orderBy: {
-        clearanceRequest: {
-          createdAt: "desc",
+        include: {
+          clearanceRequest: {
+            include: {
+              student: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      email: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+            
+          },
         },
-      },
-    });
+        orderBy: {
+              clearanceRequest: {
+                createdAt: "desc",
+              },
+            },
+      });
+  console.log("DEPT HEAD APPROVALS:", JSON.stringify(approvals, null, 2));
 
-    console.log("DEPT HEAD APPROVALS:", approvals);
     const formatted = approvals.map((a) => ({
       id: a.id,
       status: a.status,
+      role:a.roleId,
       comment: a.comment,
       clearanceRequest: {
         id: a.clearanceRequest.id,
@@ -107,8 +122,8 @@ export async function GET() {
       },
     }));
 
-    console.log("DEPT HEAD formatted APPROVALS:", formatted);
-
+  console.log("DEPT HEAD formatted APPROVALS:", JSON.stringify(formatted, null, 2));
+  
     return NextResponse.json(formatted);
   } catch (error: any) {
     return NextResponse.json(
@@ -116,6 +131,7 @@ export async function GET() {
       { status: 500 }
     );
   }
+  
 }
 
 export async function PATCH(req: Request) {
@@ -146,6 +162,7 @@ export async function PATCH(req: Request) {
           },
         },
       },
+      
     });
 
     if (!approval) {
@@ -252,6 +269,14 @@ let nextStep: RoleType | null = null as RoleType | null;
         });
 
         if (nextRole) {
+        const existing = await prisma.clearanceApproval.findFirst({
+          where: {
+            clearanceRequestId: request.id,
+            roleId: nextRole.id,
+          },
+        });
+
+        if (!existing) {
           await prisma.clearanceApproval.create({
             data: {
               clearanceRequestId: request.id,
@@ -260,6 +285,8 @@ let nextStep: RoleType | null = null as RoleType | null;
             },
           });
         }
+      
+     }
 
   let nextStaff: Staff[] = [];
 
