@@ -8,9 +8,7 @@ import {
   ClearanceStatus,
 } from "@prisma/client";
 import { Staff } from "@prisma/client";
-
 import { sendNotification } from "@/lib/notify";
-
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -19,7 +17,7 @@ export async function GET() {
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-
+    
     const staff = await prisma.staff.findUnique({
       where: { userId },
       include: {
