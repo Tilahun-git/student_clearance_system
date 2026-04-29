@@ -32,18 +32,22 @@ export async function GET() {
 
     const approvals = await prisma.clearanceApproval.findMany({
       where: {
-        role: { name: RoleType.DEPARTMENT_HEAD },
+        role: {
+          name: RoleType.DEPARTMENT_HEAD,
+        },
         status: ApprovalStatus.PENDING,
         clearanceRequest: {
-          currentStep: RoleType.DEPARTMENT_HEAD,
           departmentId: staff.departmentId,
         },
       },
       include: {
+        role: true,
         clearanceRequest: {
           include: {
             student: {
-              include: { user: true },
+              include: {
+                user: true,
+              },
             },
           },
         },
@@ -78,7 +82,10 @@ export async function POST(req: Request) {
     }
 
     const existing = await prisma.department.findFirst({
-      where: { name, schoolId },
+      where: {
+        name,
+        schoolId,
+      },
     });
 
     if (existing) {
@@ -93,7 +100,9 @@ export async function POST(req: Request) {
       include: {
         user: {
           include: {
-            roles: { include: { role: true } },
+            roles: {
+              include: { role: true },
+            },
           },
         },
       },
@@ -106,11 +115,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const isHead = staff.user.roles.some(
+    const isDepartmentHead = staff.user.roles.some(
       (r) => r.role.name === RoleType.DEPARTMENT_HEAD
     );
 
-    if (!isHead) {
+    if (!isDepartmentHead) {
       return NextResponse.json(
         { error: "Selected staff is not a Department Head" },
         { status: 400 }
@@ -133,12 +142,11 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(department);
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("CREATE DEPT ERROR:", error);
 
     return NextResponse.json(
-      { error: "Failed to create department" },
+      { error: error.message || "Failed to create department" },
       { status: 500 }
     );
   }

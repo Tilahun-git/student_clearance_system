@@ -14,16 +14,37 @@ export default function AddDepartment() {
 
   useEffect(() => {
     fetch("/api/school")
-      .then(res => res.json())
-      .then(setSchools)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setSchools(data);
+        } else {
+          setSchools(data?.data || []);
+        }
+      })
       .catch(() => toast.error("Failed to load schools"));
   }, []);
 
   useEffect(() => {
-    fetch("/api/staff?role=DEPARTMENT_HEAD")
-      .then(res => res.json())
-      .then(setHeads)
-      .catch(() => toast.error("Failed to load department heads"));
+    const fetchHeads = async () => {
+      try {
+        const res = await fetch("/api/staff?role=DEPARTMENT_HEAD");
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          setHeads([]);
+          return;
+        }
+
+        setHeads(data.data || []);
+      } catch (err) {
+        console.error(err);
+        setHeads([]);
+        toast.error("Failed to load department heads");
+      }
+    };
+
+    fetchHeads();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,10 +68,10 @@ export default function AddDepartment() {
       }
 
       toast.success("Department created successfully 🎉");
+
       setName("");
       setSchoolId("");
       setHeadId("");
-
     } catch {
       toast.error("Something went wrong");
     }
@@ -78,33 +99,40 @@ export default function AddDepartment() {
 
         <select
           value={schoolId}
-          onChange={e => setSchoolId(e.target.value)}
+          onChange={(e) => setSchoolId(e.target.value)}
           className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-900"
         >
           <option value="">Select school</option>
-          {schools.map(s => (
-            <option key={s.id} value={s.id}>{s.name}</option>
+          {schools.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
           ))}
         </select>
 
         <input
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           placeholder="Department name"
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         />
 
         <select
           value={headId}
-          onChange={e => setHeadId(e.target.value)}
+          onChange={(e) => setHeadId(e.target.value)}
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         >
           <option value="">Select department head</option>
-          {heads.map(h => (
-            <option key={h.id} value={h.id}>
-              {h.user?.name}
-            </option>
-          ))}
+
+          {Array.isArray(heads) && heads.length > 0 ? (
+            heads.map((h) => (
+              <option key={h.id} value={h.id}>
+                {h.user?.name || "Unnamed"}
+              </option>
+            ))
+          ) : (
+            <option disabled>No heads found</option>
+          )}
         </select>
 
         <button

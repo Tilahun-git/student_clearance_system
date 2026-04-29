@@ -5,24 +5,51 @@ export async function POST(req: Request) {
   try {
     const { name } = await req.json();
 
-    if (!name) {
-      return NextResponse.json({ error: "Faculty name is required" }, { status: 400 });
+    if (!name || typeof name !== "string") {
+      return NextResponse.json(
+        { error: "Faculty name is required" },
+        { status: 400 }
+      );
+    }
+
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      return NextResponse.json(
+        { error: "Faculty name cannot be empty" },
+        { status: 400 }
+      );
     }
 
     const existing = await prisma.faculty.findFirst({
-      where: { name },
+      where: {
+        name: {
+          equals: trimmedName,
+          mode: "insensitive",
+        },
+      },
     });
 
     if (existing) {
-      return NextResponse.json({ error: "Faculty already exists" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Faculty already exists" },
+        { status: 400 }
+      );
     }
 
     const faculty = await prisma.faculty.create({
-      data: { name },
+      data: {
+        name: trimmedName,
+      },
     });
 
     return NextResponse.json(faculty);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to create faculty" }, { status: 500 });
+    console.error("CREATE FACULTY ERROR:", error);
+
+    return NextResponse.json(
+      { error: "Failed to create faculty" },
+      { status: 500 }
+    );
   }
 }

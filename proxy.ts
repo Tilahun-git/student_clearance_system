@@ -1,29 +1,46 @@
 import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import { RoleType } from "@prisma/client"; 
 
 export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token;
     const path = req.nextUrl.pathname;
 
-    if (path.startsWith("/student") && !(token?.roles as RoleType[])?.includes(RoleType.STUDENT)) {
+    const roles: string[] = token?.roles || [];
+    console.log("roles are : ", roles)
+
+    if (
+      path.startsWith("/student") &&
+      !roles.includes("STUDENT")
+    ) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/advisor") && !(token?.roles as RoleType[])?.includes(RoleType.ADVISOR)) {
+    if (
+      path.startsWith("/advisor") &&
+      !roles.includes("ADVISOR")
+    ) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/department-head") && !(token?.roles as RoleType[])?.includes(RoleType.DEPARTMENT_HEAD)) {
+    if (
+      path.startsWith("/department-head") &&
+      !roles.includes("DEPARTMENT_HEAD")
+    ) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/admin") && !(token?.roles as RoleType[])?.includes(RoleType.ADMIN)) {
+    if (
+      path.startsWith("/admin") &&
+      !roles.includes("ADMIN")
+    ) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
-    if (path.startsWith("/registrar") && !(token?.roles as RoleType[])?.includes(RoleType.REGISTRAR)) {
+    if (
+      path.startsWith("/registrar") &&
+      !roles.includes("REGISTRAR")
+    ) {
       return NextResponse.redirect(new URL("/unauthorized", req.url));
     }
 
@@ -36,12 +53,14 @@ export default withAuth(
   }
 );
 
-export const config = {
-  matcher: [
-    "/student/:path*",
-    "/advisor/:path*",
-    "/admin/:path*",
-    "/registrar/:path*",
-    "/department-head/:path*",
-  ],
-};
+
+
+// import { NextResponse } from "next/server";
+
+// export function proxy() {
+//   return NextResponse.next(); // ✅ allow everything
+// }
+
+// export const config = {
+//   matcher: ["/:path*"],
+// };

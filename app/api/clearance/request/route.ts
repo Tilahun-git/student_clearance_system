@@ -2,20 +2,27 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { RoleType, ClearanceStatus } from "@prisma/client";
+import { ClearanceStatus } from "@prisma/client";
 import { sendNotification } from "@/lib/notify";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session || !session.user.roles?.includes(RoleType.STUDENT)) {
+    const roles = session?.user?.roles ?? [];
+
+    if (!session?.user?.id || !roles.includes("STUDENT")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
 
-    console.log("REQUEST BODY:", body);
+    if (!body?.studentId) {
+      return NextResponse.json(
+        { error: "Missing studentId" },
+        { status: 400 }
+      );
+    }
 
     const student = await prisma.student.findUnique({
       where: { studentId: body.studentId },
@@ -24,15 +31,13 @@ export async function POST(req: Request) {
     if (!student) {
       return NextResponse.json(
         { error: "Student profile missing" },
-        { status: 400 }
+        { status: 404 }
       );
     }
 
-    console.log("STUDENT:", student);
-
-    if (body.studentId !== student.studentId) {
+    if (student.studentId !== body.studentId) {
       return NextResponse.json(
-        { error: "Student ID mismatch occurred" },
+        { error: "Student ID mismatch" },
         { status: 400 }
       );
     }
@@ -40,7 +45,9 @@ export async function POST(req: Request) {
     const existing = await prisma.clearanceRequest.findFirst({
       where: {
         studentId: student.id,
-        status: { not: ClearanceStatus.APPROVED },
+        status: {
+          not: ClearanceStatus.APPROVED,
+        },
       },
     });
 
@@ -48,28 +55,6 @@ export async function POST(req: Request) {
       return NextResponse.json(
         { error: "You already have an active request" },
         { status: 400 }
-      );
-    }
-
-    const dbRoles = await prisma.role.findMany({
-      where: {
-        name: {
-          in: [
-            RoleType.ADVISOR,
-            RoleType.DEPARTMENT_HEAD,
-            RoleType.SCHOOL_DEAN,
-            RoleType.LIBRARY,
-            RoleType.FINANCE,
-            RoleType.REGISTRAR,
-          ],
-        },
-      },
-    });
-
-    if (dbRoles.length === 0) {
-      return NextResponse.json(
-        { error: "Roles not found in database" },
-        { status: 500 }
       );
     }
 
@@ -82,26 +67,30 @@ export async function POST(req: Request) {
         reason: body.reason,
         academicYear: body.academicYear,
         semester: body.semester,
-
-        currentStep: RoleType.ADVISOR,
-
-        approvals: {
-          create: dbRoles.map((role) => ({
-            role: {
-              connect: {
-                id: role.id, 
-              },
-            },
-          })),
-        },
+        status: ClearanceStatus.PENDING,
       },
     });
 
-    console.log("CLEARANCE CREATED:", clearance);
+    const advisorRole = await prisma.role.findUnique({
+      where: { name: "ADVISOR" },
+    });
 
-    if (!student.advisorId) {
-      console.warn("No advisor assigned to student");
-    } else {
+    if (!advisorRole) {
+      return NextResponse.json(
+        { error: "ADVISOR role not found in DB" },
+        { status: 500 }
+      );
+    }
+
+    await prisma.clearanceApproval.create({
+      data: {
+        clearanceRequestId: clearance.id,
+        roleId: advisorRole.id,
+        status: "PENDING",
+      },
+    });
+
+    if (student.advisorId) {
       const advisor = await prisma.staff.findUnique({
         where: { id: student.advisorId },
       });
@@ -111,19 +100,15 @@ export async function POST(req: Request) {
           userId: advisor.userId,
           message: `New clearance request from ${student.firstName}`,
         });
-
-      } else {
-        console.warn("Advisor not found in staff table");
       }
     }
 
     return NextResponse.json(clearance, { status: 201 });
-
-  } catch (error) {
+  } catch (error: any) {
     console.error("CLEARANCE ERROR:", error);
 
     return NextResponse.json(
-      { error: "Failed, unable to create clearance request" },
+      { error: error.message || "Failed to create clearance request" },
       { status: 500 }
     );
   }

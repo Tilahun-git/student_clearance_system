@@ -1,36 +1,85 @@
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { studentId, advisorId } = await req.json();
+    const body = await req.json();
+    const { studentId, advisorId } = body;
 
     if (!studentId || !advisorId) {
-      return Response.json({ error: "Missing fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing fields" },
+        { status: 400 }
+      );
     }
 
     const student = await prisma.student.findUnique({
       where: { studentId },
-      select: { advisorId: true },
     });
 
     if (!student) {
-      return Response.json({ error: "Student not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Student not found" },
+        { status: 404 }
+      );
     }
 
-    if (student.advisorId !== null) {
-      return Response.json(
+    if (student.advisorId) {
+      return NextResponse.json(
         { error: "Student already has an advisor" },
         { status: 409 }
       );
     }
 
-    await prisma.student.update({
-      where: { studentId },
-      data: { advisorId },
+    const advisor = await prisma.staff.findUnique({
+      where: { id: advisorId },
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: { role: true },
+            },
+          },
+        },
+      },
     });
 
-    return Response.json({ message: "Advisor assigned successfully" });
-  } catch (err) {
-    return Response.json({ error: "Server error" }, { status: 500 });
+    if (!advisor) {
+      return NextResponse.json(
+        { error: "Advisor not found" },
+        { status: 404 }
+      );
+    }
+
+    const hasAdvisorRole = advisor.user.roles.some(
+      (r) => r.role.name === "ADVISOR"
+    );
+
+    if (!hasAdvisorRole) {
+      return NextResponse.json(
+        { error: "Selected staff is not an advisor" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.student.update({
+      where: { studentId },
+      data: {
+        advisorId: advisor.id,
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Advisor assigned successfully",
+    });
+
+  } catch (err: any) {
+    console.error("ASSIGN ADVISOR ERROR:", err);
+
+    return NextResponse.json(
+      { error: err.message || "Server error" },
+      { status: 500 }
+    );
   }
 }

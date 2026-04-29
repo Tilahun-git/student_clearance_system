@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
 export async function GET() {
   try {
+    const studentRole = await prisma.role.findUnique({
+      where: { name: "STUDENT" },
+    });
+
+    if (!studentRole) {
+      return NextResponse.json(
+        { error: "STUDENT role not found in DB" },
+        { status: 404 }
+      );
+    }
+
     const users = await prisma.user.findMany({
       where: {
         roles: {
-          some: {
-            role: {
-              name: {
-                not: RoleType.STUDENT, 
-              },
-            },
+          none: {
+            roleId: studentRole.id,
           },
         },
       },
@@ -26,7 +32,7 @@ export async function GET() {
         studentProfile: true,
       },
       orderBy: {
-        name: "asc", 
+        name: "asc",
       },
     });
 
@@ -47,7 +53,7 @@ export async function GET() {
       },
       orderBy: {
         user: {
-          name: "asc", 
+          name: "asc",
         },
       },
     });
@@ -56,7 +62,6 @@ export async function GET() {
       users,
       staffs,
     });
-
   } catch (error) {
     console.error("USERS API ERROR:", error);
 

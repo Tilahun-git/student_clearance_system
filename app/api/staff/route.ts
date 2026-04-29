@@ -1,36 +1,69 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const role = searchParams.get("role");
+    let roleName = searchParams.get("role");
 
+    console.log("role is:", roleName);
+
+    // ================= NO ROLE FILTER =================
+    if (!roleName) {
+      const staffs = await prisma.staff.findMany({
+        include: {
+          user: true,
+          department: true,
+          faculty: true,
+          school: true,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: staffs,
+      });
+    }
+
+    // ================= NORMALIZE ROLE =================
+    roleName = roleName.trim().toUpperCase();
+
+    // ================= FILTERED QUERY (BEST WAY) =================
     const staffs = await prisma.staff.findMany({
-      where: role
-        ? {
-            user: {
-              roles: {
-                some: {
-                  role: {
-                    name: role as RoleType,
-                  },
-                },
+      where: {
+        user: {
+          roles: {
+            some: {
+              role: {
+                name: roleName, // 🔥 direct relation filter
               },
             },
-          }
-        : {},
+          },
+        },
+      },
       include: {
         user: true,
+        department: true,
+        faculty: true,
+        school: true,
       },
     });
 
-    return NextResponse.json(staffs);
+    console.log("filtered staff:", staffs);
+
+    return NextResponse.json({
+      success: true,
+      data: staffs,
+    });
+
   } catch (error) {
-    console.error(error);
+    console.error("STAFF API ERROR:", error);
+
     return NextResponse.json(
-      { error: "Failed to fetch staff" },
+      {
+        success: false,
+        error: "Failed to fetch staff",
+      },
       { status: 500 }
     );
   }

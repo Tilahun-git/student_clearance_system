@@ -28,7 +28,7 @@ export async function fetchApprovals() {
 
   if (!res.ok) throw new Error("Failed to fetch");
   console.log(res)
-
+console.log("data from the lib fetchs : ",res)
   return res.json();
 }
 

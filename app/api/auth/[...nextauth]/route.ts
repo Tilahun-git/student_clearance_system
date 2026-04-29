@@ -2,22 +2,20 @@ import NextAuth, { AuthOptions, DefaultUser } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { RoleType } from "@prisma/client";
 
 
 type AppUser = {
   id: string;
   name: string;
   email: string;
-  roles: RoleType[];
+  roles: string[]; 
   studentId?: string;
 };
-
 
 declare module "next-auth" {
   interface User extends DefaultUser {
     id: string;
-    roles?: RoleType[];
+    roles?: string[]; 
     studentId?: string;
   }
 
@@ -26,7 +24,7 @@ declare module "next-auth" {
       id: string;
       name?: string | null;
       email?: string | null;
-      roles?: RoleType[];
+      roles?: string[];
       studentId?: string;
     };
   }
@@ -35,11 +33,10 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
-    roles?: RoleType[];
+    roles?: string[]; 
     studentId?: string;
   }
 }
-
 
 export const authOptions: AuthOptions = {
   providers: [
@@ -67,28 +64,30 @@ export const authOptions: AuthOptions = {
           credentials.password,
           user.password
         );
+
         if (!isValid) return null;
 
-        const roles: RoleType[] = user.roles.map((ur) => ur.role.name);
+        const roles: string[] = user.roles.map(
+          (ur) => ur.role.name
+        );
 
         const appUser: AppUser = {
           id: user.id,
           name: user.name,
           email: user.email,
           roles,
-          studentId: roles.includes(RoleType.STUDENT)
+          studentId: roles.includes("STUDENT")
             ? user.studentProfile?.studentId
             : undefined,
         };
 
-        return appUser as any; 
+        return appUser as any;
       },
     }),
   ],
 
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,
-
 
   callbacks: {
     async jwt({ token, user }) {
@@ -98,7 +97,7 @@ export const authOptions: AuthOptions = {
         token.id = u.id;
         token.roles = u.roles;
 
-        if (u.roles.includes(RoleType.STUDENT)) {
+        if (u.roles.includes("STUDENT")) {
           token.studentId = u.studentId;
         }
       }
@@ -109,9 +108,9 @@ export const authOptions: AuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.roles = token.roles as RoleType[];
+        session.user.roles = token.roles as string[];
 
-        if (token.roles?.includes(RoleType.STUDENT)) {
+        if (token.roles?.includes("STUDENT")) {
           session.user.studentId = token.studentId as string;
         }
       }
@@ -120,7 +119,6 @@ export const authOptions: AuthOptions = {
     },
   },
 };
-
 
 const handler = NextAuth(authOptions);
 

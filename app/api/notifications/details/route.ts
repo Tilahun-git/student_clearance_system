@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../auth/[...nextauth]/route";
+import { ApprovalStatus } from "@prisma/client";
 
 export async function GET(req: Request) {
   try {
@@ -18,8 +19,11 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    const notification = await prisma.notification.findUnique({
-      where: { id: notificationId },
+    const notification = await prisma.notification.findFirst({
+      where: {
+        id: notificationId,
+        userId: session.user.id,
+      },
     });
 
     if (!notification) {
@@ -34,10 +38,11 @@ export async function GET(req: Request) {
         include: {
           approvals: {
             where: {
-              status: "REJECTED",
+              status: ApprovalStatus.REJECTED,
             },
             include: {
               role: true,
+              staff: true,
             },
           },
           student: true,
@@ -51,7 +56,6 @@ export async function GET(req: Request) {
       notification,
       extraData,
     });
-
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Failed" }, { status: 500 });

@@ -13,8 +13,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const trimmedName = name.trim();
+
     const existing = await prisma.school.findFirst({
-      where: { name, facultyId },
+      where: {
+        name: {
+          equals: trimmedName,
+          mode: "insensitive",
+        },
+        facultyId,
+      },
     });
 
     if (existing) {
@@ -29,7 +37,9 @@ export async function POST(req: Request) {
       include: {
         user: {
           include: {
-            roles: { include: { role: true } },
+            roles: {
+              include: { role: true },
+            },
           },
         },
       },
@@ -55,17 +65,18 @@ export async function POST(req: Request) {
 
     const school = await prisma.school.create({
       data: {
-        name,
+        name: trimmedName,
         facultyId,
         deanId,
       },
     });
 
     return NextResponse.json(school);
+  } catch (error: any) {
+    console.error("CREATE SCHOOL ERROR:", error);
 
-  } catch (error) {
     return NextResponse.json(
-      { error: "Failed to create school" },
+      { error: error.message || "Failed to create school" },
       { status: 500 }
     );
   }

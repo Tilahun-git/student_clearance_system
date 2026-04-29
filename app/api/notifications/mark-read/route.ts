@@ -24,7 +24,9 @@ export async function PATCH(req: Request) {
         },
       });
 
-      return NextResponse.json({ message: "All notifications marked as read" });
+      return NextResponse.json({
+        message: "All notifications marked as read",
+      });
     }
 
     if (!notificationId) {
@@ -34,17 +36,26 @@ export async function PATCH(req: Request) {
       );
     }
 
-    await prisma.notification.update({
+    const updated = await prisma.notification.updateMany({
       where: {
         id: notificationId,
+        userId: session.user.id, 
       },
       data: {
         read: true,
       },
     });
 
-    return NextResponse.json({ message: "Notification marked as read" });
+    if (updated.count === 0) {
+      return NextResponse.json(
+        { error: "Notification not found" },
+        { status: 404 }
+      );
+    }
 
+    return NextResponse.json({
+      message: "Notification marked as read",
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json(

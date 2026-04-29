@@ -3,15 +3,20 @@
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { useSession } from "next-auth/react";
 import { Faculty, School, Department } from "@/types/clearance";
 
 export default function Register() {
+  const { data: session, status } = useSession();
+
   const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [schools, setSchools] = useState<School[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
 
   const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
   const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
+
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     studentId: "",
@@ -26,23 +31,33 @@ export default function Register() {
   });
 
   useEffect(() => {
-    async function load() {
-      const res = await fetch("/api/clearance/data");
-      const data = await res.json();
+    if (status === "loading") return;
 
-      setFaculties(data.faculties);
-      setSchools(data.schools);
-      setDepartments(data.departments);
+    if (!session?.user?.roles?.includes("REGISTRAR")) {
+      toast.error("Unauthorized");
+      window.location.href = "/unauthorized";
+    }
+  }, [session, status]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch("/api/clearance/data");
+        const data = await res.json();
+
+        setFaculties(Array.isArray(data.faculties) ? data.faculties : []);
+        setSchools(Array.isArray(data.schools) ? data.schools : []);
+        setDepartments(Array.isArray(data.departments) ? data.departments : []);
+      } catch {
+        toast.error("Failed to load data");
+      }
     }
 
     load();
   }, []);
 
-  const inputClass =
-    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition";
-
   function handleChange(
-    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>,
+    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
   ) {
     const { name, value } = e.target;
 
@@ -80,33 +95,46 @@ export default function Register() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const res = await fetch("/api/registrar/register-student", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    setLoading(true);
 
-    const data = await res.json();
+    try {
+      const res = await fetch("/api/registrar/register-student", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    if (!res.ok) return toast.error(data.error);
+      const data = await res.json();
 
-    toast.success("Student registered successfully");
+      if (!res.ok) {
+        return toast.error(data.error || "Failed to register");
+      }
 
-    setForm({
-      studentId: "",
-      firstName: "",
-      middleName: "",
-      lastName: "",
-      program: "",
-      year: 1,
-      facultyId: "",
-      schoolId: "",
-      departmentId: "",
-    });
+      toast.success("Student registered successfully 🎉");
 
-    setFilteredSchools([]);
-    setFilteredDepartments([]);
+      setForm({
+        studentId: "",
+        firstName: "",
+        middleName: "",
+        lastName: "",
+        program: "",
+        year: 1,
+        facultyId: "",
+        schoolId: "",
+        departmentId: "",
+      });
+
+      setFilteredSchools([]);
+      setFilteredDepartments([]);
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const inputClass =
+    "w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition";
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-100 via-white to-indigo-100">
@@ -128,120 +156,51 @@ export default function Register() {
 
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-5">
-              <input
-                name="studentId"
-                placeholder="Student ID"
-                value={form.studentId}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input name="studentId" placeholder="Student ID" value={form.studentId} onChange={handleChange} className={inputClass} required />
+              <input name="firstName" placeholder="First Name" value={form.firstName} onChange={handleChange} className={inputClass} required />
+              <input name="middleName" placeholder="Middle Name" value={form.middleName} onChange={handleChange} className={inputClass} />
+              <input name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} className={inputClass} required />
 
-              <input
-                name="firstName"
-                placeholder="First Name"
-                value={form.firstName}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
-
-              <input
-                name="middleName"
-                placeholder="Middle Name (Optional)"
-                value={form.middleName}
-                onChange={handleChange}
-                className={inputClass}
-              />
-
-              <input
-                name="lastName"
-                placeholder="Last Name"
-                value={form.lastName}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
-
-              <select
-                name="program"
-                value={form.program}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="program" value={form.program} onChange={handleChange} className={inputClass} required>
                 <option value="">Select Program</option>
                 <option value="undergraduate">Undergraduate</option>
                 <option value="postgraduate">Postgraduate</option>
               </select>
 
-              <input
-                type="number"
-                name="year"
-                value={form.year}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              />
+              <input type="number" name="year" value={form.year} onChange={handleChange} className={inputClass} required />
             </div>
 
             <div className="space-y-5">
-              <select
-                name="facultyId"
-                value={form.facultyId}
-                onChange={handleChange}
-                className={inputClass}
-                required
-              >
+              <select name="facultyId" value={form.facultyId} onChange={handleChange} className={inputClass} required>
                 <option value="">Select Faculty</option>
-                {faculties.map((faculty) => (
-                  <option key={faculty.id} value={faculty.id}>
-                    {faculty.name}
-                  </option>
+                {faculties.map((f) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
                 ))}
               </select>
 
-              <select
-                name="schoolId"
-                value={form.schoolId}
-                onChange={handleChange}
-                disabled={!form.facultyId}
-                className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}
-                required
-              >
+              <select name="schoolId" value={form.schoolId} onChange={handleChange} disabled={!form.facultyId} className={`${inputClass} disabled:bg-gray-100`}>
                 <option value="">Select School</option>
-                {filteredSchools.map((school) => (
-                  <option key={school.id} value={school.id}>
-                    {school.name}
-                  </option>
+                {filteredSchools.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
 
-              <select
-                name="departmentId"
-                value={form.departmentId}
-                onChange={handleChange}
-                disabled={!form.schoolId}
-                className={`${inputClass} disabled:bg-gray-100 disabled:text-gray-400`}
-                required
-              >
+              <select name="departmentId" value={form.departmentId} onChange={handleChange} disabled={!form.schoolId} className={`${inputClass} disabled:bg-gray-100`}>
                 <option value="">Select Department</option>
-                {filteredDepartments.map((department) => (
-                  <option key={department.id} value={department.id}>
-                    {department.name}
-                  </option>
+                {filteredDepartments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
                 ))}
               </select>
-
             </div>
           </div>
 
           <div className="flex justify-center">
             <button
               type="submit"
-              className="px-8 py-3 bg-slate-600 text-white rounded-xl shadow-lg hover:bg-slate-700 hover:scale-105 transition"
+              disabled={loading}
+              className="px-8 py-3 bg-slate-600 text-white rounded-xl shadow-lg hover:bg-slate-700 transition disabled:opacity-50"
             >
-              Register Student
+              {loading ? "Registering..." : "Register Student"}
             </button>
           </div>
         </form>

@@ -1,29 +1,60 @@
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const advisors = await prisma.staff.findMany({
-      where: {
+    const { searchParams } = new URL(req.url);
+    const roleName = searchParams.get("role");
+
+    let whereClause: any = {};
+
+    if (roleName) {
+      const role = await prisma.role.findUnique({
+        where: { name: roleName },
+      });
+
+      if (!role) {
+        return NextResponse.json(
+          { error: "Role not found in database" },
+          { status: 404 }
+        );
+      }
+
+      whereClause = {
         user: {
           roles: {
             some: {
-              role: {
-                name: RoleType.ADVISOR,
+              roleId: role.id,
+            },
+          },
+        },
+      };
+    }
+
+    const staffs = await prisma.staff.findMany({
+      where: whereClause,
+      include: {
+        user: {
+          include: {
+            roles: {
+              include: {
+                role: true,
               },
             },
           },
         },
-      },
-      include: {
-        user: true,
+        department: true,
+        faculty: true,
+        school: true,
       },
     });
 
-    return Response.json(advisors);
+    return NextResponse.json(staffs);
   } catch (error) {
-    return Response.json(
-      { error: "Failed to fetch advisors" },
+    console.error("STAFF FETCH ERROR:", error);
+
+    return NextResponse.json(
+      { error: "Failed to fetch staff" },
       { status: 500 }
     );
   }

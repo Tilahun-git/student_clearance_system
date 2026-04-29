@@ -1,32 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { RoleType } from "@prisma/client";
 import { FaChevronDown } from "react-icons/fa";
-import Link from 'next/link'
+import Link from "next/link";
+
+interface Role {
+  id: string;
+  name: string;
+}
 
 interface UserForm {
   name: string;
   email: string;
   password: string;
-  roles: RoleType[];
+  roles: string[];
 }
 
 export default function AdminRegisterPage() {
   const router = useRouter();
 
-  const AVAILABLE_ROLES = [
-    RoleType.ADVISOR,
-    RoleType.DEPARTMENT_HEAD,
-    RoleType.FINANCE,
-    RoleType.LIBRARY,
-    RoleType.REGISTRAR,
-    RoleType.ADMIN,
-    RoleType.STUDENT,
-  ];
+  const [rolesFromDB, setRolesFromDB] = useState<Role[]>([]);
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   const [user, setUser] = useState<UserForm>({
     name: "",
@@ -35,14 +32,39 @@ export default function AdminRegisterPage() {
     roles: [],
   });
 
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const res = await fetch("/api/admin/roles");
 
-  const toggleRole = (role: RoleType) => {
+        if (!res.ok) {
+          toast.error("Failed to load roles");
+          return;
+        }
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setRolesFromDB(data);
+        } else {
+          setRolesFromDB([]);
+          toast.error("Invalid roles data");
+        }
+
+      } catch {
+        toast.error("Failed to load roles");
+      }
+    };
+
+    fetchRoles();
+  }, []);
+
+  const toggleRole = (roleName: string) => {
     setUser((prev) => ({
       ...prev,
-      roles: prev.roles.includes(role)
-        ? prev.roles.filter((r) => r !== role)
-        : [...prev.roles, role],
+      roles: prev.roles.includes(roleName)
+        ? prev.roles.filter((r) => r !== roleName)
+        : [...prev.roles, roleName],
     }));
   };
 
@@ -54,9 +76,7 @@ export default function AdminRegisterPage() {
     e.preventDefault();
 
     const finalRoles =
-      user.roles.length === 0
-        ? [RoleType.STUDENT]
-        : user.roles;
+      user.roles.length === 0 ? ["STUDENT"] : user.roles;
 
     try {
       const res = await fetch("/api/admin/create-user", {
@@ -115,17 +135,18 @@ export default function AdminRegisterPage() {
               setUser((prev) => ({ ...prev, name: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
+            className="border p-3 rounded-xl"
           />
+
           <input
             type="email"
-            placeholder="Email Address"
+            placeholder="Email"
             value={user.email}
             onChange={(e) =>
               setUser((prev) => ({ ...prev, email: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
+            className="border p-3 rounded-xl"
           />
 
           <input
@@ -136,66 +157,69 @@ export default function AdminRegisterPage() {
               setUser((prev) => ({ ...prev, password: e.target.value }))
             }
             required
-            className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-blue-900 focus:outline-none"
+            className="border p-3 rounded-xl"
           />
 
           <div className="relative">
             <button
               type="button"
               onClick={() => setShowRoleDropdown((prev) => !prev)}
-              className="w-full border border-gray-300 p-3 rounded-xl flex justify-between items-center bg-white hover:bg-gray-50 transition"
+              className="w-full border p-3 rounded-xl flex justify-between"
             >
-              <span className="text-gray-700 text-sm">
+              <span>
                 {user.roles.length > 0
                   ? user.roles.join(", ")
-                  : "Select roles "}
+                  : "Select roles"}
               </span>
-
-              <FaChevronDown className="text-gray-500 text-xs" />
+              <FaChevronDown />
             </button>
 
-          {showRoleDropdown && (
-            <div className="absolute top-full z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-md max-h-16 overflow-y-auto">
+            {showRoleDropdown && (
+              <div className="absolute w-full bg-white border mt-1 rounded shadow max-h-40 overflow-y-auto">
 
-              {AVAILABLE_ROLES.map((role) => (
-                <label
-                  key={role}
-                  className="flex items-center gap-2 px-2 py-1 text-xs cursor-pointer hover:bg-gray-100"
-                >
-                  <input
-                    type="checkbox"
-                    checked={user.roles.includes(role)}
-                    onChange={() => toggleRole(role)}
-                    className="accent-blue-900 w-3 h-3"
-                  />
+                {rolesFromDB.length === 0 ? (
+                  <div className="px-3 py-2 text-gray-500 text-sm">
+                    No roles found
+                  </div>
+                ) : (
+                  rolesFromDB.map((role) => (
+                    <label
+                      key={role.id}
+                      className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-100"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={user.roles.includes(role.name)}
+                        onChange={() => toggleRole(role.name)}
+                      />
+                      {role.name}
+                    </label>
+                  ))
+                )}
 
-                  <span className="text-gray-700">
-                    {role}
-                  </span>
-                </label>
-              ))}
-
-            </div>
-          )}
+              </div>
+            )}
           </div>
 
           <button
             type="submit"
-            className="bg-blue-900 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
+            className="bg-blue-900 text-white py-3 rounded-xl"
           >
-            Register User
+            Register
           </button>
-        <div className="mt-6 text-center text-gray-700">
-          <p>
+
+          <div className="text-center">
+ <p>
             Already have an account?{" "}
             <Link
               href="/auth/login"
               className="text-blue-900 font-semibold hover:underline"
             >
-              Login here
+              Register here
             </Link>
-          </p>
-        </div>
+          </p>          
+          </div>
+
         </form>
       </div>
     </div>

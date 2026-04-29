@@ -22,25 +22,32 @@ export default function AssignAdvisor() {
   const [advisorId, setAdvisorId] = useState("");
   const [student, setStudent] = useState<Student>();
 
-  useEffect(() => {
-    if (!studentId) return;
+useEffect(() => {
+  if (!studentId) return;
 
-    fetch(`/api/students/${studentId}`)
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Failed to fetch student");
-        return res.json();
-      })
-      .then(setStudent)
-      .catch(() => toast.error("Failed to load student"));
+  // ================= STUDENT =================
+  fetch(`/api/students/${studentId}`)
+    .then(async (res) => {
+      if (!res.ok) throw new Error("Failed to fetch student");
+      return res.json();
+    })
+    .then(setStudent)
+    .catch(() => toast.error("Failed to load student"));
 
-    fetch("/api/staff/advisors")
-      .then(async (res) => {
-        if (!res.ok) throw new Error("Failed to fetch advisors");
-        return res.json();
-      })
-      .then(setAdvisors)
-      .catch(() => toast.error("Failed to load advisors"));
-  }, [studentId]);
+  // ================= ADVISORS (FIXED) =================
+  fetch("/api/staff?role=ADVISOR")
+    .then(async (res) => {
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        throw new Error("Failed to fetch advisors");
+      }
+
+      setAdvisors(data.data || []); // ✅ IMPORTANT FIX
+    })
+    .catch(() => toast.error("Failed to load advisors"));
+
+}, [studentId]);
 
   const handleAssign = async () => {
     if (!studentId) return toast.error("Missing student ID");
@@ -98,19 +105,23 @@ export default function AssignAdvisor() {
         <div>
           <label className="text-sm text-gray-600">Select Advisor</label>
 
-          <select
-            value={advisorId}
-            onChange={(e) => setAdvisorId(e.target.value)}
-            className="w-full mt-1 border border-gray-300 bg-white text-gray-800 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 outline-none"
-          >
-            <option value=""> Select Advisor </option>
+        <select
+          value={advisorId}
+          onChange={(e) => setAdvisorId(e.target.value)}
+          className="w-full mt-1 border border-gray-300 bg-white text-gray-800 rounded-lg px-3 py-2"
+        >
+          <option value="">Select Advisor</option>
 
-            {advisors.map((a) => (
+          {advisors.length > 0 ? (
+            advisors.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.user?.name || "Unnamed Advisor"}
               </option>
-            ))}
-          </select>
+            ))
+          ) : (
+            <option disabled>No advisors found</option>
+          )}
+        </select>
         </div>
 
         <button

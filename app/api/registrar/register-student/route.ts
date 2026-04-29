@@ -1,64 +1,48 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const {
-      studentId,
-      firstName,
-      middleName,
-      lastName,
-      program,
-      year,
-      facultyId,
-      schoolId,
-      departmentId,
-    } = await req.json();
+    const session = await getServerSession(authOptions);
 
+    const userRoles: string[] = session?.user?.roles || [];
 
+    const isRegistrar = userRoles.includes("REGISTRAR");
 
-    if (!studentId || !firstName || !lastName || !departmentId || !facultyId || !schoolId) {
-      return Response.json(
-        { error: "Missing required fields" },
-        { status: 400 }
+    if (!isRegistrar) {
+      return NextResponse.json(
+        { error: "Unauthorized - Registrar only" },
+        { status: 401 }
       );
     }
 
-    const existingStudent = await prisma.student.findUnique({
-      where: { studentId },
+    const body = await req.json();
+
+    const student = await prisma.student.create({
+      data: {
+        studentId: body.studentId,
+        firstName: body.firstName,
+        middleName: body.middleName,
+        lastName: body.lastName,
+        program: body.program,
+        year: Number(body.year),
+        facultyId: body.facultyId,
+        schoolId: body.schoolId,
+        departmentId: body.departmentId,
+      },
     });
 
-    if (existingStudent) {
-      return Response.json(
-        { error: "Student already exists" },
-        { status: 400 }
-      );
-    }
-   const student = await prisma.student.create({
-  data: {
-    studentId: studentId,
-    firstName: firstName,
-    middleName: middleName || null,
-    lastName: lastName,
-    program: program,
-    year: Number(year),
-    facultyId: facultyId,
-    schoolId: schoolId,
-    departmentId: departmentId,
-  },
-});
+    return NextResponse.json({
+      success: true,
+      student,
+    });
+  } catch (error: any) {
+    console.error("REGISTER STUDENT ERROR:", error);
 
-    return Response.json(
-      {
-        message: "Student registered successfully",
-        student,
-      },
-      { status: 201 }
-    );
-  } catch (error) {
-    console.error(error);
-
-    return Response.json(
-      { error: "Server error not registered " },
+    return NextResponse.json(
+      { error: error.message || "Failed to register student" },
       { status: 500 }
     );
   }

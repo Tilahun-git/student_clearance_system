@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { School, Save } from "lucide-react";
+import { Faculty } from "@prisma/client";
 
 export default function AddSchool() {
-  const [faculties, setFaculties] = useState<any[]>([]);
+  const [faculties, setFaculties] = useState<Faculty[]>([]);
   const [deans, setDeans] = useState<any[]>([]);
 
   const [name, setName] = useState("");
@@ -14,18 +15,40 @@ export default function AddSchool() {
 
   useEffect(() => {
     fetch("/api/faculty")
-      .then(res => res.json())
-      .then(setFaculties)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setFaculties(data);
+        } else {
+          console.error("Invalid faculty response:", data);
+          setFaculties([]);
+        }
+      })
       .catch(() => toast.error("Failed to load faculties"));
   }, []);
 
-  useEffect(() => {
-    fetch("/api/staff?role=SCHOOL_DEAN")
-      .then(res => res.json())
-      .then(setDeans)
-      .catch(() => toast.error("Failed to load deans"));
-  }, []);
+useEffect(() => {
+  const fetchDeans = async () => {
+    try {
+      const res = await fetch("/api/staff?role=SCHOOL_DEAN");
+      const data = await res.json();
 
+      if (!res.ok || !data.success) {
+        console.error("API ERROR:", data);
+        setDeans([]);
+        return;
+      }
+
+      setDeans(data.data || []);
+    } catch (err) {
+      console.error("FETCH ERROR:", err);
+      setDeans([]);
+      toast.error("Failed to load deans");
+    }
+  };
+
+  fetchDeans();
+}, []);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -51,7 +74,6 @@ export default function AddSchool() {
       setName("");
       setFacultyId("");
       setDeanId("");
-
     } catch {
       toast.error("Something went wrong");
     }
@@ -79,33 +101,40 @@ export default function AddSchool() {
 
         <select
           value={facultyId}
-          onChange={e => setFacultyId(e.target.value)}
+          onChange={(e) => setFacultyId(e.target.value)}
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         >
           <option value="">Select faculty</option>
-          {faculties.map(f => (
-            <option key={f.id} value={f.id}>{f.name}</option>
+          {faculties.map((f) => (
+            <option key={f.id} value={f.id}>
+              {f.name}
+            </option>
           ))}
         </select>
 
         <input
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           placeholder="School name"
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         />
 
         <select
           value={deanId}
-          onChange={e => setDeanId(e.target.value)}
+          onChange={(e) => setDeanId(e.target.value)}
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         >
           <option value="">Select dean</option>
-          {deans.map(d => (
-            <option key={d.id} value={d.id}>
-              {d.user?.name}
-            </option>
-          ))}
+
+          {deans.length > 0 ? (
+            deans.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.user?.name || "Unnamed"}
+              </option>
+            ))
+          ) : (
+            <option disabled>No deans found</option>
+          )}
         </select>
 
         <button

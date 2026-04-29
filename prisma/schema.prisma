@@ -21,7 +21,7 @@ model User {
 
 model Role {
   id        String   @id @default(uuid())
-  name      RoleType @unique
+  name      String @unique
 
   approvals ClearanceApproval[]
   users     UserRole[]
@@ -138,7 +138,6 @@ model ClearanceRequest {
   semester     String?
 
   status      ClearanceStatus @default(PENDING)
-  currentStep RoleType        @default(ADVISOR)
 
   departmentId String?
   facultyId    String?
@@ -166,6 +165,8 @@ model ClearanceApproval {
   clearanceRequest ClearanceRequest @relation(fields: [clearanceRequestId], references: [id])
   role             Role             @relation(fields: [roleId], references: [id])
   staff            Staff?           @relation(fields: [staffId], references: [id])
+
+  @@unique([clearanceRequestId, roleId]) 
 }
 
 model ClearanceCertificate {
@@ -199,6 +200,9 @@ enum RoleType {
   REGISTRAR
   ADMIN
   SCHOOL_DEAN
+  CAFETERIA
+  DORMITORY
+  STUDENT_DEAN
 }
 
 enum ClearanceStatus {

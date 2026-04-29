@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
-
-
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password, roles, studentId } = await req.json();
+    const { name, email, password, roles, studentId } =
+      await req.json();
 
     if (!name || !email || !password) {
       return NextResponse.json(
@@ -15,7 +13,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -29,12 +26,11 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const selectedRoles: RoleType[] =
+    let selectedRoles: string[] =
       Array.isArray(roles) && roles.length > 0
         ? roles
-        : [RoleType.STUDENT];
+        : ["STUDENT"];
 
-    const isStudent = selectedRoles.includes(RoleType.STUDENT);
 
     const roleRecords = await prisma.role.findMany({
       where: {
@@ -44,6 +40,12 @@ export async function POST(req: Request) {
       },
     });
 
+    if (roleRecords.length !== selectedRoles.length) {
+      return NextResponse.json(
+        { error: "One or more roles are invalid" },
+        { status: 400 }
+      );
+    }
     const user = await prisma.user.create({
       data: {
         name,
@@ -52,11 +54,15 @@ export async function POST(req: Request) {
 
         roles: {
           create: roleRecords.map((role) => ({
-            role: { connect: { id: role.id } },
+            role: {
+              connect: { id: role.id },
+            },
           })),
         },
       },
     });
+
+    const isStudent = selectedRoles.includes("STUDENT");
 
     if (isStudent) {
       if (!studentId) {
@@ -67,7 +73,7 @@ export async function POST(req: Request) {
       }
 
       const student = await prisma.student.findUnique({
-        where: { studentId }, 
+        where: { studentId },
       });
 
       if (!student) {
@@ -85,22 +91,22 @@ export async function POST(req: Request) {
       }
 
       await prisma.student.update({
-        where: { studentId }, 
+        where: { studentId },
         data: {
-          userId: user.id, 
+          userId: user.id,
         },
       });
     }
-
     return NextResponse.json(
       {
-        message: "Studet user account created successfully",
+        message: "User account created successfully",
         user,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error(error);
+
     return NextResponse.json(
       { error: "Server error" },
       { status: 500 }

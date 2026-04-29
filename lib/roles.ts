@@ -11,4 +11,18 @@ export const roleRedirect: Record<string, string> = {
   STUDENT_DEAN: "/student-dean",
   FACULTY_DEAN: "/faculty-dean",
 };
+export const ROLE_TYPES = [
+  "STUDENT",
+  "ADVISOR",
+  "DEPARTMENT_HEAD",
+  "FINANCE",
+  "LIBRARY",
+  "REGISTRAR",
+  "ADMIN",
+  "SCHOOL_DEAN",
+  "CAFETERIA",
+  "DORMITORY",
+  "STUDENT_DEAN",
+] as const;
 
+export type RoleTypeFrontend = typeof ROLE_TYPES[number];

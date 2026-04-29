@@ -28,7 +28,6 @@ export default function DepartmentHead() {
 
       console.log("API RESPONSE:", data);
       setRequests(data);
-      console.log("Requests for the dept head : ",requests)
     } catch {
       toast.error("Failed to load current requests");
     } finally {
@@ -95,44 +94,51 @@ export default function DepartmentHead() {
               </thead>
 
               <tbody>
-                {requests.map((request) => (
-                  <tr
-                    key={request.id}
-                    className="border-t hover:bg-gray-50 transition"
-                  >
-                    <td className="p-3 font-medium text-gray-800">
-                      {request.clearanceRequest.student.user.name}
-                    </td>
+                {requests.map((request) => {
+                  const student = request?.clearanceRequest?.student;
+                  const user = student?.user;
 
-                    <td className="p-3 text-gray-500">
-                      {request.clearanceRequest.student.studentId}
-                    </td>
+                  return (
+                    <tr
+                      key={request.id}
+                      className="border-t hover:bg-gray-50 transition"
+                    >
+                      {/* ✅ SAFE ACCESS */}
+                      <td className="p-3 font-medium text-gray-800">
+                        {user?.name || "Unknown Student"}
+                      </td>
 
-                    <td className="p-3">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => approve(request.id)}
-                          className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-green-700 transition"
-                        >
-                          Approve
-                        </button>
+                      <td className="p-3 text-gray-500">
+                        {student?.studentId || "N/A"}
+                      </td>
 
-                        <button
-                          onClick={() => openReject(request.id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="p-3">
+                        <div className="flex justify-end gap-2">
+                          <button
+                            onClick={() => approve(request.id)}
+                            className="bg-gray-300 text-black px-3 py-1 rounded hover:bg-green-700 transition"
+                          >
+                            Approve
+                          </button>
+
+                          <button
+                            onClick={() => openReject(request.id)}
+                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
+      {/* REJECT MODAL */}
       {rejectingId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white p-6 rounded-xl w-96 shadow-lg">

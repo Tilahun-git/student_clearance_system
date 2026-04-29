@@ -2,29 +2,58 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (!session || !session.user.roles?.includes(RoleType.STUDENT)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+    const roles = session?.user?.roles ?? [];
 
-  const student = await prisma.student.findUnique({
-    where: { id: session.user.studentId },
-    include: {
-      clearanceRequests: {
-        include: {
-          approvals: true,
+    // ✅ FIX: no RoleType enum usage
+    if (!session?.user?.id || !roles.includes("STUDENT")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (!session.user.studentId) {
+      return NextResponse.json(
+        { error: "Missing student profile link" },
+        { status: 400 }
+      );
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { studentId: session.user.studentId },
+      include: {
+        clearanceRequests: {
+          include: {
+            approvals: {
+              include: {
+                role: true,
+                staff: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: "desc",
+          },
         },
       },
-    },
-  });
+    });
 
-  if (!student) {
-    return NextResponse.json({ error: "Student not found" }, { status: 404 });
+    if (!student) {
+      return NextResponse.json(
+        { error: "Student not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(student.clearanceRequests);
+  } catch (error: any) {
+    console.error("STUDENT CLEARANCE FETCH ERROR:", error);
+
+    return NextResponse.json(
+      { error: error.message || "Server error" },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json(student.clearanceRequests);
 }

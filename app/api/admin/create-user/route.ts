@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -8,23 +7,39 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { name, email, password, roles } = body;
 
+    if (!name || !email || !password) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // ================= HASH PASSWORD =================
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    console.log("ROLES FROM FRONTEND:", roles);
+    // ================= DEFAULT ROLE =================
+    const selectedRoles: string[] =
+      Array.isArray(roles) && roles.length > 0
+        ? roles
+        : ["STUDENT"];
 
+    console.log("ROLES FROM FRONTEND:", selectedRoles);
+
+    // ================= FETCH ROLES =================
     const roleRecords = await prisma.role.findMany({
       where: {
-        name: { in: roles },
+        name: { in: selectedRoles },
       },
     });
 
-    if (roleRecords.length !== roles.length) {
+    if (roleRecords.length !== selectedRoles.length) {
       return NextResponse.json(
         { error: "One or more roles are invalid or not seeded in DB" },
         { status: 400 }
       );
     }
 
+    // ================= CREATE USER + ROLES =================
     const user = await prisma.user.create({
       data: {
         name,
@@ -39,21 +54,31 @@ export async function POST(req: Request) {
       },
       include: {
         roles: {
-          include: {
-            role: true,
-          },
+          include: { role: true },
         },
       },
     });
 
-    const isStaff = roles.some((r: RoleType) => r !== RoleType.STUDENT);
+    // ================= DETECT NON-STUDENT =================
+    const isStaff = roleRecords.some(
+      (r) => r.name !== "STUDENT"
+    );
 
+    console.log("IS STAFF:", isStaff);
+
+    // ================= CREATE STAFF IF NEEDED =================
     if (isStaff) {
-      await prisma.staff.create({
-        data: {
-          userId: user.id,
-        },
+      const existingStaff = await prisma.staff.findUnique({
+        where: { userId: user.id },
       });
+
+      if (!existingStaff) {
+        await prisma.staff.create({
+          data: {
+            userId: user.id,
+          },
+        });
+      }
     }
 
     return NextResponse.json({
