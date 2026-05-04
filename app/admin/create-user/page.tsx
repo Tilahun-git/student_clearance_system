@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import toast from "react-hot-toast";
 import { FaChevronDown } from "react-icons/fa";
 import Link from "next/link";
@@ -38,12 +37,11 @@ export default function AdminRegisterPage() {
         const res = await fetch("/api/admin/roles");
 
         if (!res.ok) {
-          toast.error("Failed to load roles");
+          toast.error("Failed to load rolessssssssssss");
           return;
         }
 
         const data = await res.json();
-
         if (Array.isArray(data)) {
           setRolesFromDB(data);
         } else {
@@ -52,7 +50,7 @@ export default function AdminRegisterPage() {
         }
 
       } catch {
-        toast.error("Failed to load roles");
+        toast.error("Failed to load roles hereeee");
       }
     };
 
@@ -73,56 +71,47 @@ export default function AdminRegisterPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const finalRoles =
-      user.roles.length === 0 ? ["STUDENT"] : user.roles;
+  try {
+    const res = await fetch("/api/admin/create-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
 
-    try {
-      const res = await fetch("/api/admin/create-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...user,
-          roles: finalRoles,
-        }),
-      });
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Something went wrong");
-        return;
-      }
-
-      toast.success("User registered successfully!");
-      clearForm();
-
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 1500);
-    } catch {
-      toast.error("Server error. Please try again.");
+    if (!res.ok) {
+      toast.error(data.error || "Something went wrong");
+      return;
     }
-  };
+
+    toast.success("User registered successfully!");
+    clearForm();
+
+  } catch {
+    toast.error("Server error. Please try again.");
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md text-black bg-white rounded-2xl shadow-lg p-8">
         <div className="flex justify-center mb-6">
-          <Image
+          <img
             src="/wldu_logo.jpg"
             alt="University Logo"
             width={80}
-            height={80}
             className="rounded-full shadow-md"
           />
         </div>
 
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">
-          Register User
+          Admin Create
+           User
         </h2>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -215,7 +204,7 @@ export default function AdminRegisterPage() {
               href="/auth/login"
               className="text-blue-900 font-semibold hover:underline"
             >
-              Register here
+              Login here
             </Link>
           </p>          
           </div>

@@ -17,7 +17,6 @@ import StudentManagement from "./modules/StudentManagement";
 import DepartmentManagement from "./modules/DepartmentManagement";
 import SchoolManagement from "./modules/SchoolManagement";
 
-// ✅ add faculty tab
 type Tab = "users" | "students" | "departments" | "schools" | "faculties";
 
 function SidebarItem({
@@ -60,7 +59,6 @@ export default function AdminLayout() {
   return (
     <div className="min-h-screen flex bg-blue-50 text-slate-900">
 
-      {/* ================= SIDEBAR ================= */}
       <aside
         className={`h-screen fixed left-0 top-0 z-50
         bg-blue-400 border-r border-slate-200 shadow-sm
@@ -104,7 +102,6 @@ export default function AdminLayout() {
             onClick={() => setActiveTab("students")}
           />
 
-          {/* ✅ NEW FACULTY TAB */}
           <SidebarItem
             icon={<Building2 size={18} />}
             label="Faculties"
@@ -132,14 +129,12 @@ export default function AdminLayout() {
         </nav>
       </aside>
 
-      {/* ================= MAIN ================= */}
       <main
         className={`flex-1 transition-all duration-300
         ${open ? "ml-64" : "ml-20"}`}
       >
         <div className="p-6">
 
-          {/* ===== HEADER ===== */}
           <div className="mb-6 flex items-center justify-between">
             <div>
               <h2 className="text-xl font-semibold text-slate-800">
@@ -150,7 +145,6 @@ export default function AdminLayout() {
               </p>
             </div>
 
-            {/* ✅ USERS → Add Role */}
             {activeTab === "users" && (
               <Link
                 href="/admin/add-role"
@@ -162,7 +156,6 @@ export default function AdminLayout() {
               </Link>
             )}
 
-            {/* ✅ FACULTY → Add Faculty */}
             {activeTab === "faculties" && (
               <Link
                 href="/admin/manage-faculty/add-faculty"
@@ -174,7 +167,6 @@ export default function AdminLayout() {
               </Link>
             )}
 
-            {/* ✅ SCHOOL → Add School */}
             {activeTab === "schools" && (
               <Link
                 href="/admin/manage-faculty/add-school"
@@ -187,7 +179,6 @@ export default function AdminLayout() {
             )}
           </div>
 
-          {/* ===== CONTENT CARD ===== */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4">
 
             {activeTab === "users" && <UserManagement />}
@@ -195,7 +186,6 @@ export default function AdminLayout() {
             {activeTab === "departments" && <DepartmentManagement />}
             {activeTab === "schools" && <SchoolManagement />}
 
-            {/* Optional placeholder */}
             {activeTab === "faculties" && (
               <div className="text-slate-500 text-sm text-center py-10">
                 Faculty management coming soon...

@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import toast from "react-hot-toast";
 import { FaChevronDown } from "react-icons/fa";
 import Link from "next/link";
@@ -35,18 +34,14 @@ export default function AdminRegisterPage() {
   useEffect(() => {
     const fetchRoles = async () => {
       try {
-        // ✅ FIX 1: correct endpoint
         const res = await fetch("/api/admin/roles");
 
-        // ✅ FIX 2: handle bad response
         if (!res.ok) {
-          toast.error("Failed to load roles");
+          toast.error("Failed to load rolessssssssssss");
           return;
         }
 
         const data = await res.json();
-
-        // ✅ FIX 3: ensure it's an array
         if (Array.isArray(data)) {
           setRolesFromDB(data);
         } else {
@@ -55,7 +50,7 @@ export default function AdminRegisterPage() {
         }
 
       } catch {
-        toast.error("Failed to load roles");
+        toast.error("Failed to load roles hereeee");
       }
     };
 
@@ -76,50 +71,43 @@ export default function AdminRegisterPage() {
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    const finalRoles =
-      user.roles.length === 0 ? ["STUDENT"] : user.roles;
+  try {
+    const res = await fetch("/api/admin/create-user", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
 
-    try {
-      const res = await fetch("/api/admin/create-user", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...user,
-          roles: finalRoles,
-        }),
-      });
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.error || "Something went wrong");
-        return;
-      }
-
-      toast.success("User registered successfully!");
-      clearForm();
-
-      setTimeout(() => {
-        router.push("/auth/login");
-      }, 1500);
-    } catch {
-      toast.error("Server error. Please try again.");
+    if (!res.ok) {
+      toast.error(data.error || "Something went wrong");
+      return;
     }
-  };
+
+    toast.success("User registered successfully!");
+    clearForm();
+
+    setTimeout(() => {
+      router.push("/auth/login");
+    }, 1500);
+  } catch {
+    toast.error("Server error. Please try again.");
+  }
+};
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md text-black bg-white rounded-2xl shadow-lg p-8">
         <div className="flex justify-center mb-6">
-          <Image
+          <img
             src="/wldu_logo.jpg"
             alt="University Logo"
             width={80}
-            height={80}
             className="rounded-full shadow-md"
           />
         </div>
@@ -163,7 +151,6 @@ export default function AdminRegisterPage() {
             className="border p-3 rounded-xl"
           />
 
-          {/* ROLE DROPDOWN */}
           <div className="relative">
             <button
               type="button"
@@ -181,7 +168,6 @@ export default function AdminRegisterPage() {
             {showRoleDropdown && (
               <div className="absolute w-full bg-white border mt-1 rounded shadow max-h-40 overflow-y-auto">
 
-                {/* ✅ FIX 4: safe render */}
                 {rolesFromDB.length === 0 ? (
                   <div className="px-3 py-2 text-gray-500 text-sm">
                     No roles found
@@ -220,7 +206,7 @@ export default function AdminRegisterPage() {
               href="/auth/login"
               className="text-blue-900 font-semibold hover:underline"
             >
-              Register here
+              Login here
             </Link>
           </p>          
           </div>

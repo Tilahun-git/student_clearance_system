@@ -14,10 +14,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // ================= HASH PASSWORD =================
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // ================= DEFAULT ROLE =================
     const selectedRoles: string[] =
       Array.isArray(roles) && roles.length > 0
         ? roles
@@ -25,7 +23,6 @@ export async function POST(req: Request) {
 
     console.log("ROLES FROM FRONTEND:", selectedRoles);
 
-    // ================= FETCH ROLES =================
     const roleRecords = await prisma.role.findMany({
       where: {
         name: { in: selectedRoles },
@@ -39,7 +36,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // ================= CREATE USER + ROLES =================
     const user = await prisma.user.create({
       data: {
         name,
@@ -59,14 +55,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // ================= DETECT NON-STUDENT =================
     const isStaff = roleRecords.some(
       (r) => r.name !== "STUDENT"
     );
-
     console.log("IS STAFF:", isStaff);
-
-    // ================= CREATE STAFF IF NEEDED =================
     if (isStaff) {
       const existingStaff = await prisma.staff.findUnique({
         where: { userId: user.id },

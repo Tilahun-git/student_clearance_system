@@ -1,14 +1,30 @@
 import { createServer } from "http";
 import next from "next";
 import { Server } from "socket.io";
+import { parse } from "url";
+import fs from "fs";
+import path from "path";
 
 const dev = process.env.NODE_ENV !== "production";
-const app = next({ dev });
+const app = next({ dev, turbopack: false });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
   const httpServer = createServer((req, res) => {
-    handle(req, res);
+    const parsedUrl = parse(req.url, true);
+    const { pathname } = parsedUrl;
+
+    // ✅ SERVE STATIC FILES FROM /public
+    const publicPath = path.join(process.cwd(), "public", pathname);
+
+    if (fs.existsSync(publicPath) && fs.lstatSync(publicPath).isFile()) {
+      const stream = fs.createReadStream(publicPath);
+      stream.pipe(res);
+      return;
+    }
+
+    // 👉 fallback to Next.js
+    handle(req, res, parsedUrl);
   });
 
   const io = new Server(httpServer, {

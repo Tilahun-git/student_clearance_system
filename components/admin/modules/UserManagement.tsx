@@ -9,7 +9,6 @@ type User = {
   email: string;
   roles?: { role: { name: string } }[];
 };
-
 export default function UserManagement() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,19 +50,13 @@ export default function UserManagement() {
           </div>
         ) : users.length === 0 ? (
           <div className="p-10 text-center space-y-3">
-
             <p className="text-slate-500 text-sm">
               No users found
-            </p>
-
-          
+            </p>          
           </div>
-
         ) : (
           <div className="overflow-x-auto">
-
             <table className="w-full min-w-150 text-sm">
-
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr className="text-left text-xs uppercase tracking-wider text-slate-600">
                   <th className="px-6 py-4">Name</th>
@@ -71,15 +64,11 @@ export default function UserManagement() {
                   <th className="px-6 py-4">Role</th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-slate-100">
-
                 {users.map((u) => (
                   <tr
                     key={u.id}
-                    className="hover:bg-slate-50 transition"
-                  >
-
+                    className="hover:bg-slate-50 transition">
                     <td className="px-6 py-4 font-medium text-slate-900">
                       {u.name}
                     </td>
@@ -88,13 +77,11 @@ export default function UserManagement() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-wrap gap-2">
-
                         {u.roles?.length ? (
                           u.roles.map((r, i) => (
                             <span
                               key={i}
-                              className="px-2.5 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100"
-                            >
+                              className="px-2.5 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
                               {r.role.name}
                             </span>
                           ))
@@ -103,13 +90,10 @@ export default function UserManagement() {
                             No role
                           </span>
                         )}
-
                       </div>
                     </td>
-
                   </tr>
                 ))}
-
               </tbody>
             </table>
           </div>

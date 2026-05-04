@@ -13,6 +13,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -26,11 +27,12 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    let selectedRoles: string[] =
+    const selectedRoles: string[] =
       Array.isArray(roles) && roles.length > 0
-        ? roles
+        ? roles.map((r: string) => r.toUpperCase().trim())
         : ["STUDENT"];
 
+        
 
     const roleRecords = await prisma.role.findMany({
       where: {
@@ -46,6 +48,7 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -58,6 +61,17 @@ export async function POST(req: Request) {
               connect: { id: role.id },
             },
           })),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        createdAt: true,
+        roles: {
+          include: {
+            role: true,
+          },
         },
       },
     });
@@ -97,6 +111,7 @@ export async function POST(req: Request) {
         },
       });
     }
+
     return NextResponse.json(
       {
         message: "User account created successfully",
@@ -105,7 +120,7 @@ export async function POST(req: Request) {
       { status: 201 }
     );
   } catch (error) {
-    console.error(error);
+    console.error("CREATE USER ERROR:", error);
 
     return NextResponse.json(
       { error: "Server error" },

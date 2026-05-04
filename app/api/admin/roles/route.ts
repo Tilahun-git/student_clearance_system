@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
-// ================= CREATE ROLE =================
 export async function POST(req: Request) {
   try {
     const { name } = await req.json();
@@ -14,16 +12,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // validate against enum (important)
-    if (!Object.values(RoleType).includes(name)) {
-      return NextResponse.json(
-        { error: "Invalid role type" },
-        { status: 400 }
-      );
-    }
+    const normalizedName = name.toUpperCase().trim();
 
     const existing = await prisma.role.findUnique({
-      where: { name },
+      where: { name: normalizedName },
     });
 
     if (existing) {
@@ -34,11 +26,12 @@ export async function POST(req: Request) {
     }
 
     const role = await prisma.role.create({
-      data: { name },
+      data: {
+        name: normalizedName,
+      },
     });
 
     return NextResponse.json(role, { status: 201 });
-
   } catch (error) {
     console.error("CREATE ROLE ERROR:", error);
 
@@ -49,20 +42,18 @@ export async function POST(req: Request) {
   }
 }
 
-
-// ================= GET ROLES =================
 export async function GET() {
   try {
     const roles = await prisma.role.findMany({
       orderBy: { name: "asc" },
     });
 
+    console.log("fetched roles to register are : ",roles)
     return NextResponse.json(roles);
-
   } catch (error) {
     return NextResponse.json(
       { error: "Failed to fetch roles" },
       { status: 500 }
     );
   }
-}
+} 

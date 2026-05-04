@@ -7,29 +7,21 @@ import { ApprovalStatus } from "@prisma/client";
 export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });}
     const { searchParams } = new URL(req.url);
     const notificationId = searchParams.get("id");
-
     if (!notificationId) {
-      return NextResponse.json({ error: "Missing ID" }, { status: 400 });
-    }
-
+      return NextResponse.json({ error: "Missing ID" }, { status: 400 });}
     const notification = await prisma.notification.findFirst({
       where: {
         id: notificationId,
         userId: session.user.id,
       },
     });
-
     if (!notification) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-
     let extraData = null;
 
     if (notification.referenceId) {

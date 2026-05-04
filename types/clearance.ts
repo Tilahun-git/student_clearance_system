@@ -1,3 +1,27 @@
+import { ApprovalStatusType } from "@/lib/constants/enums"
+import { Reason } from "@/lib/constants/reasons";
+
+
+
+export type ClearanceApprovalRequest = {
+  id: string;
+  status: ApprovalStatusType;
+  comment?: string;
+  clearanceRequest: {
+    id: string;
+    createdAt: string;
+    student: {
+      studentId: string;
+      firstName: string;
+      middleName: string;
+      lastName: string;
+    };
+     reason?: Reason;
+    academicYear?: string;
+    semester?: string;
+  };
+};
+
 export type Faculty = {
   id: string;
   name: string;
@@ -83,27 +107,6 @@ export type Student = {
   faculty?: Faculty;
 };
 
-
-export type ClearanceRequest = {
-  id: string;
-  studentId: string;
-
-  reason: string;
-  academicYear?: string;
-  semester?: string;
-
-  status: "PENDING" | "IN_PROGRESS" | "APPROVED" | "REJECTED";
-  currentStep:
-    | "ADVISOR"
-    | "DEPARTMENT_HEAD"
-    | "FINANCE"
-    | "LIBRARY"
-    | "REGISTRAR"
-    | "SCHOOL_DEAN"
-    | "ADMIN";
-
-  student?: Student;
-};
 
 
 export type ClearanceDataResponse = {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
+import Link from "next/link"
 import {
   Faculty,
   School,
@@ -11,7 +12,7 @@ import {
 } from "@/types/clearance";
 
 
-import { Reason, Reasons } from "@/lib/clearanceData";
+import { Reason, Reasons } from "@/lib/constants/reasons";
 
 export default function ClearanceRequestPage() {
   const { data: session } = useSession();
@@ -147,6 +148,7 @@ console.log("Student ID :",session?.user.studentId)
           <h1 className="text-4xl font-bold text-slate-800">
             Clearance Request
           </h1>
+          <Link href={'/student/dashboard'} className="text-black"> Back </Link>
           <p className="text-slate-500 mt-2 text-sm">
             Fill in your academic details and submit your clearance request
           </p>

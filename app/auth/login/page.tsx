@@ -52,13 +52,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
         
         <div className="flex justify-center mb-6">
-          <Image
-            src="/wldu_logo.jpg"
-            alt="University Logo"
-            width={80}
-            height={80}
-            className="rounded-full shadow-md"
-          />
+         <img
+  src="/wldu_logo.jpg"
+  alt="University Logo"
+  width={80}
+  className="rounded-full shadow-md"
+/>
         </div>
 
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">

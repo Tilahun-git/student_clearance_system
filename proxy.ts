@@ -48,19 +48,15 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ token }) => !!token,
-    },
+authorized: ({ req, token }) => {
+  const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/auth") || pathname.startsWith("/api/auth")) {
+    return true;
+  }
+
+  return !!token;
+}    },
   }
 );
 
-
-
-// import { NextResponse } from "next/server";
-
-// export function proxy() {
-//   return NextResponse.next(); // ✅ allow everything
-// }
-
-// export const config = {
-//   matcher: ["/:path*"],
-// };

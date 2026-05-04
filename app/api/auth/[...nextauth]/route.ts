@@ -46,7 +46,6 @@ export const authOptions: AuthOptions = {
         email: {},
         password: {},
       },
-
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
@@ -71,7 +70,7 @@ export const authOptions: AuthOptions = {
           (ur) => ur.role.name
         );
 
-        const appUser: AppUser = {
+        return {
           id: user.id,
           name: user.name,
           email: user.email,
@@ -79,12 +78,15 @@ export const authOptions: AuthOptions = {
           studentId: roles.includes("STUDENT")
             ? user.studentProfile?.studentId
             : undefined,
-        };
-
-        return appUser as any;
+        } as any;
       },
     }),
   ],
+
+  // 👇 ADD THIS HERE
+  pages: {
+    signIn: "/auth/login",
+  },
 
   session: { strategy: "jwt" },
   secret: process.env.NEXTAUTH_SECRET,

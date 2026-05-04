@@ -13,7 +13,7 @@ model User {
   password       String
   createdAt      DateTime   @default(now())
   name           String
-
+  
   staffProfile   Staff?
   studentProfile Student?
   roles          UserRole[]
@@ -191,19 +191,6 @@ model Notification {
   createdAt   DateTime @default(now())
 }
 
-enum RoleType {
-  STUDENT
-  ADVISOR
-  DEPARTMENT_HEAD
-  FINANCE
-  LIBRARY
-  REGISTRAR
-  ADMIN
-  SCHOOL_DEAN
-  CAFETERIA
-  DORMITORY
-  STUDENT_DEAN
-}
 
 enum ClearanceStatus {
   PENDING

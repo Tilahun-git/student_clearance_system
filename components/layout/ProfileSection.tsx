@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import LogoutButton from "../UI/LogoutButton";
 import { useSession } from "next-auth/react";
 
@@ -34,7 +33,7 @@ export default function ProfileSection() {
         className="relative cursor-pointer"
         onClick={() => setShowLogout((prev) => !prev)}
       >
-        <Image
+        <img
           src={profileImage}
           alt="User profile"
           width={55}
