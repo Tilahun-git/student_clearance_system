@@ -3,5 +3,5 @@
 import RoleApprovalPage from "@/components/layout/RoleApprovalPage";
 
 export default function DepartmentHeadPage() {
-  return <RoleApprovalPage role="CAFETERIA" />;
+  return <RoleApprovalPage role="CAMPUS-POLICE" />;
 }

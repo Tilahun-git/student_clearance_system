@@ -1,8 +1,8 @@
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { ApprovalStatusEnum } from "@/lib/constants/enums";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { RoleType, ApprovalStatus } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -33,9 +33,9 @@ export async function GET() {
     const approvals = await prisma.clearanceApproval.findMany({
       where: {
         role: {
-          name: RoleType.DEPARTMENT_HEAD,
+          name: "DEPARTMENT_HEAD",
         },
-        status: ApprovalStatus.PENDING,
+        status: ApprovalStatusEnum.PENDING,
         clearanceRequest: {
           departmentId: staff.departmentId,
         },
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
     }
 
     const isDepartmentHead = staff.user.roles.some(
-      (r) => r.role.name === RoleType.DEPARTMENT_HEAD
+      (r) => r.role?.name === "DEPARTMENT_HEAD" 
     );
 
     if (!isDepartmentHead) {
@@ -126,6 +126,16 @@ export async function POST(req: Request) {
       );
     }
 
+    const existingHead = await prisma.department.findUnique({
+  where: { headId },
+});
+
+if (existingHead) {
+  return NextResponse.json(
+    { error: "Already assigned as a department head" },
+    { status: 400 }
+  );
+}
     const department = await prisma.department.create({
       data: {
         name,

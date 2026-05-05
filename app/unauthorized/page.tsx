@@ -21,10 +21,10 @@ export default function Unauthorized() {
 
         <div className="flex justify-center gap-4">
           <Link
-            href="/"
+            href="/auth/login"
             className="px-5 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition"
           >
-            Go Home
+            Go Back to Login
           </Link>
 
         </div>

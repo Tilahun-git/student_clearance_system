@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Building2, Save } from "lucide-react";
+import { School, Staff } from "@/types/clearance";
 
 export default function AddDepartment() {
-  const [schools, setSchools] = useState<any[]>([]);
-  const [heads, setHeads] = useState<any[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [heads, setHeads] = useState<Staff[]>([]);
 
   const [schoolId, setSchoolId] = useState("");
   const [headId, setHeadId] = useState("");
@@ -67,7 +68,7 @@ export default function AddDepartment() {
         return toast.error(data.error || "Failed to create department");
       }
 
-      toast.success("Department created successfully 🎉");
+      toast.success("Department created successfully");
 
       setName("");
       setSchoolId("");

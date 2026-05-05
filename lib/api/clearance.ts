@@ -32,3 +32,20 @@ export async function updateApproval(
 
   return data;
 }
+export async function bulkApproveApprovals(ids: string[]) {
+  const res = await fetch("/api/clearance/approve/bulk", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.error || "Bulk approval failed");
+  }
+
+  return data;
+}

@@ -1,28 +1,44 @@
-export const roleRedirect: Record<string, string> = {
-  ADMIN: "/admin/dashboard",
-  STUDENT: "/student/dashboard",
-  ADVISOR: "/advisor/dashboard",
-  DEPARTMENT_HEAD: "/department-head/dashboard",
-  REGISTRAR: "/registrar/dashboard",
-  LIBRARY: "/library/dashboard",
-  FINANCE: "/finance",
-  DORMITORY: "/dormitory",
-  CAFETERIA: "/cafeteria",
-  STUDENT_DEAN: "/student-dean",
-  FACULTY_DEAN: "/faculty-dean",
-};
-export const ROLE_TYPES = [
-  "STUDENT",
-  "ADVISOR",
-  "DEPARTMENT_HEAD",
-  "FINANCE",
-  "LIBRARY",
-  "REGISTRAR",
-  "ADMIN",
-  "SCHOOL_DEAN",
-  "CAFETERIA",
-  "DORMITORY",
-  "STUDENT_DEAN",
+export const routes = [
+  {
+    prefix: "/student-dean",
+    role: "STUDENT_DEAN",
+    redirect: "/student-dean/dashboard",
+  },
+  {
+    prefix: "/faculty-dean",
+    role: "SCHOOL_DEAN",
+    redirect: "/faculty-dean/dashboard",
+  },
+  {
+    prefix: "/department-head",
+    role: "DEPARTMENT_HEAD",
+    redirect: "/department-head/dashboard",
+  },
+  {
+    prefix: "/advisor",
+    role: "ADVISOR",
+    redirect: "/advisor/dashboard",
+  },
+  {
+    prefix: "/student",
+    role: "STUDENT",
+    redirect: "/student/dashboard",
+  },
+  {
+    prefix: "/admin",
+    role: "ADMIN",
+    redirect: "/admin/dashboard",
+  },
+  {
+    prefix: "/registrar",
+    role: "REGISTRAR",
+    redirect: "/registrar/dashboard",
+  },
+  {
+    prefix: "/library",
+    role: "LIBRARY",
+    redirect: "/library/dashboard",
+  },
 ] as const;
 
-export type RoleTypeFrontend = typeof ROLE_TYPES[number];
+export type RoleType = (typeof routes)[number]["role"];

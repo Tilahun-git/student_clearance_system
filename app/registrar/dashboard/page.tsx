@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
-
 export default function Registrar() {
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200">
-      <DashBoardNavbar />
 
       <div className="max-w-6xl mx-auto px-6 py-10">
 

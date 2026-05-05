@@ -34,7 +34,7 @@ export default function StudentDashboard() {
     }, []);
 
   return (
-    <div className="space-y-8">
+    <div className=" w-full space-y-8 bg-slate-100">
       <section className="bg-white rounded-2xl shadow-sm border">
         <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50">
           <h2 className="text-lg font-semibold text-indigo-600">
@@ -84,11 +84,11 @@ export default function StudentDashboard() {
           >
             {canRequest ? "Submit Clearance Request" : "Request In Progress"}
           </button>
-          {!canRequest && !hasRejected && (
+          {/* {!canRequest && !hasRejected && (
             <p className="text-sm text-slate-500">
               You already have an active clearance request.
             </p>
-          )}
+          )} */}
           {canRequest && hasRejected && (
             <p className="text-sm text-red-500">
               Your previous request was rejected. Fix issues and reapply.

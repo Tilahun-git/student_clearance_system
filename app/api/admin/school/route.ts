@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { RoleType } from "@prisma/client";
 
 export async function POST(req: Request) {
   try {
@@ -52,9 +51,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const isDean = staff.user.roles.some(
-      (r) => r.role.name === RoleType.SCHOOL_DEAN
-    );
+   const isDean = staff.user.roles.some(
+  (r) => r.role.name === "SCHOOL_DEAN"
+);
 
     if (!isDean) {
       return NextResponse.json(

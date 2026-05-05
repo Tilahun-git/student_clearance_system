@@ -110,7 +110,7 @@ export default function Register() {
         return toast.error(data.error || "Failed to register");
       }
 
-      toast.success("Student registered successfully 🎉");
+      toast.success("Student registered successfully");
 
       setForm({
         studentId: "",

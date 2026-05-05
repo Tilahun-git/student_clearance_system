@@ -83,7 +83,6 @@ export const authOptions: AuthOptions = {
     }),
   ],
 
-  // 👇 ADD THIS HERE
   pages: {
     signIn: "/auth/login",
   },

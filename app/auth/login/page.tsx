@@ -1,19 +1,27 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import Image from "next/image";
 import Link from "next/link";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
-import { roleRedirect } from "@/lib/roles";
+import { routes } from "@/lib/roles";
 
 export default function LoginPage() {
   const router = useRouter();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+
+  const getRedirectByRole = (role: string) => {
+    const match = routes.find(
+      (r) => r.role === role.toUpperCase()
+    );
+    return match?.redirect || "/unauthorized";
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,49 +40,45 @@ export default function LoginPage() {
 
     const sessionRes = await fetch("/api/auth/session");
     const session = await sessionRes.json();
-
     const userRoles: string[] = session?.user?.roles || [];
-
     if (userRoles.length === 0) {
       setError("No roles assigned. Contact admin.");
       return;
     }
-
     if (userRoles.length === 1) {
-      router.push(roleRedirect[userRoles[0]] || "/login");
-    } else {
-      setAvailableRoles(userRoles);
+      router.push(getRedirectByRole(userRoles[0]));
+      return;
     }
+    setAvailableRoles(userRoles);
   };
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
-        
+
         <div className="flex justify-center mb-6">
-         <img
-  src="/wldu_logo.jpg"
-  alt="University Logo"
-  width={80}
-  className="rounded-full shadow-md"
-/>
+          <img
+            src="/wldu_logo.jpg"
+            alt="University Logo"
+            width={80}
+            className="rounded-full shadow-md"
+          />
         </div>
 
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">
           Login
         </h2>
+
         {error && (
           <p className="text-red-500 text-center mb-4">{error}</p>
         )}
-
         <form onSubmit={handleLogin} className="flex flex-col gap-4 text-black">
+
           <input
             type="email"
             placeholder="Enter email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-        
             className="border border-gray-300 p-3 rounded-xl focus:ring-2 focus:ring-gray-500 focus:outline-none"
           />
           <div className="relative">
@@ -88,12 +92,10 @@ export default function LoginPage() {
             />
             <span
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 cursor-pointer text-gray-500"
-            >
+              className="absolute right-3 top-3 cursor-pointer text-gray-500">
               {showPassword ? <FaEyeSlash /> : <FaEye />}
             </span>
           </div>
-
           <button
             type="submit"
             className="bg-blue-900 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl transition-colors"
@@ -107,15 +109,13 @@ export default function LoginPage() {
             <p className="text-gray-700 mb-2 text-center font-medium">
               Select role to continue:
             </p>
+
             <div className="flex flex-col gap-2 items-center">
               {availableRoles.map((role) => (
                 <button
                   key={role}
-                  onClick={() =>
-                    router.push(roleRedirect[role] || "/login")
-                  }
-                  className="w-full max-w-xs bg-blue-700 text-white py-2 rounded hover:bg-blue-500 transition"
-                >
+                  onClick={() => router.push(getRedirectByRole(role))}
+                  className="w-full max-w-xs bg-blue-700 text-white py-2 rounded hover:bg-blue-500 transition">
                   {role}
                 </button>
               ))}

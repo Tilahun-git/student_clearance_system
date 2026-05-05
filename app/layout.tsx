@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google";
 import Providers from "./providers";
 import { Toaster } from "react-hot-toast";
 import SocketProvider from "@/components/layout/SocketProvider";
+import Footer from "@/components/layout/Footer";
 const poppins = Poppins({
   subsets: ["latin"],
   weight: ["100", "300", "500", "700"],
@@ -38,6 +39,7 @@ export default function RootLayout({
             },
           }}
         />
+
       </body>
     </html>
   );

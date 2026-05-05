@@ -5,35 +5,49 @@ type ApprovalTableProps = {
   requests: ClearanceApprovalRequest[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
+
+  selectedIds: string[];
+  onToggleSelect: (id: string) => void;
 };
 
 export default function ApprovalTable({
   requests,
   onApprove,
   onReject,
+  selectedIds,
+  onToggleSelect,
 }: ApprovalTableProps) {
   return (
     <div className="overflow-hidden border rounded-lg">
       <table className="w-full">
         <thead className="bg-gray-50 text-left text-sm text-gray-600">
           <tr>
+            <th className="p-3">Select</th>
             <th className="p-3">Student ID</th>
             <th className="p-3">First Name</th>
             <th className="p-3">Middle Name</th>
             <th className="p-3">Last Name</th>
-            <th className="p-3 text-right">Actions</th>
+            <th className="p-3 text-center">Actions</th>
           </tr>
         </thead>
 
         <tbody>
           {requests.map((request) => {
             const student = request.clearanceRequest.student;
-
+            const isSelected = selectedIds.includes(request.id);
+            
             return (
               <tr
                 key={request.id}
                 className="border-t hover:bg-gray-50 transition"
               >
+               <td className="p-3">
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => onToggleSelect(request.id)}
+                  />
+                </td>
                 <td className="p-3 text-gray-500">
                   {student.studentId}
                 </td>
@@ -51,7 +65,7 @@ export default function ApprovalTable({
                 </td>
 
                 <td className="p-3">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex justify-center gap-2">
                     <button
                       onClick={() => onApprove(request.id)}
                       className="bg-gray-300 text-black px-3 py-1 rounded-2xl hover:bg-green-700 transition"
