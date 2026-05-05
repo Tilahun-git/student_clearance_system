@@ -115,7 +115,6 @@ export default function RoleApprovalPage({ role }: Props) {
   return (
     <div className="min-h-screen bg-slate-100">
 
-      {/* HEADER BAR */}
       <div className="w-full px-6 py-4 space-y-2">
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -160,7 +159,6 @@ export default function RoleApprovalPage({ role }: Props) {
           </div>
         </div>
 
-        {/* TABLE */}
         <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
 
           {loading ? (
@@ -185,7 +183,6 @@ export default function RoleApprovalPage({ role }: Props) {
 
       </div>
 
-      {/* MODAL */}
       {rejectingId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center backdrop-blur-sm">
           <div className="bg-white p-6 rounded-xl w-96 shadow-lg">

@@ -8,8 +8,10 @@ import { Reasons } from "@/lib/constants/reasons";
 
 export default function ClearanceRequestModal({
   onClose,
+  onSuccess, // ✅ NEW
 }: {
   onClose: () => void;
+  onSuccess: () => void; // ✅ NEW
 }) {
   const router = useRouter();
 
@@ -56,29 +58,33 @@ export default function ClearanceRequestModal({
     return [`${y - 1}/${y}`, `${y}/${y + 1}`];
   }
 
-async function handleSubmit(e: React.FormEvent) {
-  e.preventDefault();
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
 
-  try {
-    const res = await fetch("/api/clearance/request", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        reason: form.reason,
-        academicYear: form.academicYear,
-        semester: form.semester,
-      }),
-    });
+    try {
+      const res = await fetch("/api/clearance/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reason: form.reason,
+          academicYear: form.academicYear,
+          semester: form.semester,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) return toast.error(data.error);
+      if (!res.ok) return toast.error(data.error);
 
-    toast.success("Request submitted 🎉");
-  } catch {
-    toast.error("Server error");
+      toast.success("Request submitted 🎉");
+
+      onSuccess(); // ✅ 🔥 THIS FIXES YOUR PROBLEM
+      onClose();   // ✅ close modal
+
+    } catch {
+      toast.error("Server error");
+    }
   }
-}
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">

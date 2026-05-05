@@ -4,16 +4,14 @@ import { prisma } from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const { name, facultyId, deanId } = await req.json();
-
     if (!name || !facultyId || !deanId) {
       return NextResponse.json(
         { error: "All fields are required" },
         { status: 400 }
       );
     }
-
+    
     const trimmedName = name.trim();
-
     const existing = await prisma.school.findFirst({
       where: {
         name: {
@@ -23,14 +21,12 @@ export async function POST(req: Request) {
         facultyId,
       },
     });
-
     if (existing) {
       return NextResponse.json(
         { error: "School already exists in this faculty" },
         { status: 400 }
       );
     }
-
     const staff = await prisma.staff.findUnique({
       where: { id: deanId },
       include: {
@@ -43,25 +39,21 @@ export async function POST(req: Request) {
         },
       },
     });
-
     if (!staff) {
       return NextResponse.json(
         { error: "Dean not found" },
         { status: 404 }
       );
     }
-
-   const isDean = staff.user.roles.some(
-  (r) => r.role.name === "SCHOOL_DEAN"
-);
-
+    const isDean = staff.user.roles.some(
+      (r) => r.role.name === "SCHOOL_DEAN"
+    );
     if (!isDean) {
       return NextResponse.json(
         { error: "Selected staff is not a School Dean" },
         { status: 400 }
       );
     }
-
     const school = await prisma.school.create({
       data: {
         name: trimmedName,
@@ -69,8 +61,17 @@ export async function POST(req: Request) {
         deanId,
       },
     });
+    await prisma.staff.update({
+      where: { id: deanId },
+      data: {
+        schoolId: school.id,
+      },
+    });
 
-    return NextResponse.json(school);
+    return NextResponse.json({
+      message: "School created successfully",
+      school,
+    });
   } catch (error: any) {
     console.error("CREATE SCHOOL ERROR:", error);
 

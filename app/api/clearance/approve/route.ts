@@ -2,9 +2,11 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { ApprovalStatus, ClearanceStatus } from "@prisma/client";
+import { ApprovalStatus, ClearanceStatus, Prisma } from "@prisma/client";
 import { getNextRole } from "@/lib/workflow";
 import { sendNotification } from "@/lib/notify";
+
+
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -12,23 +14,84 @@ export async function GET() {
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const staffWithRoles = await prisma.staff.findUnique({
+
+  const staff = await prisma.staff.findUnique({
     where: { userId: session.user.id },
     include: {
       user: {
         include: {
-          roles: { include: { role: true } },
+          roles: {
+            include: { role: true },
+          },
         },
       },
     },
   });
-  const roleNames = staffWithRoles?.user.roles.map((r) => r.role.name) || [];
+
+  if (!staff) {
+    return NextResponse.json({ error: "Staff not found" }, { status: 404 });
+  }
+
+  const roleNames = staff.user.roles.map((r) => r.role.name);
+
+  const roleFilters: Prisma.ClearanceApprovalWhereInput[] = [];
+
+  for (const roleName of roleNames) {
+    // 🎯 ADVISOR
+    if (roleName === "ADVISOR") {
+      roleFilters.push({
+        role: { name: "ADVISOR" },
+        status: ApprovalStatus.PENDING,
+        clearanceRequest: {
+          student: {
+            advisorId: staff.id,
+          },
+        },
+      });
+    }
+
+    // 🎯 DEPARTMENT HEAD
+    else if (roleName === "DEPARTMENT_HEAD") {
+      if (!staff.departmentId) continue;
+
+      roleFilters.push({
+        role: { name: "DEPARTMENT_HEAD" },
+        status: ApprovalStatus.PENDING,
+        clearanceRequest: {
+          student: {
+            departmentId: staff.departmentId,
+          },
+        },
+      });
+    }
+
+    // 🎯 SCHOOL DEAN ✅ (THIS IS WHAT YOU WERE MISSING)
+    else if (roleName === "SCHOOL_DEAN") {
+      if (!staff.schoolId) continue;
+
+      roleFilters.push({
+        role: { name: "SCHOOL_DEAN" },
+        status: ApprovalStatus.PENDING,
+        clearanceRequest: {
+          student: {
+            schoolId: staff.schoolId,
+          },
+        },
+      });
+    }
+
+    // 🎯 DEFAULT ROLES
+    else {
+      roleFilters.push({
+        role: { name: roleName },
+        status: ApprovalStatus.PENDING,
+      });
+    }
+  }
+
   const approvals = await prisma.clearanceApproval.findMany({
     where: {
-      role: {
-        name: { in: roleNames },
-      },
-      status: ApprovalStatus.PENDING,
+      OR: roleFilters,
     },
     include: {
       role: true,
@@ -42,6 +105,7 @@ export async function GET() {
       approvedAt: "desc",
     },
   });
+
   return NextResponse.json(approvals);
 }
 

@@ -3,19 +3,18 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-
 type AppUser = {
   id: string;
   name: string;
   email: string;
-  roles: string[]; 
+  roles: string[];
   studentId?: string;
 };
 
 declare module "next-auth" {
   interface User extends DefaultUser {
     id: string;
-    roles?: string[]; 
+    roles?: string[];
     studentId?: string;
   }
 
@@ -26,6 +25,7 @@ declare module "next-auth" {
       email?: string | null;
       roles?: string[];
       studentId?: string;
+      activeRole?: string; 
     };
   }
 }
@@ -33,8 +33,9 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
-    roles?: string[]; 
+    roles?: string[];
     studentId?: string;
+    activeRole?: string; 
   }
 }
 
@@ -91,7 +92,7 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         const u = user as AppUser;
 
@@ -101,6 +102,14 @@ export const authOptions: AuthOptions = {
         if (u.roles.includes("STUDENT")) {
           token.studentId = u.studentId;
         }
+
+        if (!token.activeRole && u.roles.length > 0) {
+          token.activeRole = u.roles[0];
+        }
+      }
+
+      if (trigger === "update" && session?.activeRole) {
+        token.activeRole = session.activeRole;
       }
 
       return token;
@@ -110,6 +119,7 @@ export const authOptions: AuthOptions = {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.roles = token.roles as string[];
+        session.user.activeRole = token.activeRole as string;
 
         if (token.roles?.includes("STUDENT")) {
           session.user.studentId = token.studentId as string;

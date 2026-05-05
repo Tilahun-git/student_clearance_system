@@ -188,7 +188,7 @@ export default function AdminLayout() {
 
             {activeTab === "faculties" && (
               <div className="text-slate-500 text-sm text-center py-10">
-                Faculty management coming soon...
+                Faculty management 
               </div>
             )}
 

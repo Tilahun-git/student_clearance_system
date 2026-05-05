@@ -41,4 +41,8 @@ export const routes = [
   },
 ] as const;
 
+export const ROLE_TYPES = routes.map((r) => r.role);
+
+export type RoleTypeFrontend = (typeof ROLE_TYPES)[number];
+
 export type RoleType = (typeof routes)[number]["role"];

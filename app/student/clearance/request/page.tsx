@@ -53,7 +53,7 @@ export default function ClearanceRequestPage() {
       });
       const data = await res.json();
       if (!res.ok) return toast.error(data.error);
-      toast.success("Request submitted successfully 🎉");
+      toast.success("Request submitted successfully");
       router.push("/student/dashboard");
     } catch {
       toast.error("Server error");
