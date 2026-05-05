@@ -81,9 +81,7 @@ export async function PATCH(req: Request) {
       },
     },
   });
-
   const roleNames = staffWithRoles?.user.roles.map((r) => r.role.name) || [];
-
   if (!roleNames.includes(approval.role.name)) {
     return NextResponse.json(
       { error: "Forbidden: You can't approve this request" },
@@ -128,20 +126,16 @@ export async function PATCH(req: Request) {
   if (!allApproved) {
     return NextResponse.json({ message: "Waiting for others" });
   }
-
   const nextRole = getNextRole(roleName);
-
   if (!nextRole) {
     await prisma.clearanceRequest.update({
       where: { id: request.id },
       data: { status: ClearanceStatus.APPROVED },
     });
-
     await sendNotification({
       userId: request.student.userId!,
       message: "Clearance fully approved",
     });
-
     return NextResponse.json({ message: "Clearance process has been completed" });
   }
   const nextRoleData = await prisma.role.findUnique({
@@ -163,7 +157,6 @@ export async function PATCH(req: Request) {
       },
     });
   }
-
   const nextStaff = await prisma.staff.findMany({
     where: {
       user: {
@@ -186,13 +179,11 @@ export async function PATCH(req: Request) {
       userId: request.student.userId!,
       message: ` ${roleName} has approved your clearance request`,
     });
-
   await prisma.clearanceRequest.update({
     where: { id: request.id },
     data: {
       status: ClearanceStatus.IN_PROGRESS,
     },
   });
-
   return NextResponse.json({ message: "Updated" });
 }

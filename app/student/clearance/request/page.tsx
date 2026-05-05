@@ -1,129 +1,49 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 import toast from "react-hot-toast";
-import Link from "next/link"
-import {
-  Faculty,
-  School,
-  Department,
-  ClearanceDataResponse
-} from "@/types/clearance";
-
-
-import { Reason, Reasons } from "@/lib/constants/reasons";
+import { useRouter } from "next/navigation";
+import { fetchStudentProfile } from "@/lib/api/student";
+import { Reasons } from "@/lib/constants/reasons";
+import { MdClose } from "react-icons/md";
 
 export default function ClearanceRequestPage() {
-  const { data: session } = useSession();
+  const router = useRouter();
 
-const [faculties, setFaculties] = useState<Faculty[]>([]);
-const [schools, setSchools] = useState<School[]>([]);
-const [departments, setDepartments] = useState<Department[]>([]);
-const [filteredSchools, setFilteredSchools] = useState<School[]>([]);
-const [filteredDepartments, setFilteredDepartments] = useState<Department[]>([]);
-const reasons: readonly Reason[] = Reasons;
-
-
-
+  const [loading, setLoading] = useState(true);
+  const [student, setStudent] = useState<any>(null);
   const [form, setForm] = useState({
-    studentId: "",
-    facultyId: "",
-    schoolId: "",
-    departmentId: "",
     reason: "",
     academicYear: "",
     semester: "",
   });
 
-
-console.log("Student ID :",session?.user.studentId)
-
-  
   useEffect(() => {
-    if (session?.user?.studentId) {
-
-      setForm((prev) => ({
-        ...prev,
-        studentId: session.user.studentId || "",
-      }));
-    }
-  }, [session]);
-
-  useEffect(() => {
-    async function load() {
+    async function loadStudent() {
       try {
-        const res = await fetch("/api/clearance/data");
-        const data: ClearanceDataResponse = await res.json();
-        
-      console.log("fetched data are",data.schools);
-        setFaculties(data.faculties);
-        setSchools(data.schools);
-        setDepartments(data.departments);
+        const data = await fetchStudentProfile();
+        setStudent(data);
       } catch {
-        toast.error("Failed to load data");
+        toast.error("Failed to load student info");
+      } finally {
+        setLoading(false);
       }
     }
-    load();
+    loadStudent();
   }, []);
-
-  function handleChange(e: React.ChangeEvent<
-      HTMLSelectElement | HTMLInputElement
-    >) {
-      const { name, value } = e.target;
-
-      if (name === "facultyId") {
-        const filtered = schools.filter(
-          (s) => String(s.facultyId) === String(value)
-        );
-
-        setFilteredSchools(filtered);
-        setFilteredDepartments([]);
-
-        setForm({ ...form, facultyId: value, schoolId: "", departmentId: "" });
-        return;
-      }
-
-      if (name === "schoolId") {
-        const filtered = departments.filter(
-          (d) => String(d.schoolId) === String(value)
-        );
-
-        setFilteredDepartments(filtered);
-
-        setForm({ ...form, schoolId: value, departmentId: "" });
-        return;
-      }
-      if (name === "academicYear") {
-    setForm({ ...form, academicYear: value, semester: "" });
-    return;
-  }
-      setForm({ ...form, [name]: value });
+  function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const { name, value } = e.target;
+    if (name === "academicYear") {
+      setForm({ ...form, academicYear: value, semester: "" });
+      return;
     }
-  function clearForm() {
-    setForm((prev) => ({
-      ...prev,
-      facultyId: "",
-      schoolId: "",
-      departmentId: "",
-      reason: "",
-      academicYear: "",
-      semester: "",
-    }));
-
-    setFilteredSchools([]);
-    setFilteredDepartments([]);
+    setForm({ ...form, [name]: value });
   }
-
   function getAcademicYears() {
-  const currentYear = new Date().getFullYear();
-
-  return [
-    `${currentYear - 1}/${currentYear}`,
-    `${currentYear}/${currentYear + 1}`,
-  ];
-}
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    const y = new Date().getFullYear();
+    return [`${y - 1}/${y}`, `${y}/${y + 1}`];
+  }
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
       const res = await fetch("/api/clearance/request", {
@@ -133,181 +53,134 @@ console.log("Student ID :",session?.user.studentId)
       });
       const data = await res.json();
       if (!res.ok) return toast.error(data.error);
-      toast.success("Request created successfully");
-      clearForm();
+      toast.success("Request submitted successfully 🎉");
+      router.push("/student/dashboard");
     } catch {
       toast.error("Server error");
-    } 
+    }
   }
-
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-100 via-blue-50 to-indigo-100 flex items-center justify-center px-4 py-10">
-      <div className="w-full max-w-4xl">
-
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-slate-800">
-            Clearance Request
-          </h1>
-          <Link href={'/student/dashboard'} className="text-black"> Back </Link>
-          <p className="text-slate-500 mt-2 text-sm">
-            Fill in your academic details and submit your clearance request
-          </p>
-        </div>
-
-       <form
-            onSubmit={handleSubmit}
-            className="bg-white rounded-3xl shadow-2xl border border-gray-200 p-10 space-y-10"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-md px-4">
+      <div className="w-full max-w-3xl bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 bg-linear-to-r from-indigo-600 to-indigo-500 text-white">
+          <div>
+            <h1 className="text-lg font-semibold">Clearance Request</h1>
+            <p className="text-xs text-indigo-100">
+              Submit your academic clearance application
+            </p>
+          </div>
+          <button
+            onClick={() => router.back()}
+            className="text-white/80 hover:text-white text-xl font-bold"
           >
+            <MdClose/>
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="p-6 space-y-7">
+          {loading ? (
+            <p className="text-center text-slate-500 py-10">
+              Loading student information...
+            </p>
+          ) : (
+            <>
+              <section className="space-y-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Student Information
+                </h2>
+                <div className="grid md:grid-cols-2 gap-4">
+                  <input
+                    value={student.studentId}
+                    readOnly
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                  />
+                  <input
+                    value={`${student.firstName} ${student.middleName ?? ""} ${student.lastName}`}
+                    readOnly
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                  />
+                </div>
+              </section>
+              <section className="space-y-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Academic Information
+                </h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <input
+                    value={student.faculty?.name}
+                    readOnly
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                  />
+                  <input
+                    value={student.school?.name}
+                    readOnly
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                  />
+                  <input
+                    value={student.department?.name}
+                    readOnly
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700"
+                  />
+                </div>
+              </section>
+              <section className="space-y-3">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                  Request Details
+                </h2>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <select
+                    name="reason"
+                    value={form.reason}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    required
+                  >
+                    <option value="">Select Reason</option>
+                    {Reasons.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    name="academicYear"
+                    value={form.academicYear}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    required >
+                    <option value="">Academic Year</option>
+                    {getAcademicYears().map((y) => (
+                      <option key={y}>{y}</option>
+                    ))}
+                  </select>
+                  <select
+                    name="semester"
+                    value={form.semester}
+                    onChange={handleChange}
+                    disabled={!form.academicYear}
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none" >
+                    <option value="">Semester</option>
+                    <option value="1">Semester 1</option>
+                    <option value="2">Semester 2</option>
+                  </select>
+                </div>
+              </section>
 
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Student Information
-              </h2>
-
-              <input
-                value={form.studentId}
-                readOnly
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed"
-              />
-            </div>
-
-            <div className="h-px bg-gray-200" />
-
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Academic Information
-              </h2>
-
-              <div className="grid md:grid-cols-2 gap-5">
-
-                <select
-                  name="facultyId"
-                  value={form.facultyId}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                  required
-                >
-                  <option value="" className="text-gray-400">
-                    Select Faculty
-                  </option>
-                  {faculties.map(f => (
-                    <option key={f.id} value={f.id} className="text-gray-800">
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  name="schoolId"
-                  value={form.schoolId}
-                  onChange={handleChange}
-                  disabled={!form.facultyId}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                  required
-                >
-                  <option value="" className="text-gray-400">
-                    Select School
-                  </option>
-                  {filteredSchools.map(s => (
-                    <option key={s.id} value={s.id} className="text-gray-800">
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  name="departmentId"
-                  value={form.departmentId}
-                  onChange={handleChange}
-                  disabled={!form.schoolId}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 disabled:bg-gray-100 disabled:text-gray-400 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                  required
-                >
-                  <option value="" className="text-gray-400">
-                    Select Department
-                  </option>
-                  {filteredDepartments.map(d => (
-                    <option key={d.id} value={d.id} className="text-gray-800">
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => router.back()}
+                  className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition">
+                  Submit Request
+                </button>
               </div>
-            </div>
-
-            <div className="h-px bg-gray-200" />
-
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
-                Request Details
-              </h2>
-
-              <div className="grid md:grid-cols-2 gap-5">
-
-                <select
-                  name="reason"
-                  value={form.reason}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                  required
-                >
-                  <option value="" className="text-gray-400">
-                    Select Reason
-                  </option>
-                  {reasons.map(r => (
-                    <option key={r.id} value={r.id} className="text-gray-800">
-                      {r.name}
-                    </option>
-                  ))}
-                </select>
-
-                 <select
-                  name="academicYear"
-                  value={form.academicYear}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 outline-none transition"
-                  required
-                >
-                  <option value="" className="text-gray-400">
-                    Select Academic Year
-                  </option>
-
-                  {getAcademicYears().map((year) => (
-                    <option key={year} value={year}>
-                      {year}
-                    </option>
-                  ))}
-                </select>
-
-            <select
-              name="semester"
-              value={form.semester}
-              onChange={handleChange}
-              disabled={!form.academicYear}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 
-                        bg-white text-gray-800
-                        disabled:bg-gray-100 disabled:text-gray-400 
-                        focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 
-                        outline-none transition"
-              required
-            >
-              <option value="">Select Semester</option>
-              <option value="1">Semester 1</option>
-              <option value="2">Semester 2</option>
-            </select>
-
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              className="w-full bg-gray-500 hover:bg-gray-700 text-white py-3 rounded-xl font-semibold shadow-md transition disabled:opacity-60"
-            >
-              Submit Request
-            </button>
-
-          </form>
+            </>
+          )}
+        </form>
       </div>
     </div>
   );

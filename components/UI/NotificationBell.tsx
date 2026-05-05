@@ -68,7 +68,7 @@ export default function NotificationBell() {
         onClick={() => setOpen(!open)}
         className="relative flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 transition"
       >
-        <Bell className="w-5 h-5 text-gray-700" />
+        <Bell className="w-15 h-10 text-gray-700 p-2 rounded-full hover:bg-slate-100 transition cursor-pointer" />
 
         {unread > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow">

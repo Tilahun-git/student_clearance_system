@@ -114,3 +114,9 @@ export type ClearanceDataResponse = {
   schools: School[];
   departments: Department[];
 };
+
+export type Notification = {
+   userId: string;
+  message: string;
+  referenceId?: string;
+}

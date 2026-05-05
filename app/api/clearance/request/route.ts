@@ -17,28 +17,14 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
-    if (!body?.studentId) {
-      return NextResponse.json(
-        { error: "Missing studentId" },
-        { status: 400 }
-      );
-    }
-
     const student = await prisma.student.findUnique({
-      where: { studentId: body.studentId },
+      where: { userId: session.user.id },
     });
 
     if (!student) {
       return NextResponse.json(
         { error: "Student profile missing" },
         { status: 404 }
-      );
-    }
-
-    if (student.studentId !== body.studentId) {
-      return NextResponse.json(
-        { error: "Student ID mismatch" },
-        { status: 400 }
       );
     }
 
@@ -90,20 +76,46 @@ export async function POST(req: Request) {
       },
     });
 
+    const notifications: Promise<any>[] = [];
+
+    // Advisor notification
     if (student.advisorId) {
       const advisor = await prisma.staff.findUnique({
         where: { id: student.advisorId },
       });
 
-      if (advisor) {
-        await sendNotification({
-          userId: advisor.userId,
-          message: `New clearance request from ${student.firstName}`,
-        });
+      if (advisor?.userId) {
+        notifications.push(
+          sendNotification({
+            userId: advisor.userId,
+            message: `New clearance request from ${student.studentId}`,
+            referenceId: clearance.id,
+          })
+        );
       }
     }
 
+    if (student.departmentId) {
+      const department = await prisma.department.findUnique({
+        where: { id: student.departmentId },
+        include: { head: true },
+      });
+
+      if (department?.head?.userId) {
+        notifications.push(
+          sendNotification({
+            userId: department.head.userId,
+            message: `New clearance request awaiting your review`,
+            referenceId: clearance.id,
+          })
+        );
+      }
+    }
+
+    await Promise.allSettled(notifications);
+
     return NextResponse.json(clearance, { status: 201 });
+
   } catch (error: any) {
     console.error("CLEARANCE ERROR:", error);
 

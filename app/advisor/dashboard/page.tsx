@@ -52,7 +52,7 @@ export default function AdvisorDashboard() {
   }
   async function submitReject() {
     if (!comment.trim()) {
-      return toast.error("Please enter a rejection reason");
+      return toast.error("Please enter a reason");
     }
     try {
       await updateApproval(
