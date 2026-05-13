@@ -40,3 +40,40 @@ html {
     transform: translateY(0);
   }
 }
+
+@media print {
+  body {
+    background: white !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  .print-area,
+  .print-area * {
+    visibility: visible !important;
+  }
+
+  .print-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* preserve colors in PDF */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* hide UI */
+  nav,
+  header,
+  .no-print {
+    display: none !important;
+  }
+}

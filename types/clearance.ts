@@ -1,26 +1,41 @@
-import { ApprovalStatusType } from "@/lib/constants/enums"
 import { Reason } from "@/lib/constants/reasons";
+import { ApprovalStatus } from "@prisma/client";
 
 
-
-export type ClearanceApprovalRequest = {
+export interface ClearanceApprovalRequest {
   id: string;
-  status: ApprovalStatusType;
+  status: string;
   comment?: string;
+  role: {
+    id: string;
+    name: string;
+  };
+  officeId?: string;
+  office?: {
+    id: string;
+    office_name: string;
+    code: string;
+  };
   clearanceRequest: {
     id: string;
+    status: string;
     createdAt: string;
     student: {
-      studentId: string;
+      id: string;
       firstName: string;
-      middleName: string;
+      middleName:string;
       lastName: string;
+      studentId: string;
     };
-     reason?: Reason;
-    academicYear?: string;
-    semester?: string;
   };
-};
+}
+
+
+export interface ApprovalPayload {
+  approvalId: string;
+  status: ApprovalStatus;
+  comment?: string;
+}
 
 export type Faculty = {
   id: string;
@@ -108,7 +123,16 @@ export type Student = {
 };
 
 
-
+ export type RegisterStudentData = {
+  firstName: string;
+  middleName: string;
+  lastName: string;
+  program: string;
+  year: number;
+  facultyId: string;
+  schoolId: string;
+  departmentId: string;
+};
 export type ClearanceDataResponse = {
   faculties: Faculty[];
   schools: School[];
@@ -119,4 +143,32 @@ export type Notification = {
    userId: string;
   message: string;
   referenceId?: string;
+}
+
+
+export interface Certificate {
+  id: string;
+  issuedAt: string;
+
+  request?: {
+    academicYear?: string;
+    semester?: string;
+    reason:{
+      name:string
+    };
+    status?: string;
+
+    student?: {
+      firstName: string;
+      lastName: string;
+      studentId: string;
+      program?: string;
+      year?: number;
+      section?: string;
+
+      faculty?: { name: string };
+      school?: { name: string };
+      department?: { name: string };
+    };
+  };
 }

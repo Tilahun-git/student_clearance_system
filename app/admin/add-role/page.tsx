@@ -4,32 +4,25 @@ import { useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { ROLE_TYPES, RoleTypeFrontend } from "@/lib/roles";
 import { PlusCircle } from "lucide-react";
-
 export default function AddRolePage() {
   const [role, setRole] = useState<RoleTypeFrontend | "">("");
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-
   const fetchRoles = async () => {
     const res = await fetch("/api/admin/roles");
     const data = await res.json();
     setRoles(data);
   };
-
   useEffect(() => {
     fetchRoles();
   }, []);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!role) {
       toast.error("Please select a role");
       return;
     }
-
     setLoading(true);
-
     try {
       const res = await fetch("/api/admin/roles", {
         method: "POST",
@@ -38,14 +31,11 @@ export default function AddRolePage() {
         },
         body: JSON.stringify({ name: role }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         toast.error(data.error);
         return;
       }
-
       toast.success("Role added successfully!");
       setRole("");
       fetchRoles();
@@ -59,10 +49,7 @@ export default function AddRolePage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4">
-
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-6">
-
-        {/* HEADER */}
         <div className="mb-6">
           <h1 className="text-2xl font-semibold text-slate-800">
             Role Management
@@ -71,11 +58,7 @@ export default function AddRolePage() {
             Add and manage system roles
           </p>
         </div>
-
-        {/* FORM */}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
-          {/* SELECT */}
           <div className="flex flex-col gap-1">
             <label className="text-sm text-slate-600 font-medium">
               Select Role
@@ -98,7 +81,6 @@ export default function AddRolePage() {
             </select>
           </div>
 
-          {/* BUTTON */}
           <button
             type="submit"
             disabled={loading}
@@ -112,7 +94,6 @@ export default function AddRolePage() {
           </button>
         </form>
 
-        {/* ROLES LIST */}
         <div className="mt-8">
           <h2 className="text-sm font-semibold text-black mb-3">
             Existing Roles

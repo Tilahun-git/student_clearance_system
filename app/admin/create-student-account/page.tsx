@@ -10,6 +10,7 @@ export default function CreateStudentAccount() {
   const router = useRouter();
 
   const studentId = params.get("studentId"); 
+  const [loadingStudent, setLoadingStudent] = useState(true);
 
   const [form, setForm] = useState({
     name: "",
@@ -17,6 +18,31 @@ export default function CreateStudentAccount() {
     password: "",
   });
 
+
+  useEffect(() => {
+  const fetchStudent = async () => {
+    if (!studentId) return;
+
+    try {
+      const res = await fetch(`/api/admin/student/${studentId}`);
+
+      if (!res.ok) throw new Error("Failed to fetch student");
+
+      const data = await res.json();
+
+      setForm((prev) => ({
+        ...prev,
+        name: `${data.firstName} ${data.middleName}`,
+      }));
+    } catch (err) {
+      toast.error("Failed to load student info");
+    } finally {
+      setLoadingStudent(false);
+    }
+  };
+
+  fetchStudent();
+}, [studentId]);
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -45,9 +71,11 @@ export default function CreateStudentAccount() {
 
       toast.success(data.message);
 
-      setTimeout(() => {
-        router.push("/admin/dashboard");
-      }, 1500);
+      setForm({
+        name:"",
+        email:"",
+        password:""
+      })
     } catch {
       toast.error("Something went wrong");
     }
@@ -77,6 +105,7 @@ export default function CreateStudentAccount() {
             <label className="text-sm text-gray-600"> Name</label>
             <input
               type="text"
+              value={form.name}
               required
               placeholder="Enter full name"
               className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-800"

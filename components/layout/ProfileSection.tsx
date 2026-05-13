@@ -10,7 +10,6 @@ export default function ProfileSection() {
 
   if (status === "loading" || !session?.user) return null;
   const name = session.user.name || "User";
-  const email = session.user.email || "Email";
   const role = session.user.roles?.join(", ") || "";
   const profileImage = "/studentImage.jpg"; 
   return (

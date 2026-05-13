@@ -54,13 +54,13 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    const school = await prisma.school.create({
-      data: {
-        name: trimmedName,
-        facultyId,
-        deanId,
-      },
-    });
+   const school = await prisma.school.create({
+  data: {
+    name: trimmedName,
+    facultyId,
+    school_deanId: deanId || null
+  },
+})
     await prisma.staff.update({
       where: { id: deanId },
       data: {

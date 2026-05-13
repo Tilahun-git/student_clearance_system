@@ -1,49 +1,39 @@
 "use client";
 
 import Link from "next/link";
-export default function Registrar() {
+import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
+import Header from "@/components/layout/Header";
+import RoleApprovalPage from "@/components/layout/RoleApprovalPage";
+
+export default function RegistrarPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-gray-100 to-gray-200">
+    <div className="min-h-screen w-full bg-slate-100">
+      <DashBoardNavbar />
+      <Header />
+      <div className="max-w-7xl mx-auto px-6 py-8 space-y-6">
 
-      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
-        <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Registrar Dashboard
-          </h1>
-          <p className="text-gray-600 mt-2">
-            Manage student records and registration processes
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <h1 className="text-2xl font-semibold text-slate-800">
+              Registrar Dashboard
+            </h1>
+         
+          </div>
 
           <Link
             href="/registrar/register-student"
-            className="group bg-white border border-gray-200 rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col items-center text-center"
-          >
-            <div className="text-5xl mb-4 transition-transform group-hover:scale-110">
-              🎓
-            </div>
-
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">
-              Register Student
-            </h2>
-
-            <p className="text-gray-600 text-sm leading-relaxed">
-              Add new students and assign them to departments, programs,
-              and advisors efficiently.
-            </p>
-
-            <div className="mt-5 text-indigo-600 text-sm font-medium group-hover:underline">
-              Get Started →
-            </div>
+            className="
+              inline-flex items-center gap-2
+              bg-indigo-600 hover:bg-indigo-700
+              text-white text-sm font-medium
+              px-4 py-2 rounded-xl shadow-sm transition
+            ">
+           Register Student
           </Link>
-
         </div>
-
-        <div className="mt-12 text-center text-sm text-gray-500">
-          Registrar actions are logged and secured.
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm">
+          <RoleApprovalPage role="REGISTRAR" />
         </div>
 
       </div>

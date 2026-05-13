@@ -14,6 +14,21 @@ export const routes = [
     role: "DEPARTMENT_HEAD",
     redirect: "/department-head/dashboard",
   },
+    {
+    prefix: "/campus-police",
+    role: "CAMPUS_POLICE",
+    redirect: "/campus-police/dashboard",
+  },
+  {
+    prefix: "/dormitory",
+    role: "DORMITORY",
+    redirect: "/dormitory/dashboard",
+  },
+  {
+    prefix: "/cafeteria",
+    role: "CAFETERIA",
+    redirect: "/cafeteria/dashboard",
+  },
   {
     prefix: "/advisor",
     role: "ADVISOR",
@@ -46,3 +61,7 @@ export const ROLE_TYPES = routes.map((r) => r.role);
 export type RoleTypeFrontend = (typeof ROLE_TYPES)[number];
 
 export type RoleType = (typeof routes)[number]["role"];
+
+export function hasRole(user: any, roleName: string) {
+  return user.roles?.some((r: any) => r.role.name === roleName)
+}

@@ -1,253 +1,85 @@
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { ApprovalStatus, ClearanceStatus, Prisma } from "@prisma/client";
-import { getNextRole } from "@/lib/workflow";
-import { sendNotification } from "@/lib/notify";
-
-
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import {getAuthorizedStaff,hasRoleAccess,} from "@/lib/clearance/approval.authorization";
+import {getApprovalById,} from "@/lib/clearance/approval.query";
+import {processApprovalWorkflow,} from "@/lib/clearance/approval.workflow";
+import {fetchApprovalsForStaff} from "@/lib/clearance/approval.fetch";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const staff = await prisma.staff.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      user: {
-        include: {
-          roles: {
-            include: { role: true },
-          },
+  try {
+    const session =
+      await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        {
+          error: "Unauthorized",
         },
+        {
+          status: 401,
+        }
+      );
+    }
+
+    const approvals = await fetchApprovalsForStaff(session.user.id);
+    return NextResponse.json(approvals);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json(
+      {
+        error:"Failed to fetch approvals",
       },
-    },
-  });
-
-  if (!staff) {
-    return NextResponse.json({ error: "Staff not found" }, { status: 404 });
+      {
+        status: 500,
+      }
+    );
   }
-
-  const roleNames = staff.user.roles.map((r) => r.role.name);
-
-  const roleFilters: Prisma.ClearanceApprovalWhereInput[] = [];
-
-  for (const roleName of roleNames) {
-    // 🎯 ADVISOR
-    if (roleName === "ADVISOR") {
-      roleFilters.push({
-        role: { name: "ADVISOR" },
-        status: ApprovalStatus.PENDING,
-        clearanceRequest: {
-          student: {
-            advisorId: staff.id,
-          },
-        },
-      });
-    }
-
-    // 🎯 DEPARTMENT HEAD
-    else if (roleName === "DEPARTMENT_HEAD") {
-      if (!staff.departmentId) continue;
-
-      roleFilters.push({
-        role: { name: "DEPARTMENT_HEAD" },
-        status: ApprovalStatus.PENDING,
-        clearanceRequest: {
-          student: {
-            departmentId: staff.departmentId,
-          },
-        },
-      });
-    }
-
-    // 🎯 SCHOOL DEAN ✅ (THIS IS WHAT YOU WERE MISSING)
-    else if (roleName === "SCHOOL_DEAN") {
-      if (!staff.schoolId) continue;
-
-      roleFilters.push({
-        role: { name: "SCHOOL_DEAN" },
-        status: ApprovalStatus.PENDING,
-        clearanceRequest: {
-          student: {
-            schoolId: staff.schoolId,
-          },
-        },
-      });
-    }
-
-    // 🎯 DEFAULT ROLES
-    else {
-      roleFilters.push({
-        role: { name: roleName },
-        status: ApprovalStatus.PENDING,
-      });
-    }
-  }
-
-  const approvals = await prisma.clearanceApproval.findMany({
-    where: {
-      OR: roleFilters,
-    },
-    include: {
-      role: true,
-      clearanceRequest: {
-        include: {
-          student: true,
-        },
-      },
-    },
-    orderBy: {
-      approvedAt: "desc",
-    },
-  });
-
-  return NextResponse.json(approvals);
 }
 
 export async function PATCH(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  const staff = await prisma.staff.findUnique({
-    where: { userId: session.user.id },
-  });
+  try {
+    const session = await getServerSession(authOptions);
 
-  if (!staff) {
-    return NextResponse.json({ error: "Not found" }, { status: 403 });
-  }
-  const { approvalId, status, comment } = await req.json();
-  const approval = await prisma.clearanceApproval.findUnique({
-    where: { id: approvalId },
-    include: {
-      role: true,
-      clearanceRequest: {
-        include: { student: true },
-      },
-    },
-  });
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
 
-  if (!approval) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
-  }
-  const staffWithRoles = await prisma.staff.findUnique({
-    where: { userId: session.user.id },
-    include: {
-      user: {
-        include: {
-          roles: { include: { role: true } },
-        },
-      },
-    },
-  });
-  const roleNames = staffWithRoles?.user.roles.map((r) => r.role.name) || [];
-  if (!roleNames.includes(approval.role.name)) {
+    const staff = await getAuthorizedStaff(session.user.id);
+    if (!staff) {
+      return NextResponse.json(
+        { error: "Staff not found" },
+        { status: 404 }
+      );
+    }
+
+    const roleNames = staff.user.roles.map((r) => r.role.name);
+    const { approvalId, status, comment } = await req.json();
+    const approval = await getApprovalById(approvalId);
+
+    if (!approval) {
+      return NextResponse.json(
+        { error: "Approval not found" },
+        { status: 404 }
+      );
+    }
+
+    if (!hasRoleAccess(roleNames, approval.role.name)) {
+      return NextResponse.json(
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const result = await processApprovalWorkflow(approvalId,staff.id,status,comment);
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: "Forbidden: You can't approve this request" },
-      { status: 403 },
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
-
-  const request = approval.clearanceRequest;
-  const roleName = approval.role.name;
-
-  await prisma.clearanceApproval.update({
-    where: { id: approvalId },
-    data: {
-      status,
-      comment,
-      staffId: staff.id,
-      approvedAt: status === "APPROVED" ? new Date() : null,
-    },
-  });
-
-  if (status === "REJECTED") {
-    await prisma.clearanceRequest.update({
-      where: { id: request.id },
-      data: { status: ClearanceStatus.REJECTED },
-    });
-
-    await sendNotification({
-      userId: request.student.userId!,
-      message: `Clearance request is rejected by ${roleName}`,
-    });
-    return NextResponse.json({ message: "Clearance request Rejected" });
-  }
-  const roleApprovals = await prisma.clearanceApproval.findMany({
-    where: {
-      clearanceRequestId: request.id,
-      role: { name: roleName },
-    },
-  });
-
-  const allApproved = roleApprovals.every((a) => a.status === "APPROVED");
-
-  if (!allApproved) {
-    return NextResponse.json({ message: "Waiting for others" });
-  }
-  const nextRole = getNextRole(roleName);
-  if (!nextRole) {
-    await prisma.clearanceRequest.update({
-      where: { id: request.id },
-      data: { status: ClearanceStatus.APPROVED },
-    });
-    await sendNotification({
-      userId: request.student.userId!,
-      message: "Clearance fully approved",
-    });
-    return NextResponse.json({ message: "Clearance process has been completed" });
-  }
-  const nextRoleData = await prisma.role.findUnique({
-    where: { name: nextRole },
-  });
-  if (nextRoleData) {
-    await prisma.clearanceApproval.upsert({
-      where: {
-        clearanceRequestId_roleId: {
-          clearanceRequestId: request.id,
-          roleId: nextRoleData.id,
-        },
-      },
-      update: {},
-      create: {
-        clearanceRequestId: request.id,
-        roleId: nextRoleData.id,
-        status: ApprovalStatus.PENDING,
-      },
-    });
-  }
-  const nextStaff = await prisma.staff.findMany({
-    where: {
-      user: {
-        roles: {
-          some: {
-            role: { name: nextRole },
-          },
-        },
-      },
-    },
-  });
-
-  for (const s of nextStaff) {
-    await sendNotification({
-      userId: s.userId,
-      message: ` ${nextRole} has got new clearance request`,
-    });
-  }
-  await sendNotification({
-      userId: request.student.userId!,
-      message: ` ${roleName} has approved your clearance request`,
-    });
-  await prisma.clearanceRequest.update({
-    where: { id: request.id },
-    data: {
-      status: ClearanceStatus.IN_PROGRESS,
-    },
-  });
-  return NextResponse.json({ message: "Updated" });
 }

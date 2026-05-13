@@ -13,18 +13,29 @@ export default function AddDepartment() {
   const [headId, setHeadId] = useState("");
   const [name, setName] = useState("");
 
-  useEffect(() => {
-    fetch("/api/school")
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setSchools(data);
-        } else {
-          setSchools(data?.data || []);
-        }
-      })
-      .catch(() => toast.error("Failed to load schools"));
-  }, []);
+ useEffect(() => {
+  const fetchSchools = async () => {
+    try {
+      const res = await fetch("/api/school"); 
+
+      if (!res.ok) {
+        throw new Error("API failed");
+      }
+
+      const data = await res.json();
+
+      console.log("SCHOOLS API:", data);
+
+      setSchools(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to load schools");
+      setSchools([]);
+    }
+  };
+
+  fetchSchools();
+}, []);
 
   useEffect(() => {
     const fetchHeads = async () => {

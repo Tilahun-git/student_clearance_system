@@ -10,7 +10,7 @@ async function main() {
     "STUDENT",
     "ADVISOR",
     "DEPARTMENT_HEAD",
-    "FINANCE",
+    "CAMPUS_POLICE",
     "LIBRARY",
     "REGISTRAR",
     "ADMIN",

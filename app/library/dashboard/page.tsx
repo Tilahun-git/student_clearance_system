@@ -2,6 +2,8 @@
 
 import RoleApprovalPage from "@/components/layout/RoleApprovalPage";
 
-export default function DepartmentHeadPage() {
-  return <RoleApprovalPage role="LIBRARY" />;
+export default function LibraryPage() {
+  return (
+    <RoleApprovalPage role="LIBRARY" />
+  );
 }

@@ -11,12 +11,12 @@ export const sendNotification = async ({ userId,message,referenceId,}: Notificat
     },
   });
 
+
   try {
     const io = getIO();
     io.to(userId).emit("notification", notification);
   } catch (error) {
     console.log("Socket not ready");
   }
-
   return notification;
 };

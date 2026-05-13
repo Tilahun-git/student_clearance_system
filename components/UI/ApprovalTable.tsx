@@ -5,11 +5,9 @@ type ApprovalTableProps = {
   requests: ClearanceApprovalRequest[];
   onApprove: (id: string) => void;
   onReject: (id: string) => void;
-
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
 };
-
 export default function ApprovalTable({
   requests,
   onApprove,
@@ -35,12 +33,10 @@ export default function ApprovalTable({
           {requests.map((request) => {
             const student = request.clearanceRequest.student;
             const isSelected = selectedIds.includes(request.id);
-            
             return (
               <tr
                 key={request.id}
-                className="border-t hover:bg-gray-50 transition"
-              >
+                className="border-t hover:bg-gray-50 transition">
                <td className="p-3">
                   <input
                     type="checkbox"
@@ -51,19 +47,15 @@ export default function ApprovalTable({
                 <td className="p-3 text-gray-500">
                   {student.studentId}
                 </td>
-
                 <td className="p-3 font-medium text-gray-800">
                   {student.firstName}
                 </td>
-
                 <td className="p-3 font-medium text-gray-800">
                   {student.middleName}
                 </td>
-
                 <td className="p-3 font-medium text-gray-800">
                   {student.lastName}
                 </td>
-
                 <td className="p-3">
                   <div className="flex justify-center gap-2">
                     <button

@@ -7,25 +7,21 @@ import { ClearanceStatus } from "@prisma/client";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-
     const student = await prisma.student.findUnique({
       where: { userId: session.user.id },
     });
-
     if (!student) {
       return NextResponse.json(
         { error: "Student not found" },
         { status: 404 }
       );
     }
-
     const latestRequest = await prisma.clearanceRequest.findFirst({
       where: { studentId: student.id },
       orderBy: { createdAt: "desc" },

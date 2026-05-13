@@ -20,7 +20,7 @@ export default function AddFaculty() {
 
     if (!res.ok) return toast.error(data.error);
 
-    toast.success("Faculty added successfully 🎉");
+    toast.success("Faculty added successfully ");
     setName("");
   };
 

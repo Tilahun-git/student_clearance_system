@@ -6,6 +6,8 @@ export type User = {
 
 export type Advisor = {
   id: string;
-  name: string;
-  user:User ;
+
+  user?: {
+    name?: string;
+  };
 };

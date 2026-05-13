@@ -32,3 +32,24 @@ export async function GET(
     );
   }
 }
+
+// import { NextResponse } from "next/server"
+// import { students } from "@/data/students"
+
+// export async function GET(
+//   req: Request,
+//   context: { params: Promise<{ id: string }> }
+// ) {
+//   const { id } = await context.params
+
+//   const student = students.find(s => s.id === id)
+
+//   if (!student) {
+//     return NextResponse.json(
+//       { error: "Student not found" },
+//       { status: 404 }
+//     )
+//   }
+
+//   return NextResponse.json(student)
+//}

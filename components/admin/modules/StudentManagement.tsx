@@ -36,9 +36,6 @@ export default function StudentManagement() {
           <h2 className="text-xl font-semibold text-slate-900">
             Student Management
           </h2>
-          <p className="text-sm text-slate-500">
-            Manage student accounts and advisors
-          </p>
         </div>
 
       </div>
@@ -65,15 +62,13 @@ export default function StudentManagement() {
                   <th className="px-6 py-4">Year</th>
                   <th className="px-6 py-4">Department</th>
                   <th className="px-6 py-4">Account Status</th>
-                  <th className="px-6 py-4">Advisor Status</th>
-                  <th className="px-6 py-4 text-center">Actions</th>
+                  <th className="px-6 py-4 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
 
                 {students.map((s) => {
                   const hasAccount = !!s.userId;
-                  const hasAdvisor = !!s.advisorId;
 
                   return (
                     <tr
@@ -100,9 +95,7 @@ export default function StudentManagement() {
                             {s.department.name}
                           </span>
                         ) : (
-                          <span className="text-slate-400 text-xs">
-                            Not assigned
-                          </span>
+                          ""
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -116,17 +109,7 @@ export default function StudentManagement() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        {hasAdvisor ? (
-                          <span className="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
-                            Advisor Assigned
-                          </span>
-                        ) : (
-                          <span className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                            No Advisor
-                          </span>
-                        )}
-                      </td>
+                     
                       <td className="px-6 py-4">
                         <div className="flex justify-center gap-2">
                           <Link
@@ -146,33 +129,13 @@ export default function StudentManagement() {
                           >
                             {hasAccount ? "Created" : "Create"}
                           </Link>
-                          <Link
-                            href={
-                              hasAdvisor
-                                ? "#"
-                                : `/admin/assign-advisor?studentId=${s.studentId}`
-                            }
-                            onClick={(e) => hasAdvisor && e.preventDefault()}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-lg transition
-                              ${
-                                hasAdvisor
-                                  ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                                  : "bg-emerald-600 text-white hover:bg-emerald-700"
-                              }
-                            `}
-                          >
-                            {hasAdvisor ? "Assigned" : "Assign"}
-                          </Link>
-
+                         
                         </div>
                       </td>
-
                     </tr>
                   );
                 })}
-
               </tbody>
-
             </table>
           </div>
         )}

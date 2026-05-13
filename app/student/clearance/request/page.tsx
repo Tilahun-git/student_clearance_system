@@ -132,8 +132,7 @@ export default function ClearanceRequestPage() {
                     value={form.reason}
                     onChange={handleChange}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                    required
-                  >
+                    required>
                     <option value="">Select Reason</option>
                     {Reasons.map((r) => (
                       <option key={r.id} value={r.id}>
@@ -158,9 +157,9 @@ export default function ClearanceRequestPage() {
                     onChange={handleChange}
                     disabled={!form.academicYear}
                     className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-800 disabled:bg-slate-100 disabled:text-slate-400 focus:ring-2 focus:ring-indigo-500 outline-none" >
-                    <option value="">Semester</option>
-                    <option value="1">Semester 1</option>
-                    <option value="2">Semester 2</option>
+                    <option value="">Choose Semester</option>
+                    <option value="First Semester">Semester 1</option>
+                    <option value="Second Semester">Semester 2</option>
                   </select>
                 </div>
               </section>
