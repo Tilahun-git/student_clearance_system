@@ -36,7 +36,6 @@ export default function ChangePasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-
     if (newPassword !== confirmPassword) {
       toast.error("New passwords do not match");
       return;
@@ -53,9 +52,7 @@ export default function ChangePasswordPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         toast.error(data.error || "Failed to change password");
         return;

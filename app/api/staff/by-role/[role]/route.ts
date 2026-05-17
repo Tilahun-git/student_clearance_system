@@ -4,19 +4,33 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ role: string }> },
+  context: { params: Promise<{ role: string }> }
 ) {
   const { role } = await context.params;
   const { searchParams } = new URL(req.url);
-  const schoolId     = searchParams.get("schoolId")     ?? undefined;
-  const departmentId = searchParams.get("departmentId") ?? undefined;
+
+  const schoolId = searchParams.get("schoolId") || undefined;
+  const departmentId = searchParams.get("departmentId") || undefined;
+
+  const normalizedRole = role.toUpperCase();
+
+  if (!Object.values(RoleType).includes(normalizedRole as RoleType)) {
+    return NextResponse.json(
+      { error: "Invalid role" },
+      { status: 400 }
+    );
+  }
 
   const staff = await prisma.staff.findMany({
     where: {
-      ...(schoolId     && { schoolId }),
-      ...(departmentId && { departmentId }),
+      ...(schoolId ? { schoolId } : {}),
+      ...(departmentId ? { departmentId } : {}),
       user: {
-        roles: { some: { role: { name: role.toUpperCase() as RoleType } } },
+        roles: {
+          some: {
+            role: { name: normalizedRole as RoleType },
+          },
+        },
       },
     },
     include: {
@@ -26,7 +40,7 @@ export async function GET(
         },
       },
       department: { select: { name: true } },
-      school:     { select: { name: true } },
+      school: { select: { name: true } },
     },
   });
 

@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import { School } from "lucide-react";
 import PageHeader from "../PageHeader";
 import toast from "react-hot-toast";
-import { fetchSchools, assignSchoolDean, deleteSchool } from "@/lib/api/admin";
+import {
+  fetchSchools,
+  assignSchoolDean,
+  deleteSchool,
+} from "@/lib/api/admin";
+
 import SchoolTable, { type SchoolRow } from "@/components/tables/SchoolTable";
 import ConfirmDeleteModal from "@/components/UI/ConfirmDeleteModal";
 import Pagination from "@/components/UI/Pagination";
@@ -13,13 +18,13 @@ import { usePagination } from "@/hooks/usePagination";
 const PAGE_SIZE = 10;
 
 export default function SchoolManagement() {
-  const [schools, setSchools]               = useState<SchoolRow[]>([]);
-  const [loading, setLoading]               = useState(true);
+  const [schools, setSchools] = useState<SchoolRow[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedSchool, setSelectedSchool] = useState<string | null>(null);
-  const [deanOptions, setDeanOptions]       = useState<any[]>([]);
-  const [assigning, setAssigning]           = useState(false);
-  const [deletingId, setDeletingId]         = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete]   = useState<SchoolRow | null>(null);
+  const [deanOptions, setDeanOptions] = useState<any[]>([]);
+  const [assigning, setAssigning] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<SchoolRow | null>(null);
 
   function loadSchools() {
     setLoading(true);
@@ -29,17 +34,31 @@ export default function SchoolManagement() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadSchools(); }, []);
+  useEffect(() => {
+    loadSchools();
+  }, []);
 
-  async function openAssign(schoolId: string) {
-    setSelectedSchool(schoolId);
-    const res  = await fetch(`/api/staff/by-role/SCHOOL_DEAN`);
+  // ✅ FIXED: now receives full object
+  async function openAssign(school: SchoolRow) {
+    setSelectedSchool(school.id);
+
+    const params = new URLSearchParams();
+
+    if (school.id) {
+      params.append("schoolId", school.id);
+    }
+
+    const res = await fetch(
+      `/api/staff/by-role/SCHOOL_DEAN?${params.toString()}`
+    );
+
     const data = await res.json();
     setDeanOptions(Array.isArray(data) ? data : []);
   }
 
   async function handleAssignDean(schoolId: string, deanId: string) {
     if (!deanId) return;
+
     setAssigning(true);
     try {
       await assignSchoolDean(schoolId, deanId);
@@ -54,10 +73,14 @@ export default function SchoolManagement() {
 
   async function confirmDeleteSchool() {
     if (!pendingDelete) return;
+
     setDeletingId(pendingDelete.id);
+
     try {
       await deleteSchool(pendingDelete.id);
-      setSchools((prev) => prev.filter((s) => s.id !== pendingDelete.id));
+      setSchools((prev) =>
+        prev.filter((s) => s.id !== pendingDelete.id)
+      );
       toast.success("School deleted");
       setPendingDelete(null);
     } catch (err: any) {
@@ -67,7 +90,8 @@ export default function SchoolManagement() {
     }
   }
 
-  const { page, totalPages, totalItems, paged, goTo } = usePagination(schools, PAGE_SIZE);
+  const { page, totalPages, totalItems, paged, goTo } =
+    usePagination(schools, PAGE_SIZE);
 
   return (
     <div>
@@ -77,14 +101,11 @@ export default function SchoolManagement() {
         iconColor="text-blue-600"
         title="School Management"
         subtitle="Manage schools and assign deans"
-        action={{ href: "/admin/manage-faculty/add-school", label: "Add School", color: "bg-blue-600 hover:bg-blue-700" }}
-        badge={
-          !loading && schools.length > 0 ? (
-            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-              {schools.length} total
-            </span>
-          ) : undefined
-        }
+        action={{
+          href: "/admin/manage-faculty/add-school",
+          label: "Add School",
+          color: "bg-blue-600 hover:bg-blue-700",
+        }}
       />
 
       <SchoolTable
@@ -97,7 +118,9 @@ export default function SchoolManagement() {
         onOpenAssign={openAssign}
         onAssignDean={handleAssignDean}
         onCancelAssign={() => setSelectedSchool(null)}
-        onDelete={(id) => setPendingDelete(schools.find((s) => s.id === id) ?? null)}
+        onDelete={(id) =>
+          setPendingDelete(schools.find((s) => s.id === id) ?? null)
+        }
       />
 
       <Pagination

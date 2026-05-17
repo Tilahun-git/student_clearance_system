@@ -23,7 +23,7 @@ export default function AddOfficePage() {
       });
       setOfficeName("");
       setCode("");
-      router.push("/admin/dashboard");
+      // router.push("/admin/dashboard");
     } catch (err) {
       console.error(err);
       alert("Failed to create office");

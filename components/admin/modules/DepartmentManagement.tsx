@@ -4,8 +4,16 @@ import { useEffect, useState } from "react";
 import { Building2 } from "lucide-react";
 import PageHeader from "../PageHeader";
 import toast from "react-hot-toast";
-import { fetchDepartments, assignDepartmentHead, deleteDepartment } from "@/lib/api/admin";
-import DepartmentTable, { type DepartmentRow } from "@/components/tables/DepartmentTable";
+import {
+  fetchDepartments,
+  assignDepartmentHead,
+  deleteDepartment,
+} from "@/lib/api/admin";
+
+import DepartmentTable, {
+  type DepartmentRow,
+} from "@/components/tables/DepartmentTable";
+
 import ConfirmDeleteModal from "@/components/UI/ConfirmDeleteModal";
 import Pagination from "@/components/UI/Pagination";
 import { usePagination } from "@/hooks/usePagination";
@@ -14,12 +22,13 @@ const PAGE_SIZE = 10;
 
 export default function DepartmentManagement() {
   const [departments, setDepartments] = useState<DepartmentRow[]>([]);
-  const [loading, setLoading]         = useState(true);
+  const [loading, setLoading] = useState(true);
   const [selectedDept, setSelectedDept] = useState<string | null>(null);
-  const [headOptions, setHeadOptions]   = useState<any[]>([]);
-  const [assigning, setAssigning]       = useState(false);
-  const [deletingId, setDeletingId]     = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<DepartmentRow | null>(null);
+  const [headOptions, setHeadOptions] = useState<any[]>([]);
+  const [assigning, setAssigning] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] =
+    useState<DepartmentRow | null>(null);
 
   function loadDepartments() {
     setLoading(true);
@@ -29,17 +38,30 @@ export default function DepartmentManagement() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { loadDepartments(); }, []);
+  useEffect(() => {
+    loadDepartments();
+  }, []);
 
-  async function openAssign(deptId: string) {
-    setSelectedDept(deptId);
-    const res  = await fetch(`/api/staff/by-role/DEPARTMENT_HEAD`);
+  // ✅ FIXED: now receives full department object
+  async function openAssign(dept: DepartmentRow) {
+    setSelectedDept(dept.id);
+
+    const params = new URLSearchParams();
+
+    if (dept.id) params.append("departmentId", dept.id);
+    if (dept.schoolId) params.append("schoolId", dept.schoolId);
+
+    const res = await fetch(
+      `/api/staff/by-role/DEPARTMENT_HEAD?${params.toString()}`
+    );
+
     const data = await res.json();
     setHeadOptions(Array.isArray(data) ? data : []);
   }
 
   async function handleAssignHead(departmentId: string, headId: string) {
     if (!headId) return;
+
     setAssigning(true);
     try {
       await assignDepartmentHead(departmentId, headId);
@@ -54,10 +76,14 @@ export default function DepartmentManagement() {
 
   async function confirmDeleteDepartment() {
     if (!pendingDelete) return;
+
     setDeletingId(pendingDelete.id);
+
     try {
       await deleteDepartment(pendingDelete.id);
-      setDepartments((prev) => prev.filter((d) => d.id !== pendingDelete.id));
+      setDepartments((prev) =>
+        prev.filter((d) => d.id !== pendingDelete.id)
+      );
       toast.success("Department deleted");
       setPendingDelete(null);
     } catch (err: any) {
@@ -67,7 +93,8 @@ export default function DepartmentManagement() {
     }
   }
 
-  const { page, totalPages, totalItems, paged, goTo } = usePagination(departments, PAGE_SIZE);
+  const { page, totalPages, totalItems, paged, goTo } =
+    usePagination(departments, PAGE_SIZE);
 
   return (
     <div>
@@ -77,7 +104,11 @@ export default function DepartmentManagement() {
         iconColor="text-purple-600"
         title="Department Management"
         subtitle="Manage departments and assign heads"
-        action={{ href: "/admin/manage-faculty/add-department", label: "Add Department", color: "bg-purple-600 hover:bg-purple-700" }}
+        action={{
+          href: "/admin/manage-faculty/add-department",
+          label: "Add Department",
+          color: "bg-purple-600 hover:bg-purple-700",
+        }}
         badge={
           !loading && departments.length > 0 ? (
             <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
@@ -97,7 +128,9 @@ export default function DepartmentManagement() {
         onOpenAssign={openAssign}
         onAssignHead={handleAssignHead}
         onCancelAssign={() => setSelectedDept(null)}
-        onDelete={(id) => setPendingDelete(departments.find((d) => d.id === id) ?? null)}
+        onDelete={(id) =>
+          setPendingDelete(departments.find((d) => d.id === id) ?? null)
+        }
       />
 
       <Pagination

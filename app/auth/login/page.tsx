@@ -318,7 +318,7 @@ export default function LoginPage() {
             <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Set Your Password</h2>
             <form onSubmit={handleChangePassword} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Temporary Password</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Current Password</label>
                 <PasswordInput
                   value={currentPwd}
                   onChange={setCurrentPwd}
