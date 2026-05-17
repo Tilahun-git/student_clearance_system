@@ -1,38 +1,29 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import {getAuthorizedStaff,hasRoleAccess,} from "@/lib/clearance/approval.authorization";
-import {getApprovalById,} from "@/lib/clearance/approval.query";
-import {processApprovalWorkflow,} from "@/lib/clearance/approval.workflow";
-import {fetchApprovalsForStaff} from "@/lib/clearance/approval.fetch";
+import { prisma } from "@/lib/prisma";
+import { getAuthorizedStaff, hasRoleAccess } from "@/lib/clearance/approval.authorization";
+import { getApprovalById } from "@/lib/clearance/approval.query";
+import { processApprovalWorkflow } from "@/lib/clearance/approval.workflow";
+import { fetchApprovalsForStaff } from "@/lib/clearance/approval.fetch";
 
 export async function GET() {
   try {
-    const session =
-      await getServerSession(authOptions);
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json(
-        {
-          error: "Unauthorized",
-        },
-        {
-          status: 401,
-        }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const approvals = await fetchApprovalsForStaff(session.user.id);
+    // Pass activeRole so the user only sees approvals for the role
+    // they are currently logged in as — not all their roles combined.
+    const approvals = await fetchApprovalsForStaff(
+      session.user.id,
+      session.user.activeRole,
+    );
     return NextResponse.json(approvals);
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      {
-        error:"Failed to fetch approvals",
-      },
-      {
-        status: 500,
-      }
-    );
+    return NextResponse.json({ error: "Failed to fetch approvals" }, { status: 500 });
   }
 }
 
@@ -55,22 +46,44 @@ export async function PATCH(req: Request) {
       );
     }
 
-    const roleNames = staff.user.roles.map((r) => r.role.name);
+    // Use activeRole for authorization — the user can only approve
+    // requests for the role they are currently acting as.
+    const activeRole = session.user.activeRole;
+    const roleNames = staff.user.roles.map((r) => r.role.name as string);
+
+    // Verify the active role is valid for this user
+    if (!activeRole || !roleNames.includes(activeRole)) {
+      return NextResponse.json({ error: "No active role" }, { status: 403 });
+    }
+
     const { approvalId, status, comment } = await req.json();
     const approval = await getApprovalById(approvalId);
 
     if (!approval) {
-      return NextResponse.json(
-        { error: "Approval not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Approval not found" }, { status: 404 });
     }
 
-    if (!hasRoleAccess(roleNames, approval.role.name)) {
-      return NextResponse.json(
-        { error: "Forbidden" },
-        { status: 403 }
-      );
+    // Only allow approval if the active role matches the approval's required role
+    if (!hasRoleAccess([activeRole], approval.role.name)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    // ── Library borrow check ──────────────────────────────────────────────
+    // If the library manager is trying to APPROVE, block if the student
+    // has an unreturned borrow record.
+    if (activeRole === "LIBRARY" && status === "APPROVED") {
+      const studentId = approval.clearanceRequest.student.id;
+      const unreturnedBorrow = await prisma.libraryBorrow.findFirst({
+        where: { studentId, returned: false },
+      });
+      if (unreturnedBorrow) {
+        return NextResponse.json(
+          {
+            error: `Cannot approve: student ${approval.clearanceRequest.student.studentId} has an unreturned library book. Mark it as returned first.`,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const result = await processApprovalWorkflow(approvalId,staff.id,status,comment);

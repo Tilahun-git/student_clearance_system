@@ -1,22 +1,18 @@
 import { prisma } from "./prisma";
 import { getIO } from "./socket-server";
-import {Notification} from '@/types/clearance'
+import { NotificationPayload } from "@/types/clearance";
 
-export const sendNotification = async ({ userId,message,referenceId,}: Notification) => {
+export async function sendNotification({ userId, message, referenceId, forRole }: NotificationPayload) {
   const notification = await prisma.notification.create({
-    data: {
-      userId,
-      message,
-      referenceId,
-    },
+    data: { userId, message, referenceId, forRole },
   });
-
 
   try {
     const io = getIO();
     io.to(userId).emit("notification", notification);
-  } catch (error) {
-    console.log("Socket not ready");
+  } catch {
+    // Socket server not ready — notification is still persisted in DB
   }
+
   return notification;
-};
+}

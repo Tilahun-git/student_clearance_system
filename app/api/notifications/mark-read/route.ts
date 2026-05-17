@@ -11,56 +11,52 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const userId     = session.user.id;
+    const activeRole = session.user.activeRole;
+
+    // Scope all mark-read operations to the current active role only.
+    // This prevents marking DEPT_HEAD notifications as read when the user
+    // is acting as ADVISOR, and vice versa.
+    // Notifications with no forRole (null) are always included.
+    const roleFilter = activeRole
+      ? { OR: [{ forRole: activeRole }, { forRole: null }] }
+      : {};
+
     const { notificationId, markAll } = await req.json();
 
     if (markAll) {
       await prisma.notification.updateMany({
         where: {
-          userId: session.user.id,
+          userId,
           read: false,
+          ...roleFilter,
         },
-        data: {
-          read: true,
-        },
+        data: { read: true },
       });
 
-      return NextResponse.json({
-        message: "All notifications marked as read",
-      });
+      return NextResponse.json({ message: "All notifications marked as read" });
     }
 
     if (!notificationId) {
-      return NextResponse.json(
-        { error: "Notification ID required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Notification ID required" }, { status: 400 });
     }
 
     const updated = await prisma.notification.updateMany({
       where: {
         id: notificationId,
-        userId: session.user.id, 
+        userId,
+        ...roleFilter,
       },
-      data: {
-        read: true,
-      },
+      data: { read: true },
     });
 
     if (updated.count === 0) {
-      return NextResponse.json(
-        { error: "Notification not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Notification not found" }, { status: 404 });
     }
 
-    return NextResponse.json({
-      message: "Notification marked as read",
-    });
+    return NextResponse.json({ message: "Notification marked as read" });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: "Failed to update notification" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to update notification" }, { status: 500 });
   }
 }

@@ -22,34 +22,24 @@ export default function CreateStudentAccount() {
   useEffect(() => {
   const fetchStudent = async () => {
     if (!studentId) return;
-
     try {
       const res = await fetch(`/api/admin/student/${studentId}`);
-
       if (!res.ok) throw new Error("Failed to fetch student");
-
       const data = await res.json();
-
-      setForm((prev) => ({
-        ...prev,
-        name: `${data.firstName} ${data.middleName}`,
-      }));
+      setForm((prev) => ({...prev, name: `${data.firstName} ${data.middleName}`,}));
     } catch (err) {
       toast.error("Failed to load student info");
     } finally {
       setLoadingStudent(false);
     }
   };
-
   fetchStudent();
 }, [studentId]);
   const handleCreateAccount = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!studentId) {
       return toast.error("Student ID missing");
     }
-
     try {
       const res = await fetch("/api/admin/create-student-user", {
         method: "POST",
@@ -68,9 +58,7 @@ export default function CreateStudentAccount() {
       if (!res.ok) {
         return toast.error(data.error);
       }
-
       toast.success(data.message);
-
       setForm({
         name:"",
         email:"",
@@ -82,16 +70,13 @@ export default function CreateStudentAccount() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-gray-100 to-gray-200 px-4">
-
+    <div className="flex-1 flex items-center justify-center overflow-y-auto bg-slate-50 px-4 py-10">
       <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8 space-y-6 border">
 
         <h2 className="text-2xl font-bold text-gray-800 text-center">
           Create Student Account
         </h2>
-
         <form onSubmit={handleCreateAccount} className="space-y-4">
-
           <div>
             <label className="text-sm text-gray-600">Student ID</label>
             <input
@@ -100,7 +85,6 @@ export default function CreateStudentAccount() {
               className="w-full mt-1 px-3 py-2 border rounded-lg bg-gray-100 text-gray-700"
             />
           </div>
-
           <div>
             <label className="text-sm text-gray-600"> Name</label>
             <input

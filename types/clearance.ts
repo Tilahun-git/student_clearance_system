@@ -1,14 +1,13 @@
-import { Reason } from "@/lib/constants/reasons";
-import { ApprovalStatus } from "@prisma/client";
+import { ApprovalStatus, RoleType } from "@prisma/client";
 
 
 export interface ClearanceApprovalRequest {
   id: string;
-  status: string;
+  status: ApprovalStatus;
   comment?: string;
   role: {
     id: string;
-    name: string;
+    name: RoleType;
   };
   officeId?: string;
   office?: {
@@ -23,13 +22,12 @@ export interface ClearanceApprovalRequest {
     student: {
       id: string;
       firstName: string;
-      middleName:string;
+      middleName?: string;
       lastName: string;
       studentId: string;
     };
   };
 }
-
 
 export interface ApprovalPayload {
   approvalId: string;
@@ -37,135 +35,112 @@ export interface ApprovalPayload {
   comment?: string;
 }
 
+
 export type Faculty = {
   id: string;
   name: string;
-
   schools?: School[];
 };
-
 
 export type School = {
   id: string;
   name: string;
   facultyId: string;
-
   faculty?: Faculty;
-
   deanId?: string;
   dean?: Staff;
-
   departments?: Department[];
 };
-
 
 export type Department = {
   id: string;
   name: string;
   schoolId: string;
-
   school?: School;
-
   headId?: string;
   head?: Staff;
 };
 
-
 export type Staff = {
   id: string;
   userId: string;
-
   user?: User;
-
   facultyId?: string;
   schoolId?: string;
   departmentId?: string;
 };
 
-
 export type User = {
   id: string;
   name: string;
   email: string;
-
-  roles?: {
-    role: {
-      name: string;
-    };
-  }[];
+  roles?: { role: { name: RoleType } }[];
 };
-
 
 export type Student = {
   id: string;
   studentId: string;
-
   firstName: string;
   middleName?: string;
   lastName: string;
-
   program: string;
   year: number;
-
   userId?: string;
   advisorId?: string;
-
   user?: User;
   advisor?: Staff;
-
   departmentId: string;
   schoolId?: string;
   facultyId?: string;
-
   department?: Department;
   school?: School;
   faculty?: Faculty;
 };
 
 
- export type RegisterStudentData = {
+export type RegisterStudentData = {
   firstName: string;
-  middleName: string;
+  middleName?: string;
   lastName: string;
   program: string;
   year: number;
   facultyId: string;
   schoolId: string;
   departmentId: string;
+  section?: string;
 };
+
 export type ClearanceDataResponse = {
   faculties: Faculty[];
   schools: School[];
   departments: Department[];
 };
 
-export type Notification = {
-   userId: string;
+
+export type NotificationPayload = {
+  userId: string;
   message: string;
   referenceId?: string;
-}
+  forRole?: string;
+};
 
 
 export interface Certificate {
   id: string;
   issuedAt: string;
-
   request?: {
     academicYear?: string;
     semester?: string;
-    reason:{
-      name:string
-    };
+    reason?: string;
     status?: string;
-
     student?: {
       firstName: string;
+      middleName:string;
       lastName: string;
       studentId: string;
       program?: string;
       year?: number;
       section?: string;
-
       faculty?: { name: string };
       school?: { name: string };
       department?: { name: string };

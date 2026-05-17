@@ -1,25 +1,14 @@
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import Footer from "@/components/layout/Footer";
-import Header from "@/components/layout/Header";
 
-export default function LibraryLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function LibraryLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100">
-
+    <div className="h-screen flex flex-col overflow-hidden bg-slate-50">
       <DashBoardNavbar />
-
-      <Header />
-
-      <main className="max-w-6xl mx-auto px-6 py-2">
+      <div className="flex flex-1 overflow-hidden">
         {children}
-      </main>
-
-      <Footer />
-
+      </div>
+      <Footer/>
     </div>
   );
 }

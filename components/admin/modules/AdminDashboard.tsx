@@ -1,403 +1,274 @@
 "use client";
 
-import {
-  Users,
-  GraduationCap,
-  Building2,
-  School,
-  Briefcase,
-  ClipboardCheck,
-  Clock3,
-  CheckCircle2,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import {GraduationCap,Building2,School,Briefcase,Clock3,CheckCircle2,ArrowRight,XCircle,} from "lucide-react";
+import Link from "next/link";
 
-const stats = [
-  {
-    title: "Registered Students",
-    value: "842",
-    icon: GraduationCap,
-    color:
-      "bg-emerald-100 text-emerald-700",
-  },
+import { fetchAdminStats } from "@/lib/api/admin";
 
-  {
-    title: "Pending Clearances",
-    value: "56",
-    icon: Clock3,
-    color:
-      "bg-amber-100 text-amber-700",
-  },
+// ── Types 
 
-  {
-    title: "Approved Clearances",
-    value: "721",
-    icon: CheckCircle2,
-    color:
-      "bg-indigo-100 text-indigo-700",
-  },
+type ActivityItem = {
+  id: string;
+  studentId: string;
+  studentName: string;
+  role: string;
+  status: "APPROVED" | "REJECTED";
+  approvedAt: string;
+};
 
-  {
-    title: "Departments",
-    value: "12",
-    icon: Building2,
-    color:
-      "bg-orange-100 text-orange-700",
-  },
+type Stats = {
+  totalStudents: number;
+  totalSchools: number;
+  totalDepartments: number;
+  totalOffices: number;
+  totalFaculties: number;
+  pendingClearances: number;
+  approvedClearances: number;
+  recentActivity: ActivityItem[];
+};
 
-  {
-    title: "Schools",
-    value: "5",
-    icon: School,
-    color:
-      "bg-blue-100 text-blue-700",
-  },
+// ── Helpers 
 
-  {
-    title: "Clearance Offices",
-    value: "8",
-    icon: Briefcase,
-    color:
-      "bg-pink-100 text-pink-700",
-  },
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function activityLabel(item: ActivityItem): string {
+  const office = item.role
+    .split(" ")
+    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+  return item.status === "APPROVED"
+    ? `${office} clearance approved`
+    : `${office} clearance rejected`;
+}
+
+// ── Stat card 
+
+type StatCardProps = {
+  title: string;
+  value: number | string;
+  accent: string;   
+  iconColor: string;
+  icon: React.ElementType;
+  loading: boolean;
+};
+
+function StatCard({ title, value, accent, iconColor, icon: Icon, loading }: StatCardProps) {
+  const [borderColor, bgColor] = accent.split(" ");
+  return (
+    <div
+      className={`
+        bg-white rounded-2xl border border-slate-200 shadow-sm
+        flex items-center gap-4 px-5 py-4
+        border-l-4 ${borderColor}
+        hover:shadow-md transition-shadow
+      `}
+    >
+      <div className={`p-2.5 rounded-xl ${bgColor} shrink-0`}>
+        <Icon className={`w-5 h-5 ${iconColor}`} />
+      </div>
+      <div className="min-w-0">
+        {loading ? (
+          <>
+            <div className="skeleton h-7 w-14 rounded mb-1.5" />
+            <div className="skeleton h-3 w-24 rounded" />
+          </>
+        ) : (
+          <>
+            <p className="text-2xl font-bold text-slate-800 leading-none">{value}</p>
+            <p className="text-xs italic text-slate-400 mt-1 truncate">{title}</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Quick actions 
+
+const quickActions = [
+  { label: "Register New Student",  href: "/registrar/register-student",          color: "bg-indigo-600 hover:bg-indigo-700" },
+  { label: "Create User Account",   href: "/admin/create-user",                   color: "bg-emerald-600 hover:bg-emerald-700" },
+  { label: "Add School",            href: "/admin/manage-faculty/add-school",     color: "bg-blue-600 hover:bg-blue-700" },
+  { label: "Add Department",        href: "/admin/manage-faculty/add-department", color: "bg-purple-600 hover:bg-purple-700" },
 ];
 
-const recentActivities = [
-  {
-    student: "WDU23001",
-    action:
-      "Library clearance approved",
-    time: "2 mins ago",
-  },
-
-  {
-    student: "WDU23012",
-    action:
-      "Department clearance pending",
-    time: "10 mins ago",
-  },
-
-  {
-    student: "WDU23018",
-    action:
-      "Finance office approved clearance",
-    time: "25 mins ago",
-  },
-
-  {
-    student: "WDU23025",
-    action:
-      "Advisor assigned successfully",
-    time: "1 hour ago",
-  },
-];
+// ── Main component 
 
 export default function DashboardOverview() {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAdminStats()
+      .then((d) => setStats(d))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const statCards: Array<Omit<StatCardProps, "loading"> & { key: string }> = [
+    {
+      key: "students",
+      title: "Registered Students",
+      value: stats?.totalStudents ?? 0,
+      accent: "border-emerald-400 bg-emerald-50",
+      iconColor: "text-emerald-600",
+      icon: GraduationCap,
+    },
+    {
+      key: "pending",
+      title: "Pending Clearances",
+      value: stats?.pendingClearances ?? 0,
+      accent: "border-amber-400 bg-amber-50",
+      iconColor: "text-amber-600",
+      icon: Clock3,
+    },
+    {
+      key: "approved",
+      title: "Approved Clearances",
+      value: stats?.approvedClearances ?? 0,
+      accent: "border-indigo-400 bg-indigo-50",
+      iconColor: "text-indigo-600",
+      icon: CheckCircle2,
+    },
+    {
+      key: "departments",
+      title: "Departments",
+      value: stats?.totalDepartments ?? 0,
+      accent: "border-orange-400 bg-orange-50",
+      iconColor: "text-orange-600",
+      icon: Building2,
+    },
+    {
+      key: "schools",
+      title: "Schools",
+      value: stats?.totalSchools ?? 0,
+      accent: "border-blue-400 bg-blue-50",
+      iconColor: "text-blue-600",
+      icon: School,
+    },
+    {
+      key: "offices",
+      title: "Clearance Offices",
+      value: stats?.totalOffices ?? 0,
+      accent: "border-pink-400 bg-pink-50",
+      iconColor: "text-pink-600",
+      icon: Briefcase,
+    },
+  ];
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
 
-      {/* HEADER */}
-
-      <div className="flex items-center justify-between">
-
-        <div>
-          <h2 className="text-3xl font-bold text-slate-800">
-            Student Clearance Dashboard
-          </h2>
-
-          <p className="text-slate-500 mt-2">
-            Monitor student clearance
-            progress, approvals,
-            departments and office
-            activities across the
-            university.
-          </p>
-        </div>
-
-        <div
-          className="
-            hidden md:flex
-            items-center gap-3
-            bg-indigo-50
-            text-indigo-700
-            px-5 py-3
-            rounded-2xl
-            border border-indigo-100
-          "
-        >
-          <ClipboardCheck size={22} />
-
-          <div>
-            <p className="text-sm font-medium">
-              Clearance System
-            </p>
-
-            <p className="text-xs text-indigo-500">
-              Active & Operational
-            </p>
-          </div>
-        </div>
-
+      {/* ── Stats grid ── */}
+      <div className="grid grid-cols-2 xl:grid-cols-3 gap-4">
+        {statCards.map(({ key, ...cardProps }) => (
+          <StatCard key={key} {...cardProps} loading={loading} />
+        ))}
       </div>
 
-      {/* STATS */}
+      {/* ── Bottom grid ── */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
 
-      <div
-        className="
-          grid grid-cols-1
-          sm:grid-cols-2
-          xl:grid-cols-3
-          gap-6
-        "
-      >
-        {stats.map((item) => {
-
-          const Icon = item.icon;
-
-          return (
-            <div
-              key={item.title}
-              className="
-                bg-white
-                border border-slate-200
-                rounded-3xl
-                p-6
-                shadow-sm
-                hover:shadow-md
-                transition-all
-              "
-            >
-              <div className="flex items-center justify-between">
-
-                <div>
-                  <p className="text-sm text-slate-500">
-                    {item.title}
-                  </p>
-
-                  <h3 className="text-4xl font-bold text-slate-800 mt-3">
-                    {item.value}
-                  </h3>
-                </div>
-
-                <div
-                  className={`
-                    h-16 w-16
-                    rounded-2xl
-                    flex items-center justify-center
-                    ${item.color}
-                  `}
-                >
-                  <Icon size={30} />
-                </div>
-
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* MAIN GRID */}
-
-      <div
-        className="
-          grid grid-cols-1
-          xl:grid-cols-3
-          gap-6
-        "
-      >
-
-        {/* RECENT ACTIVITIES */}
-
-        <div
-          className="
-            xl:col-span-2
-            bg-white
-            border border-slate-200
-            rounded-3xl
-            p-6
-            shadow-sm
-          "
-        >
-          <div className="flex items-center justify-between mb-6">
-
+        {/* Recent activity */}
+        <div className="xl:col-span-2 bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
             <div>
-              <h3 className="text-xl font-bold text-slate-800">
-                Recent Clearance Activities
-              </h3>
-
-              <p className="text-sm text-slate-500 mt-1">
-                Latest updates from
-                offices and departments
-              </p>
+              <h3 className="text-sm font-semibold text-slate-800">Recent Clearance Activity</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Latest approval actions across all offices</p>
             </div>
-
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Live
+            </span>
           </div>
 
-          <div className="space-y-4">
-
-            {recentActivities.map(
-              (activity, index) => (
+          <div className="divide-y divide-slate-50">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-5 py-3.5">
+                  <div className="skeleton w-2 h-2 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="skeleton h-3.5 rounded w-2/3" />
+                    <div className="skeleton h-3 rounded w-1/3" />
+                  </div>
+                  <div className="skeleton h-3 rounded w-16" />
+                </div>
+              ))
+            ) : !stats?.recentActivity?.length ? (
+              <div className="px-5 py-10 text-center text-slate-400 text-sm">
+                No clearance activity yet.
+              </div>
+            ) : (
+              stats.recentActivity.map((item) => (
                 <div
-                  key={index}
-                  className="
-                    flex items-center justify-between
-                    border border-slate-100
-                    rounded-2xl
-                    p-4
-                    hover:bg-slate-50
-                    transition
-                  "
+                  key={item.id}
+                  className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50 transition-colors"
                 >
-                  <div>
-                    <p className="font-semibold text-slate-700">
-                      {
-                        activity.student
-                      }
+                  {item.status === "APPROVED" ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">
+                      {activityLabel(item)}
                     </p>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                      {
-                        activity.action
-                      }
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      {item.studentName}{" "}
+                      <span className="font-mono text-slate-300">·</span>{" "}
+                      {item.studentId}
                     </p>
                   </div>
-
-                  <span className="text-xs text-slate-400">
-                    {activity.time}
+                  <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
+                    {timeAgo(item.approvedAt)}
                   </span>
                 </div>
-              )
+              ))
             )}
-
           </div>
         </div>
 
-
-        <div
-          className="
-            bg-linear-to-br
-            from-indigo-600
-            to-indigo-500
-            rounded-3xl
-            p-6
-            text-white
-            shadow-lg
-          "
-        >
-          <h3 className="text-2xl font-bold">
-            Quick Actions
-          </h3>
-
-          <p className="text-indigo-100 mt-2">
-            Manage student clearance
-            operations quickly from one
-            place.
-          </p>
-
-          <div className="mt-6 space-y-3">
-
-            <button
-              className="
-                w-full
-                bg-white/10
-                hover:bg-white/20
-                transition
-                rounded-2xl
-                p-4
-                text-left
-              "
-            >
-              Register New Student
-            </button>
-
-            <button
-              className="
-                w-full
-                bg-white/10
-                hover:bg-white/20
-                transition
-                rounded-2xl
-                p-4
-                text-left
-              "
-            >
-              Assign Advisors
-            </button>
-
-            <button
-              className="
-                w-full
-                bg-white/10
-                hover:bg-white/20
-                transition
-                rounded-2xl
-                p-4
-                text-left
-              "
-            >
-              Review Pending Clearances
-            </button>
-
-            <button
-              className="
-                w-full
-                bg-white/10
-                hover:bg-white/20
-                transition
-                rounded-2xl
-                p-4
-                text-left
-              "
-            >
-              Generate Clearance Reports
-            </button>
-
+        {/* Quick actions */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-slate-100">
+            <h3 className="text-sm font-semibold text-slate-800">Quick Actions</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Common admin tasks</p>
           </div>
-        </div>
-
-      </div>
-
-      {/* FOOTER STATUS */}
-
-      <div
-        className="
-          bg-white
-          border border-slate-200
-          rounded-3xl
-          p-6
-          shadow-sm
-        "
-      >
-        <div className="flex items-center gap-4">
-
-          <div
-            className="
-              h-14 w-14
-              rounded-2xl
-              bg-emerald-100
-              text-emerald-700
-              flex items-center justify-center
-            "
-          >
-            <ClipboardCheck size={28} />
+          <div className="p-4 space-y-2.5">
+            {quickActions.map((a) => (
+              <Link
+                key={a.label}
+                href={a.href}
+                className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-medium text-white transition-all ${a.color}`}
+              >
+                {a.label}
+                <ArrowRight size={14} />
+              </Link>
+            ))}
           </div>
 
-          <div>
-            <h4 className="text-lg font-bold text-slate-800">
-              Clearance Workflow Status
-            </h4>
-
-            <p className="text-slate-500 mt-1">
-              All clearance modules,
-              office approvals,
-              advisor assignments and
-              department operations are
-              functioning normally.
+          <div className="mx-4 mb-4 p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-xs font-semibold text-emerald-700">All systems normal</p>
+            </div>
+            <p className="text-[11px] text-emerald-600 mt-1">
+              Clearance workflow, notifications and approvals are running smoothly.
             </p>
           </div>
-
         </div>
-      </div>
 
+      </div>
     </div>
   );
 }

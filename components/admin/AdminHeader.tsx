@@ -1,47 +1,32 @@
 "use client";
 
-import Link from "next/link";
-import { PlusCircle } from "lucide-react";
-import {tabs,TabKey,} from "./tabConfig";
+import { Menu } from "lucide-react";
+import { tabs, TabKey } from "./tabConfig";
 
 type Props = {
   activeTab: TabKey;
+  onMenuClick: () => void;
 };
 
-export default function AdminHeader({
-  activeTab,
-}: Props) {
-
-  const currentTab = tabs.find(
-    (tab) => tab.key === activeTab
-  );
+export default function AdminHeader({ activeTab, onMenuClick }: Props) {
+  const currentTab = tabs.find((tab) => tab.key === activeTab);
 
   return (
-    <div className="mb-6 flex items-center justify-between">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-800">
-          {currentTab?.label}
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          University management system
-          administration panel
-        </p>
+    <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center gap-3">
+      <button
+        onClick={onMenuClick}
+        className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition md:hidden"
+        aria-label="Open sidebar"
+      >
+        <Menu size={18} />
+      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-xs text-slate-400">Admin</span>
+        <span className="text-xs text-slate-300">/</span>
+        <span className="text-xs font-semibold text-slate-700">
+          {currentTab?.label ?? "Dashboard"}
+        </span>
       </div>
-
-      {currentTab?.action && (
-        <Link
-          href={currentTab.action.href}
-          className={`
-            flex items-center gap-2
-            text-white px-4 py-2 rounded-xl
-            text-sm font-medium shadow-sm transition
-            ${currentTab.action.color}
-          `}
-        >
-          <PlusCircle size={16} />
-          {currentTab.action.label}
-        </Link>
-      )}
     </div>
   );
 }

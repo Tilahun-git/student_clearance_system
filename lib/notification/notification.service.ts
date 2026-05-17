@@ -1,82 +1,44 @@
-import {Notification,Student,} from "@prisma/client";
+import { Student } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendNotification } from "@/lib/notify";
 
+/** Notify the student's advisor and department head when a new clearance request is created. */
+export async function notifyInitialApprovers(student: Student, clearanceId: string) {
+  const notifications: Promise<any>[] = [];
 
-export async function notifyInitialApprovers(student: Student,clearanceId: string) {
-  const notifications: Promise<Notification>[] = [];
   if (student.advisorId) {
-    const advisor = await prisma.staff.findUnique({
-        where: {
-          id: student.advisorId,
-        },
-      });
+    const advisor = await prisma.staff.findUnique({ where: { id: student.advisorId } });
     if (advisor?.userId) {
-
       notifications.push(
         sendNotification({
           userId: advisor.userId,
           message: `New clearance request from ${student.studentId}`,
           referenceId: clearanceId,
-        })
+          forRole: "ADVISOR",
+        }),
       );
     }
   }
-  if (student.departmentId) {
-    const department = await prisma.department.findUnique({
-        where: {
-          id: student.departmentId,
-        },
-        include: {
-          head: true,
-        },
-      });
-
-    if (department?.head?.userId) {
-
-      notifications.push(
-        sendNotification({
-          userId: department.head.userId,
-          message: "New clearance request awaiting your review",
-          referenceId: clearanceId,
-        })
-      );
-    }
-  }
-  await Promise.allSettled(
-    notifications
-  );
+  await Promise.allSettled(notifications);
 }
 
-export async function notifyRole(roleName: string,message: string,clearanceId?: string
-) {
-
+// Notify all users who hold a specific role.
+export async function notifyRole(roleName: string, message: string, clearanceId?: string) {
   const role = await prisma.role.findUnique({
-      where: {
-        name: roleName,
-      },
-      include: {
-        users: {
-          include: {
-            user: true,
-          },
-        },
-      },
-    });
+    where: { name: roleName as any },
+    include: { users: { include: { user: true } } },
+  });
 
-  if (!role) {
-    return;
-  }
+  if (!role) return;
 
-  const notifications =
+  await Promise.allSettled(
     role.users.map((userRole) =>
       sendNotification({
         userId: userRole.user.id,
         message,
         referenceId: clearanceId,
-      })
-    );
-  await Promise.allSettled(
-    notifications
+        forRole: roleName,
+      }),
+    ),
   );
 }

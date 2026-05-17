@@ -13,6 +13,8 @@ model User {
   password  String
   createdAt DateTime @default(now())
   name      String
+  isActive  Boolean  @default(true)
+  mustChangePassword Boolean @default(false)
 
   staffProfile   Staff?
   studentProfile Student?
@@ -21,8 +23,8 @@ model User {
 }
 
 model Role {
-  id   String @id @default(uuid())
-  name String @unique
+  id   String   @id @default(uuid())
+  name RoleType @unique
 
   approvals ClearanceApproval[]
   users     UserRole[]
@@ -44,7 +46,6 @@ model Student {
 
   advisorId    String?
   departmentId String
-  facultyId    String?
   schoolId     String?
 
   program    String
@@ -57,10 +58,10 @@ model Student {
 
   certificates      ClearanceCertificate[]
   clearanceRequests ClearanceRequest[]
+  libraryBorrows    LibraryBorrow[]
 
   advisor    Staff?     @relation("AdvisorStudents", fields: [advisorId], references: [id])
   department Department @relation(fields: [departmentId], references: [id])
-  faculty    Faculty?   @relation(fields: [facultyId], references: [id])
   school     School?    @relation(fields: [schoolId], references: [id])
   user       User?      @relation(fields: [userId], references: [id])
 }
@@ -69,14 +70,12 @@ model Staff {
   id     String @id @default(uuid())
   userId String @unique
 
-  facultyId    String?
   schoolId     String?
   departmentId String?
 
   approvals ClearanceApproval[]
 
   department Department? @relation(fields: [departmentId], references: [id])
-  faculty    Faculty?    @relation(fields: [facultyId], references: [id])
   school     School?     @relation(fields: [schoolId], references: [id])
 
   user User @relation(fields: [userId], references: [id])
@@ -88,7 +87,7 @@ model Staff {
   headOfDepartment Department? @relation("DepartmentHead")
   deanOfSchool     School?     @relation("SchoolDean")
 
-  facultyDean Faculty? @relation("FacultyDean")
+  libraryBorrowsAdded LibraryBorrow[]
 }
 
 model ClearanceStaffOffice {
@@ -102,32 +101,16 @@ model ClearanceStaffOffice {
   approvals ClearanceApproval[]
 }
 
-model Faculty {
-  id   String @id @default(uuid())
-  name String
-
-  faculty_deanId String? @unique
-  faculty_dean   Staff?  @relation("FacultyDean", fields: [faculty_deanId], references: [id])
-
-  clearanceRequests ClearanceRequest[]
-  schools           School[]
-  students          Student[]
-  staff             Staff[]
-}
-
 model School {
   id            String  @id @default(uuid())
   name          String
-  facultyId     String
   school_deanId String? @unique
   school_dean   Staff?  @relation("SchoolDean", fields: [school_deanId], references: [id])
 
   clearanceRequests ClearanceRequest[]
   departments       Department[]
-
-  faculty  Faculty   @relation(fields: [facultyId], references: [id])
-  staff    Staff[]
-  students Student[]
+  staff             Staff[]
+  students          Student[]
 }
 
 model Department {
@@ -156,13 +139,11 @@ model ClearanceRequest {
   resubmissionCount Int             @default(0)
   rejectedByRole    String?
   departmentId      String?
-  facultyId         String?
   schoolId          String?
 
   approvals   ClearanceApproval[]
   certificate ClearanceCertificate?
   department  Department?           @relation(fields: [departmentId], references: [id])
-  faculty     Faculty?              @relation(fields: [facultyId], references: [id])
   school      School?               @relation(fields: [schoolId], references: [id])
   student     Student               @relation(fields: [studentId], references: [id])
 }
@@ -181,8 +162,7 @@ model ClearanceApproval {
   clearanceRequest ClearanceRequest @relation(fields: [clearanceRequestId], references: [id])
   role             Role             @relation(fields: [roleId], references: [id])
   staff            Staff?           @relation(fields: [staffId], references: [id])
-
-  office ClearanceStaffOffice? @relation(fields: [officeId], references: [id])
+  office           ClearanceStaffOffice? @relation(fields: [officeId], references: [id])
 
   @@unique([clearanceRequestId, roleId])
 }
@@ -202,12 +182,24 @@ model ClearanceCertificate {
   student Student          @relation(fields: [studentId], references: [id])
 }
 
+model LibraryBorrow {
+  id        String   @id @default(uuid())
+  studentId String
+  addedBy   String
+  returned  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  student Student @relation(fields: [studentId], references: [id])
+  staff   Staff   @relation(fields: [addedBy], references: [id])
+}
+
 model Notification {
   id          String   @id @default(uuid())
   userId      String
   message     String
   read        Boolean  @default(false)
   referenceId String?
+  forRole     String?
   createdAt   DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
@@ -224,4 +216,19 @@ enum ApprovalStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum RoleType {
+  STUDENT
+  ADVISOR
+  DEPARTMENT_HEAD
+  SCHOOL_DEAN
+  LIBRARY
+  REGISTRAR
+  ADMIN
+  CAFETERIA
+  DORMITORY
+  STUDENT_DEAN
+  CAMPUS_POLICE
+  FINANCE
 }

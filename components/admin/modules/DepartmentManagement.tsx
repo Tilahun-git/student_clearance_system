@@ -1,151 +1,122 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Building2 } from "lucide-react";
+import PageHeader from "../PageHeader";
+import toast from "react-hot-toast";
+import { fetchDepartments, assignDepartmentHead, deleteDepartment } from "@/lib/api/admin";
+import DepartmentTable, { type DepartmentRow } from "@/components/tables/DepartmentTable";
+import ConfirmDeleteModal from "@/components/UI/ConfirmDeleteModal";
+import Pagination from "@/components/UI/Pagination";
+import { usePagination } from "@/hooks/usePagination";
 
-type Department = {
-  id: string;
-
-  name: string;
-
-  school?: {
-    name?: string;
-  };
-
-  head?: {
-    user?: {
-      name?: string;
-    };
-  };
-};
+const PAGE_SIZE = 10;
 
 export default function DepartmentManagement() {
+  const [departments, setDepartments] = useState<DepartmentRow[]>([]);
+  const [loading, setLoading]         = useState(true);
+  const [selectedDept, setSelectedDept] = useState<string | null>(null);
+  const [headOptions, setHeadOptions]   = useState<any[]>([]);
+  const [assigning, setAssigning]       = useState(false);
+  const [deletingId, setDeletingId]     = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DepartmentRow | null>(null);
 
-  const [departments, setDepartments] =
-    useState<Department[]>([]);
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("/api/department")
-      .then((res) => res.json())
-      .then((data) => setDepartments(data))
+  function loadDepartments() {
+    setLoading(true);
+    fetchDepartments()
+      .then((data) => setDepartments(Array.isArray(data) ? data : []))
+      .catch(() => setDepartments([]))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { loadDepartments(); }, []);
+
+  async function openAssign(deptId: string) {
+    setSelectedDept(deptId);
+    const res  = await fetch(`/api/staff/by-role/DEPARTMENT_HEAD`);
+    const data = await res.json();
+    setHeadOptions(Array.isArray(data) ? data : []);
+  }
+
+  async function handleAssignHead(departmentId: string, headId: string) {
+    if (!headId) return;
+    setAssigning(true);
+    try {
+      await assignDepartmentHead(departmentId, headId);
+      loadDepartments();
+      setSelectedDept(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to assign head");
+    } finally {
+      setAssigning(false);
+    }
+  }
+
+  async function confirmDeleteDepartment() {
+    if (!pendingDelete) return;
+    setDeletingId(pendingDelete.id);
+    try {
+      await deleteDepartment(pendingDelete.id);
+      setDepartments((prev) => prev.filter((d) => d.id !== pendingDelete.id));
+      toast.success("Department deleted");
+      setPendingDelete(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to delete department");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  const { page, totalPages, totalItems, paged, goTo } = usePagination(departments, PAGE_SIZE);
 
   return (
-    <div className="bg-gray-50 min-h-full p-6 rounded-xl">
+    <div>
+      <PageHeader
+        icon={Building2}
+        iconBg="bg-purple-100"
+        iconColor="text-purple-600"
+        title="Department Management"
+        subtitle="Manage departments and assign heads"
+        action={{ href: "/admin/manage-faculty/add-department", label: "Add Department", color: "bg-purple-600 hover:bg-purple-700" }}
+        badge={
+          !loading && departments.length > 0 ? (
+            <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+              {departments.length} total
+            </span>
+          ) : undefined
+        }
+      />
 
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <DepartmentTable
+        departments={paged}
+        loading={loading}
+        selectedDept={selectedDept}
+        headOptions={headOptions}
+        assigning={assigning}
+        deletingId={deletingId}
+        onOpenAssign={openAssign}
+        onAssignHead={handleAssignHead}
+        onCancelAssign={() => setSelectedDept(null)}
+        onDelete={(id) => setPendingDelete(departments.find((d) => d.id === id) ?? null)}
+      />
 
-        <h2 className="text-2xl font-semibold text-gray-900">
-          Department Management
-        </h2>
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        pageSize={PAGE_SIZE}
+        onPageChange={goTo}
+      />
 
-        <Link
-          href="/admin/manage-faculty/add-department"
-          className="
-            bg-purple-600 hover:bg-purple-700
-            text-white px-4 py-2
-            rounded-lg shadow-sm transition
-          "
-        >
-          + Add Department
-        </Link>
-
-      </div>
-
-      {/* TABLE */}
-      <div className="
-        bg-white border border-gray-200
-        rounded-xl shadow-sm overflow-hidden
-      ">
-
-        <table className="w-full text-sm">
-
-          <thead className="
-            bg-gray-50 text-gray-600
-            uppercase text-xs tracking-wider
-          ">
-            <tr>
-
-              <th className="text-left p-4">
-                Department
-              </th>
-
-              <th className="text-left p-4">
-                School
-              </th>
-
-              <th className="text-left p-4">
-                Head
-              </th>
-
-            </tr>
-          </thead>
-
-          <tbody>
-
-            {loading ? (
-              <tr>
-                <td colSpan={3} className="p-6 text-center text-gray-400">
-                  Loading...
-                </td>
-              </tr>
-            ) : departments.length === 0 ? (
-              <tr>
-                <td colSpan={3} className="p-6 text-center text-gray-400">
-                  No departments found
-                </td>
-              </tr>
-            ) : (
-
-              departments.map((d) => (
-
-                <tr key={d.id} className="border-t hover:bg-gray-50">
-
-                  <td className="p-4 font-medium text-gray-900">
-                    {d.name}
-                  </td>
-
-                  <td className="p-4 text-gray-700">
-                    {d.school?.name ?? (
-                      <span className="text-gray-400">
-                        Not assigned
-                      </span>
-                    )}
-                  </td>
-
-                  <td className="p-4">
-
-                    {d.head?.user?.name ? (
-                      <span className="
-                        inline-flex px-3 py-1
-                        rounded-full bg-indigo-100
-                        text-indigo-700 text-xs font-medium
-                      ">
-                        {d.head.user.name}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">
-                        No head assigned
-                      </span>
-                    )}
-
-                  </td>
-
-                </tr>
-
-              ))
-
-            )}
-
-          </tbody>
-
-        </table>
-
-      </div>
+      <ConfirmDeleteModal
+        open={!!pendingDelete}
+        title="Delete Department"
+        description={`"${pendingDelete?.name}" and all its data will be permanently removed.`}
+        confirmLabel="Delete Department"
+        loading={!!deletingId}
+        onConfirm={confirmDeleteDepartment}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }

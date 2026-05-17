@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -7,7 +8,7 @@ export async function GET() {
         roles: {
           some: {
             role: {
-              name: "STUDENT",
+              name: RoleType.STUDENT,
             },
           },
         },

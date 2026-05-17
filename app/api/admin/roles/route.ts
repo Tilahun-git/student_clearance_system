@@ -1,59 +1,42 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { ROLE_TYPES } from "@/lib/roles";
+import { RoleType } from "@prisma/client";
+
+const VALID_ROLES = ROLE_TYPES;
 
 export async function POST(req: Request) {
   try {
     const { name } = await req.json();
-
     if (!name) {
-      return NextResponse.json(
-        { error: "Role name is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Role name is required" }, { status: 400 });
     }
-
     const normalizedName = name.toUpperCase().trim();
-
-    const existing = await prisma.role.findUnique({
-      where: { name: normalizedName },
-    });
-
-    if (existing) {
+    if (!VALID_ROLES.includes(normalizedName as RoleType)) {
       return NextResponse.json(
-        { error: "Role already exists" },
-        { status: 400 }
+        { error: `Invalid role. Must be one of: ${VALID_ROLES.join(", ")}` },
+        { status: 400 },
       );
     }
 
-    const role = await prisma.role.create({
-      data: {
-        name: normalizedName,
-      },
-    });
+    const existing = await prisma.role.findUnique({ where: { name: normalizedName } });
+    if (existing) {
+      return NextResponse.json({ error: "Role already exists" }, { status: 400 });
+    }
 
+    const role = await prisma.role.create({ data: { name: normalizedName } });
     return NextResponse.json(role, { status: 201 });
   } catch (error) {
     console.error("CREATE ROLE ERROR:", error);
-
-    return NextResponse.json(
-      { error: "Failed to create role" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to create role" }, { status: 500 });
   }
 }
 
 export async function GET() {
   try {
-    const roles = await prisma.role.findMany({
-      orderBy: { name: "asc" },
-    });
-
-    console.log("fetched roles to register are : ",roles)
+    const roles = await prisma.role.findMany({ orderBy: { name: "asc" } });
     return NextResponse.json(roles);
   } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to fetch roles" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch roles" }, { status: 500 });
   }
-} 
+}

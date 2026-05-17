@@ -1,45 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
 import ApprovalTable from "@/components/UI/ApprovalTable";
-import {
-  fetchApprovals,
-  updateApproval,
-  bulkApproveApprovals,
-} from "@/lib/api/clearance";
-
-import { ApprovalStatus } from "@prisma/client";
-
+import { fetchApprovals, updateApproval, bulkApproveApprovals } from "@/lib/api/clearance";
+import { fetchBlockedStudentIds } from "@/lib/api/library";
+import { ApprovalStatus, RoleType } from "@prisma/client";
 import { ClearanceApprovalRequest } from "@/types/clearance";
+import { ClipboardCheck, CheckCheck, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import Pagination from "@/components/UI/Pagination";
+import { usePagination } from "@/hooks/usePagination";
 
-type Props = {
-  role: string;
-};
+const PAGE_SIZE = 10;
 
-export default function RoleApprovalPage({
-  role,
-}: Props) {
+type Props = { role: string };
+
+export default function RoleApprovalPage({ role }: Props) {
+  const { status } = useSession();
   const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]);
-
   const [loading, setLoading] = useState(true);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [submittingReject, setSubmittingReject] = useState(false);
+  const [blockedStudentIds, setBlockedStudentIds] = useState<Set<string>>(new Set());
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Wait for session before fetching — avoids 401 on first render
+  useEffect(() => {
+    if (status !== "authenticated") return;
+    loadRequests();
+  }, [role, status]);
 
   useEffect(() => {
-    loadRequests();
-  }, [role]);
+    if (role !== RoleType.LIBRARY || status !== "authenticated") return;
+    fetchBlockedStudentIds()
+      .then((ids) => setBlockedStudentIds(new Set(ids)))
+      .catch(() => setBlockedStudentIds(new Set()));
+  }, [role, status]);
+
+  useEffect(() => {
+    if (rejectingId) {
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+  }, [rejectingId]);
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      if (e.key === "Escape") closeRejectModal();
+    }
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, []);
 
   async function loadRequests() {
     try {
       setLoading(true);
       const data = await fetchApprovals();
-
       setRequests(Array.isArray(data) ? data : []);
-
-      console.log("fetched requests are : ", requests)
     } catch {
       toast.error(`Failed to load ${role} requests`);
       setRequests([]);
@@ -50,66 +68,43 @@ export default function RoleApprovalPage({
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) =>
-      prev.includes(id)
-        ? prev.filter((x) => x !== id)
-        : [...prev, id]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
   }
 
   function toggleSelectAll() {
-    setSelectedIds((prev) =>
-      prev.length === requests.length
-        ? []
-        : requests.map((r) => r.id)
-    );
+    // Only select non-blocked requests
+    const selectableIds = requests
+      .filter((r) => !blockedStudentIds.has(r.clearanceRequest.student.studentId))
+      .map((r) => r.id);
+    const allSelected = selectableIds.every((id) => selectedIds.includes(id));
+    setSelectedIds(allSelected ? [] : selectableIds);
   }
 
   async function approve(id: string) {
     try {
-      await updateApproval(
-        id,
-        ApprovalStatus.APPROVED
-      );
-
+      await updateApproval(id, ApprovalStatus.APPROVED);
       toast.success("Approved successfully");
-
-      setRequests((prev) =>
-        prev.filter((r) => r.id !== id)
-      );
-
-      setSelectedIds((prev) =>
-        prev.filter((x) => x !== id)
-      );
-    } catch {
-      toast.error("Error approving request");
+      setRequests((prev) => prev.filter((r) => r.id !== id));
+      setSelectedIds((prev) => prev.filter((x) => x !== id));
+    } catch (err: any) {
+      toast.error(err?.message || "Error approving request");
     }
   }
 
   async function approveSelected() {
-    if (!selectedIds.length) {
-      return toast.error("No requests selected");
-    }
-
+    if (!selectedIds.length) return toast.error("No requests selected");
     try {
       await bulkApproveApprovals(selectedIds);
-
-      toast.success(
-        "Selected requests approved"
-      );
-
-      setRequests((prev) =>
-        prev.filter(
-          (r) => !selectedIds.includes(r.id)
-        )
-      );
-
+      toast.success("Selected requests approved");
+      setRequests((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
       setSelectedIds([]);
     } catch {
       toast.error("Bulk approval failed");
     }
   }
 
-  function openReject(id: string) {
+  function openRejectModal(id: string) {
     setRejectingId(id);
     setComment("");
   }
@@ -117,38 +112,15 @@ export default function RoleApprovalPage({
   function closeRejectModal() {
     setRejectingId(null);
     setComment("");
-    setSubmittingReject(false);
   }
 
   async function submitReject() {
-    if (!comment.trim()) {
-      return toast.error(
-        "Enter rejection reason"
-      );
-    }
-
+    if (!comment.trim()) return toast.error("Please enter a rejection reason");
     try {
       setSubmittingReject(true);
-
-      await updateApproval(
-        rejectingId!,
-        ApprovalStatus.REJECTED,
-        comment
-      );
-
-      toast.success("Rejected successfully");
-
-      setRequests((prev) =>
-        prev.filter(
-          (r) => r.id !== rejectingId
-        )
-      );
-
-      setSelectedIds((prev) =>
-        prev.filter(
-          (id) => id !== rejectingId
-        )
-      );
+      await updateApproval(rejectingId!, ApprovalStatus.REJECTED, comment);
+      toast.success("Request rejected");
+      setRequests((prev) => prev.filter((r) => r.id !== rejectingId));
       closeRejectModal();
     } catch {
       toast.error("Error rejecting request");
@@ -157,143 +129,175 @@ export default function RoleApprovalPage({
     }
   }
 
+  const { page, totalPages, totalItems, paged, goTo } = usePagination(requests, PAGE_SIZE);
+
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="w-full px-4 sm:px-6 py-4 space-y-4">
-        <section className="bg-white border border-slate-200 rounded-2xl shadow-sm p-4 sm:p-6">
-          {loading ? (
-            <div className="py-20 flex items-center justify-center">
-              <p className="text-slate-500 text-sm sm:text-base">
-                Loading approvals...
-              </p>
-            </div>
-          ) : requests.length === 0 ? (
-            <div className="py-20 flex items-center justify-center">
-              <p className="text-slate-500 text-sm sm:text-base text-center">
-                No pending approvals received
-              </p>
-            </div>
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-xl bg-indigo-100">
+            <ClipboardCheck className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div>
+            <h1 className="text-base font-semibold text-slate-800">
+              Clearance Requests
+            </h1>
+            <p className="text-xs text-slate-500">
+              {role.replace(/_/g, " ")} · {requests.length} pending
+            </p>
+          </div>
+        </div>
 
-          ) : (
-            <div className="space-y-4">
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-slate-50 border border-slate-200 rounded-2xl p-4">
-                <div className="flex items-center flex-wrap gap-3">
-                  <span className="text-sm font-medium text-slate-700">
-                    Selected
-                  </span>
-                  <span className="inline-flex items-center justify-center min-w-8 px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                    {selectedIds.length}
-                  </span>
-
-                  <span className="text-xs text-slate-500">
-                    of {requests.length}
-                  </span>
-
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-
-                  <button
-                    onClick={toggleSelectAll}
-                    className="px-4 py-2 text-sm font-medium rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition"
-                  >
-                    {selectedIds.length ===
-                    requests.length
-                      ? "Unselect All"
-                      : "Select All"}
-                  </button>
-
-                  <button
-                    onClick={approveSelected}
-                    disabled={!selectedIds.length}
-                    className={`px-4 py-2 text-sm font-medium rounded-xl transition ${
-                      !selectedIds.length
-                        ? "bg-green-200 text-green-700 cursor-not-allowed"
-                        : "bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                    }`}
-                  >
-                    Approve Selected
-                  </button>
-
-                </div>
-
-              </div>
-
-              {/* TABLE */}
-
-              <ApprovalTable
-                requests={requests}
-                onApprove={approve}
-                onReject={openReject}
-                selectedIds={selectedIds}
-                onToggleSelect={toggleSelect}
-              />
-
-            </div>
-          )}
-
-        </section>
-
+        {selectedIds.length > 0 && (
+          <button
+            onClick={approveSelected}
+            className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-sm transition"
+          >
+            <CheckCheck size={15} />
+            Approve {selectedIds.length} selected
+          </button>
+        )}
       </div>
 
-      {rejectingId && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center px-4 py-6">
-          <div className="w-full max-w-md sm:max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="border-b border-slate-200 px-5 sm:px-6 py-4 bg-red-50">
-              <h2 className="text-lg sm:text-xl font-semibold text-red-600">
-                Reject Clearance Request
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                Please provide a reason for rejection.
-              </p>
-            </div>
-            <div className="p-5 sm:p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">
-                  Rejection Reason
-                </label>
-                <textarea
-                  rows={6}
-                  placeholder="Enter detailed rejection reason..."
-                  value={comment}
-                  onChange={(e) =>
-                    setComment(e.target.value)
-                  }
-                  className="w-full resize-none rounded-2xl border border-slate-300 p-4 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 transition"
-                />
-              </div>
-
-            </div>
-            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 px-5 sm:px-6 py-4 border-t border-slate-200 bg-slate-50">
-              <button
-                onClick={closeRejectModal}
-                disabled={submittingReject}
-                className="px-5 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition disabled:opacity-50"
-              >
-                Cancel
-              </button>
-
-              <button
-                onClick={submitReject}
-                disabled={submittingReject}
-                className={`px-5 py-2.5 rounded-xl text-white transition ${
-                  submittingReject
-                    ? "bg-red-300 cursor-not-allowed"
-                    : "bg-red-600 hover:bg-red-700"
-                }`}
-              >
-                {submittingReject
-                  ? "Submitting..."
-                  : "Submit Rejection"}
-              </button>
-
-            </div>
-
-          </div>
-
+      {/* Select all bar */}
+      {requests.length > 1 && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="select-all"
+            checked={
+              requests
+                .filter((r) => !blockedStudentIds.has(r.clearanceRequest.student.studentId))
+                .every((r) => selectedIds.includes(r.id)) &&
+              requests.some((r) => !blockedStudentIds.has(r.clearanceRequest.student.studentId))
+            }
+            onChange={toggleSelectAll}
+            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
+          />
+          <label htmlFor="select-all" className="text-sm text-slate-600 cursor-pointer">
+            Select all ({requests.filter((r) => !blockedStudentIds.has(r.clearanceRequest.student.studentId)).length} eligible)
+          </label>
         </div>
       )}
 
+      {/* Content */}
+      {loading ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-slate-500">Loading requests…</p>
+          </div>
+        </div>
+      ) : requests.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-3">
+            <CheckCheck className="w-6 h-6 text-emerald-600" />
+          </div>
+          <p className="text-slate-600 font-medium">All caught up!</p>
+          <p className="text-sm text-slate-400 mt-1">No pending requests at this time.</p>
+        </div>
+      ) : (
+        <>
+          <ApprovalTable
+            requests={paged}
+            onApprove={approve}
+            onReject={openRejectModal}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onToggleSelectAll={toggleSelectAll}
+            blockedStudentIds={blockedStudentIds}
+          />
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={PAGE_SIZE}
+            onPageChange={goTo}
+          />
+        </>
+      )}
+      {rejectingId && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop"
+          onClick={(e) => e.target === e.currentTarget && closeRejectModal()}
+        >
+          <div className="w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden modal-panel">
+            <div className="h-1.5 w-full bg-red-500" />
+
+            {/* Header */}
+            <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-red-100">
+                  <X className="w-4 h-4 text-red-600" />
+                </div>
+                <div>
+                  <h2 className="text-base font-semibold text-slate-800">Reject Request</h2>
+                </div>
+              </div>
+              <button
+                onClick={closeRejectModal}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <X size={15} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wide mb-2">
+                  Rejection Reason
+                </label>
+                <textarea
+                  ref={textareaRef}
+                  placeholder="Describe clearly why this request is being rejected."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={5}
+                  className="
+                    w-full px-4 py-3 text-sm
+                    border border-slate-200 rounded-xl
+                    resize-none bg-slate-50
+                    focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-300
+                    focus:bg-white
+                    placeholder:text-slate-400
+                    transition-all duration-150
+                  "
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  onClick={closeRejectModal}
+                  className="px-4 py-2 text-sm font-medium rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitReject}
+                  disabled={submittingReject || !comment.trim()}
+                  className="
+                    inline-flex items-center gap-2
+                    px-5 py-2 text-sm font-medium rounded-xl
+                    bg-red-600 text-white
+                    hover:bg-red-700
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    transition
+                  "
+                >
+                  {submittingReject ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Submitting…
+                    </>
+                  ) : (
+                    "Confirm Rejection"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

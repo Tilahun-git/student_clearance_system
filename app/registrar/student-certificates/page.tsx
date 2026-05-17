@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchStudentCertificates } from "@/lib/api/student";
 
 type Certificate = {
   id: string;
@@ -27,11 +28,9 @@ export default function RegistrarCertificatesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/student/clearance/certificates")
-      .then((res) => res.json())
-      .then((data) => {
-        setCertificates(Array.isArray(data) ? data : []);
-      })
+    fetchStudentCertificates()
+      .then((data) => setCertificates(Array.isArray(data) ? data : []))
+      .catch(() => setCertificates([]))
       .finally(() => setLoading(false));
   }, []);
 

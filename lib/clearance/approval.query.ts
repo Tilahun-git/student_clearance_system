@@ -15,14 +15,3 @@ export async function getApprovalById(id: string) {
   });
 }
 
-// export async function getRoleApprovals(
-//   requestId: string,
-//   roleName: string
-// ) {
-//   return prisma.clearanceApproval.findMany({
-//     where: {
-//       clearanceRequestId: requestId,
-//       role: { name: roleName },
-//     },
-//   });
-// }

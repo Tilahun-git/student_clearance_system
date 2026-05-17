@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
 
 export async function getAuthorizedStaff(userId: string) {
   return prisma.staff.findUnique({
@@ -17,9 +18,6 @@ export async function getAuthorizedStaff(userId: string) {
   });
 }
 
-export function hasRoleAccess(
-  roleNames: string[],
-  approvalRole: string
-) {
+export function hasRoleAccess(roleNames: string[],approvalRole: RoleType) {
   return roleNames.includes(approvalRole);
 }

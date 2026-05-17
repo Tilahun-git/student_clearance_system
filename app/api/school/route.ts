@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const url = new URL(req.url);
-    const facultyId = url.searchParams.get("facultyId");
-
     const schools = await prisma.school.findMany({
-      where: facultyId ? { facultyId } : {},
+      include: {
+        school_dean: { include: { user: { select: { name: true } } } },
+      },
+      orderBy: { name: "asc" },
     });
 
     return NextResponse.json(schools);
   } catch (error) {
+    console.error("SCHOOL_FETCH_ERROR", error);
     return NextResponse.json({ error: "Failed to fetch schools" }, { status: 500 });
   }
 }

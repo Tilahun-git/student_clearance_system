@@ -1,52 +1,53 @@
-export const WORKFLOW: Record<string, string[]> = {
-  ADVISOR: ["DEPARTMENT_HEAD"],
+import { RoleType } from "@prisma/client";
 
-  DEPARTMENT_HEAD: ["SCHOOL_DEAN"],
+export const WORKFLOW: Partial<Record<RoleType, RoleType[]>> = {
+  ADVISOR: [RoleType.DEPARTMENT_HEAD],
 
-  // school dean starts first office approvals
+  DEPARTMENT_HEAD: [RoleType.SCHOOL_DEAN],
+
   SCHOOL_DEAN: [
-    "LIBRARY",
-    "DORMITORY",
-    "CAFETERIA",
-    "CAMPUS_POLICE",
+    RoleType.LIBRARY,
+    RoleType.DORMITORY,
+    RoleType.CAFETERIA,
+    RoleType.CAMPUS_POLICE,
   ],
 
-  // after cafeteria + police approved
-  CAFETERIA: ["STUDENT_DEAN"],
+  CAFETERIA: [RoleType.STUDENT_DEAN],
 
-  CAMPUS_POLICE: ["STUDENT_DEAN"],
+  CAMPUS_POLICE: [RoleType.STUDENT_DEAN],
 
-  // independent office approvals
-  LIBRARY: [],
+  LIBRARY: [RoleType.REGISTRAR],
 
-  DORMITORY: [],
+  DORMITORY: [RoleType.REGISTRAR],
 
-  STUDENT_DEAN: [],
+  STUDENT_DEAN: [RoleType.REGISTRAR],
 
-  // final stage
   REGISTRAR: [],
 };
 
-export type WorkflowRole =
-  keyof typeof WORKFLOW;
-
-export function getNextRole(
-  currentRole: string
-): string[] {
-  return WORKFLOW[currentRole] || [];
+/** Returns the next roles that should be activated after currentRole approves. */
+export function getNextRoles(currentRole: RoleType): RoleType[] {
+  return WORKFLOW[currentRole] ?? [];
 }
 
-export function getFirstRole(): string {
-  return "ADVISOR";
+export const getNextRole = getNextRoles;
+
+/** Returns the first role in the workflow. */
+export function getFirstRole(): RoleType {
+  return RoleType.ADVISOR;
 }
 
-export function getRemainingFlow(
-  currentRole: string
-): string[] {
-  const result: string[] = [];
+/** Returns true if the role participates in the clearance workflow. */
+export function isWorkflowRole(role: RoleType): boolean {
+  return role in WORKFLOW;
+}
 
-  function traverse(role: string) {
-    const next = WORKFLOW[role] || [];
+/** Returns all downstream roles recursively. */
+export function getRemainingFlow(currentRole: RoleType): RoleType[] {
+  const result: RoleType[] = [];
+
+  function traverse(role: RoleType) {
+    const next = WORKFLOW[role] ?? [];
 
     for (const r of next) {
       if (!result.includes(r)) {
@@ -61,17 +62,36 @@ export function getRemainingFlow(
   return result;
 }
 
-export function getOfficeByRole(
-  role: string
+export function getOfficeCodeByRole(
+role: RoleType
 ) {
-  const map: Record<string, string> = {
-    LIBRARY: "LIBRARY",
-    DORMITORY: "DORMITORY",
-    CAFETERIA: "CAFETERIA",
-    CAMPUS_POLICE: "CAMPUS_POLICE",
-    STUDENT_DEAN: "STUDENT_DEAN",
-    REGISTRAR: "REGISTRAR",
-  };
 
-  return map[role] ?? null;
+switch (role) {
+
+case RoleType.LIBRARY:
+  return "LIBRARY";
+
+case RoleType.DORMITORY:
+  return "DORMITORY";
+
+case RoleType.CAFETERIA:
+  return "CAFETERIA";
+
+case RoleType.CAMPUS_POLICE:
+  return "CAMPUS_POLICE";
+
+case RoleType.REGISTRAR:
+  return "REGISTRAR";
+
+case RoleType.STUDENT_DEAN:
+  return "STUDENT_DEAN";
+
+default:
+  return null;
+
 }
+}
+
+
+/** Alias for backward compatibility. */
+export const getOfficeByRole = getOfficeCodeByRole;

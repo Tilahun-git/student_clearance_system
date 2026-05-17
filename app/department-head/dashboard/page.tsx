@@ -1,94 +1,69 @@
 "use client";
 
-import { useState } from "react";
-import { ClipboardCheck,Users,ChevronDown,ChevronRight,} from "lucide-react";
+import { useState, useEffect } from "react";
+import { Menu } from "lucide-react";
 import RoleApprovalPage from "@/components/layout/RoleApprovalPage";
 import AssignAdvisorSection from "@/components/department/AssignAdvisorSection";
-import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
-import Header from "@/components/layout/Header";
-
-type Tab = "approvals" | "assign-advisor";
+import DeptHeadSidebar, { DeptHeadTab } from "@/components/department-head/DeptHeadSidebar";
 
 export default function DepartmentHeadPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("approvals");
-  const [openAdvisorMenu, setOpenAdvisorMenu] = useState(false);
-  const [selectedSection, setSelectedSection] =useState("Section A");
+  const [activeTab, setActiveTab]           = useState<DeptHeadTab>("approvals");
+  const [selectedSection, setSelectedSection] = useState("A");
+  const [advisorMenuOpen, setAdvisorMenuOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen]         = useState(false);
+
+  // Default expanded on desktop after mount
+  useEffect(() => {
+    if (window.innerWidth >= 768) setSidebarOpen(true);
+  }, []);
+
+  const pageTitle =
+    activeTab === "approvals"
+      ? "Clearance Requests"
+      : `Assign Advisors — Section ${selectedSection}`;
 
   return (
-      <div className="min-h-screen  bg-slate-100">
-        <DashBoardNavbar/>
-              {/* <Header/> */}
-          <div className="min-h-screen flex bg-slate-100">
-            <aside className="w-72 bg-white border-r border-slate-200 shadow-sm">
+    <div className="flex flex-1 overflow-hidden">
+      <DeptHeadSidebar
+        open={sidebarOpen}
+        setOpen={setSidebarOpen}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        selectedSection={selectedSection}
+        setSelectedSection={setSelectedSection}
+        advisorMenuOpen={advisorMenuOpen}
+        setAdvisorMenuOpen={setAdvisorMenuOpen}
+      />
 
-            <div className="p-5 border-b">
-              <h2 className="text-xl font-bold text-slate-800">
-                Department Head
-              </h2>
-
-              <p className="text-sm text-slate-500 mt-1">
-                 Manage approvals and advisors
-              </p>
-            </div>
-        <nav className="p-4 space-y-2">
+      {/* Main content */}
+      <main className="flex-1 min-h-0 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+        {/* Header bar */}
+        <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 md:px-6 py-3 flex items-center gap-3">
+          {/* Hamburger — mobile only */}
           <button
-            onClick={() => setActiveTab("approvals")}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition ${
-              activeTab === "approvals"
-                ? "bg-indigo-100 text-indigo-700"
-                : "hover:bg-slate-100 text-slate-700"
-            }`}>
-            <ClipboardCheck size={18} />
-            Clearance Requests
+            onClick={() => setSidebarOpen((p) => !p)}
+            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition md:hidden"
+            aria-label="Open sidebar"
+          >
+            <Menu size={18} />
           </button>
-          <div>
-            <button onClick={() => setOpenAdvisorMenu(!openAdvisorMenu)
-              }
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-slate-100 text-slate-700">
-              <div className="flex items-center gap-3">
-                <Users size={18} />
-                Assign Advisors
-              </div>
-              {openAdvisorMenu ? (
-                <ChevronDown size={16} />
-              ) : (
-                <ChevronRight size={16} />
-              )}
-            </button>
-            {openAdvisorMenu && (
-              <div className="ml-6 mt-2 space-y-1">
-                {["A", "B", "C"].map(
-                  (section) => (
-                    <button
-                      key={section}
-                      onClick={() => {
-                        setSelectedSection(section);
-                        setActiveTab("assign-advisor");
-                      }}
-                      className={`block w-full text-left px-3 py-2 rounded-lg text-sm transition ${
-                        selectedSection === section
-                          ? "bg-indigo-50 text-indigo-700"
-                          : "hover:bg-slate-100 text-slate-600"
-                      }`}>
-                      {`Section ${section}`}
-                    </button>
-                  )
-                )}
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400">Department Head</span>
+            <span className="text-xs text-slate-300">/</span>
+            <span className="text-xs font-semibold text-slate-700">{pageTitle}</span>
           </div>
-        </nav>
-      </aside>
-      <main className="flex-1 p-6">
-        {activeTab === "approvals" && (
-          <RoleApprovalPage role="DEPARTMENT_HEAD"/>
-        )}
-        {activeTab === "assign-advisor" && (
-          <AssignAdvisorSection
-            section={selectedSection}/>
-        )}
+        </div>
+
+        {/* Page body — scrollable */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
+          {activeTab === "approvals" && (
+            <RoleApprovalPage role="DEPARTMENT_HEAD" />
+          )}
+          {activeTab === "assign-advisor" && (
+            <AssignAdvisorSection section={selectedSection} />
+          )}
+        </div>
       </main>
-    </div>
     </div>
   );
 }

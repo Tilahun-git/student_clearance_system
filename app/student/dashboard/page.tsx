@@ -1,113 +1,122 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Header from "@/components/layout/Header";
 import ClearanceRequestModal from "@/components/layout/ClearanceRequestModal";
 import ClearanceTable from "@/components/UI/ClearanceProgressTable";
-import { useRouter } from "next/navigation";
-import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
-import Header from "@/components/layout/Header";
+import { FileCheck2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
+import { fetchClearanceProgress } from "@/lib/api/student";
 
 export default function StudentDashboard() {
   const router = useRouter();
-
   const [openRequest, setOpenRequest] = useState(false);
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [canRequest, setCanRequest] = useState(false);
-  const [certificates, setCertificates] = useState<any[]>([]);
 
-  const hasRejected = data?.some((d) => d.status === "REJECTED");
-  const isFullyApproved = data.length > 0 && data.every((d) => d.status === "APPROVED");
-  
-  const fetchProgress = async () => {
+  const hasRequest      = data.length > 0;
+  const hasRejected     = data.some((item) => item.status === "REJECTED");
+  const isFullyApproved = hasRequest && data.every((item) => item.status === "APPROVED");
+  const isInProgress    = hasRequest && !isFullyApproved && !hasRejected;
+
+  const loadProgress = async () => {
     try {
-      const res = await fetch("/api/student/clearance-progress");
-      const responseData = await res.json();
+      setLoading(true);
+      const responseData = await fetchClearanceProgress();
       setData(responseData.approvals || []);
-      setCanRequest(responseData.canRequest );
-      const certRes = await fetch("/api/student/clearance/certificates");
-      const certData = await certRes.json();
-      setCertificates(certData || []);
-    } catch {
-      console.error("Failed to load progress");
+      setCanRequest(responseData.canRequest);
+    } catch (error) {
+      console.error("Failed to load progress:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchProgress();
-  }, []);
+  useEffect(() => { loadProgress(); }, []);
 
   return (
-    <div className="w-full space-y-8 bg-slate-100">
-      <DashBoardNavbar/>
-      <Header/>
-      <section className="bg-white rounded-2xl shadow-sm border">
-        <div className="flex items-center justify-between px-6 py-4 border-b bg-slate-50">
-          <h2 className="text-lg font-semibold text-indigo-600">
-            Clearance Progress
-          </h2>
+    <div className="max-w-5xl mx-auto px-5 py-6 space-y-6">
+      <Header />
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50">
+          <div className="flex items-center gap-2">
+            <FileCheck2 className="w-4 h-4 text-indigo-600" />
+            <h2 className="text-sm font-semibold text-slate-800">Clearance Progress</h2>
+          </div>
           <button
-            onClick={() => {
-              if (isFullyApproved) {
-                router.push("/student/clearance/certificate");
-              }
-            }}
+            onClick={() => isFullyApproved && router.push("/student/clearance/certificate")}
             disabled={!isFullyApproved}
-            className={`px-5 py-2 rounded-full text-sm transition
-              ${
-                isFullyApproved
-                  ? "bg-green-600 text-white hover:bg-green-700"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`} >
-            {
+            className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
               isFullyApproved
-                ? "View Certificates"
-                : "Certificate Not Ready"
-            }
+                ? "bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm"
+                : "bg-slate-100 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            <FileCheck2 size={15} />
+            {isFullyApproved ? "View Certificate" : "Certificate Not Ready"}
           </button>
         </div>
+
         {loading ? (
-          <p className="p-6 text-slate-500">Loading...</p>
-        ) : data.length === 0 ? (
-          <p className="p-6 text-slate-500 text-center">
-            You haven't started clearance request yet.
-          </p>
+          <div className="p-10 flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : !hasRequest ? (
+          <div className="p-10 text-center">
+            <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+              <FileCheck2 className="w-5 h-5 text-slate-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-600">No clearance request yet</p>
+            <p className="text-xs text-slate-400 mt-1">Submit a request to start the clearance process.</p>
+          </div>
         ) : (
           <ClearanceTable data={data} />
         )}
-      </section>
-      <section className="flex flex-col items-start gap-2">
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col gap-3">
         <button
-          onClick={() => canRequest && setOpenRequest(true)}
-          disabled={!canRequest||isFullyApproved }
-          className={`px-8 py-3 rounded-xl font-medium transition shadow-sm
-            ${
-              canRequest || isFullyApproved
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }
-          `}
+          onClick={() => { if (canRequest) setOpenRequest(true); }}
+          disabled={!canRequest}
+          className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl font-medium text-sm transition shadow-sm w-fit ${
+            canRequest
+              ? "bg-indigo-600 text-white hover:bg-indigo-700"
+              : "bg-slate-100 text-slate-400 cursor-not-allowed"
+          }`}
         >
-          {canRequest || isFullyApproved ? "Submit Clearance Request" : "Request In Progress"}
+          {isFullyApproved ? <CheckCircle2 size={16} /> : <Send size={15} />}
+          {!hasRequest
+            ? "Submit Clearance Request"
+            : isInProgress
+            ? "Request In Progress"
+            : isFullyApproved
+            ? "Start New Clearance"
+            : hasRejected
+            ? "Resubmit Clearance Request"
+            : "Submit Clearance Request"}
         </button>
 
-        {canRequest && hasRejected && (
-          <p className="text-sm text-red-500">
-            Your previous request was rejected. Fix issues and reapply.
-          </p>
+        {hasRejected && (
+          <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl w-fit">
+            <AlertCircle size={15} />
+            Your previous request was rejected. Review the reason and resubmit your clearance request.
+          </div>
         )}
-      </section>
+
+        {isFullyApproved && (
+          <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl w-fit">
+            <CheckCircle2 size={15} />
+            Your clearance has been fully approved. You may now download your certificate or start a new clearance request.
+          </div>
+        )}
+      </div>
 
       {openRequest && (
         <ClearanceRequestModal
           onClose={() => setOpenRequest(false)}
-          onSuccess={() => {
-            setOpenRequest(false);
-
-            fetchProgress();
-          }}
+          onSuccess={() => { setOpenRequest(false); loadProgress(); }}
         />
       )}
     </div>

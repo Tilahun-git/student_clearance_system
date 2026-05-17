@@ -3,94 +3,36 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Building2, Save } from "lucide-react";
-import { School, Staff } from "@/types/clearance";
+import { fetchSchools, createDepartment } from "@/lib/api/admin";
+
+type School = { id: string; name: string };
 
 export default function AddDepartment() {
   const [schools, setSchools] = useState<School[]>([]);
-  const [heads, setHeads] = useState<Staff[]>([]);
-
   const [schoolId, setSchoolId] = useState("");
-  const [headId, setHeadId] = useState("");
-  const [name, setName] = useState("");
-
- useEffect(() => {
-  const fetchSchools = async () => {
-    try {
-      const res = await fetch("/api/school"); 
-
-      if (!res.ok) {
-        throw new Error("API failed");
-      }
-
-      const data = await res.json();
-
-      console.log("SCHOOLS API:", data);
-
-      setSchools(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-      toast.error("Failed to load schools");
-      setSchools([]);
-    }
-  };
-
-  fetchSchools();
-}, []);
+  const [name, setName]         = useState("");
 
   useEffect(() => {
-    const fetchHeads = async () => {
-      try {
-        const res = await fetch("/api/staff?role=DEPARTMENT_HEAD");
-        const data = await res.json();
-
-        if (!res.ok || !data.success) {
-          setHeads([]);
-          return;
-        }
-
-        setHeads(data.data || []);
-      } catch (err) {
-        console.error(err);
-        setHeads([]);
-        toast.error("Failed to load department heads");
-      }
-    };
-
-    fetchHeads();
+    fetchSchools()
+      .then((data) => setSchools(Array.isArray(data) ? data : []))
+      .catch(() => toast.error("Failed to load schools"));
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!name || !schoolId || !headId) {
-      return toast.error("All fields are required");
-    }
-
+    if (!name || !schoolId) return toast.error("All fields are required");
     try {
-      const res = await fetch("/api/admin/department", {
-        method: "POST",
-        body: JSON.stringify({ name, schoolId, headId }),
-        headers: { "Content-Type": "application/json" },
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        return toast.error(data.error || "Failed to create department");
-      }
-
+      await createDepartment(name, schoolId);
       toast.success("Department created successfully");
-
       setName("");
       setSchoolId("");
-      setHeadId("");
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create department");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-200 flex items-center justify-center p-6">
+    <div className="flex-1 flex items-center justify-center overflow-y-auto bg-slate-50 p-6">
       <form
         onSubmit={handleSubmit}
         className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-300 p-8 space-y-5"
@@ -99,54 +41,30 @@ export default function AddDepartment() {
           <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-xl bg-purple-100 text-purple-700">
             <Building2 />
           </div>
-
-          <h2 className="text-xl font-bold text-slate-900">
-            Add Department
-          </h2>
-
+          <h2 className="text-xl font-bold text-slate-900">Add Department</h2>
           <p className="text-sm text-slate-600">
-            Create department and assign head
+            Create a department — assign a head from the Departments table afterwards
           </p>
         </div>
 
         <select
           value={schoolId}
           onChange={(e) => setSchoolId(e.target.value)}
+          required
           className="w-full px-4 py-2 rounded-xl border border-slate-300 bg-white text-slate-900"
         >
           <option value="">Select school</option>
           {schools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
-
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Department name"
+          required
           className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
         />
-
-        <select
-          value={headId}
-          onChange={(e) => setHeadId(e.target.value)}
-          className="w-full px-4 py-2 rounded-xl border border-slate-300 text-slate-900"
-        >
-          <option value="">Select department head</option>
-
-          {Array.isArray(heads) && heads.length > 0 ? (
-            heads.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.user?.name || "Unnamed"}
-              </option>
-            ))
-          ) : (
-            <option disabled>No heads found</option>
-          )}
-        </select>
-
         <button
           type="submit"
           className="w-full flex justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl"

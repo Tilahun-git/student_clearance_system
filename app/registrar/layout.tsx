@@ -1,17 +1,14 @@
+import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import Footer from "@/components/layout/Footer";
 
-export default function StudentLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RegistrarLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-linear-to-b from-slate-50 to-slate-100">
-
-      <main className="w-full mx-auto py-2">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <DashBoardNavbar />
+      <main className="flex-1 w-full">
         {children}
       </main>
-      <Footer/>
+      <Footer />
     </div>
   );
 }

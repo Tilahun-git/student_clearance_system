@@ -8,33 +8,35 @@ type Props = {
   onClick: () => void;
 };
 
-export default function SidebarItem({
-  icon,
-  label,
-  active,
-  open,
-  onClick,
-}: Props) {
+export default function SidebarItem({ icon, label, active, open, onClick }: Props) {
   return (
     <button
       onClick={onClick}
+      title={!open ? label : undefined}
       className={`
-        w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
-        transition-all duration-200 relative
+        relative w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
+        transition-all duration-150 group
         ${
           active
-            ? "bg-indigo-50 text-indigo-700 font-medium"
-            : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-        } `} >
-      {active && (
-        <span className="absolute left-0 top-2 bottom-2 w-1 bg-indigo-600 rounded-full" />
-      )}
-      <div className="flex items-center justify-center w-6">
-        {icon}
-      </div>
+            ? "bg-indigo-600 text-white shadow-sm"
+            : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+        }
+      `}
+    >
+      <div className="flex items-center justify-center w-5 shrink-0">{icon}</div>
 
-      {open && (
-        <span className="text-sm truncate">
+      {open && <span className="text-sm font-medium truncate">{label}</span>}
+
+      {/* Tooltip when collapsed */}
+      {!open && (
+        <span
+          className="
+            absolute left-full ml-3 px-2.5 py-1.5 text-xs font-medium
+            bg-slate-800 text-white rounded-lg whitespace-nowrap
+            opacity-0 group-hover:opacity-100 pointer-events-none
+            transition-opacity duration-150 z-50 shadow-lg
+          "
+        >
           {label}
         </span>
       )}

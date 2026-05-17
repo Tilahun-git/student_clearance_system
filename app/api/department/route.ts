@@ -8,6 +8,11 @@ export async function GET(req: Request) {
 
     const departments = await prisma.department.findMany({
       where: schoolId ? { schoolId } : {},
+      include: {
+        school: { select: { name: true } },
+        head:   { include: { user: { select: { name: true } } } },
+      },
+      orderBy: { name: "asc" },
     });
 
     return NextResponse.json(departments);

@@ -1,27 +1,34 @@
-import { prisma } from "@/lib/prisma"
-import { NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
+import { NextResponse } from "next/server";
 
 export async function GET(
   req: Request,
-  context: { params: Promise<{ role: string }> }
+  context: { params: Promise<{ role: string }> },
 ) {
-  const { role } = await context.params
+  const { role } = await context.params;
+  const { searchParams } = new URL(req.url);
+  const schoolId     = searchParams.get("schoolId")     ?? undefined;
+  const departmentId = searchParams.get("departmentId") ?? undefined;
 
   const staff = await prisma.staff.findMany({
+    where: {
+      ...(schoolId     && { schoolId }),
+      ...(departmentId && { departmentId }),
+      user: {
+        roles: { some: { role: { name: role.toUpperCase() as RoleType } } },
+      },
+    },
     include: {
       user: {
         include: {
-          roles: {
-            include: { role: true },
-          },
+          roles: { include: { role: true } },
         },
       },
+      department: { select: { name: true } },
+      school:     { select: { name: true } },
     },
-  })
+  });
 
-  const filtered = staff.filter(s =>
-    s.user.roles.some(r => r.role.name === role.toUpperCase())
-  )
-
-  return NextResponse.json(filtered)
+  return NextResponse.json(staff);
 }

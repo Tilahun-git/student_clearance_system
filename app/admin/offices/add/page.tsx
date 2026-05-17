@@ -23,7 +23,7 @@ export default function AddOfficePage() {
       });
       setOfficeName("");
       setCode("");
-      router.push("/admin/offices");
+      router.push("/admin/dashboard");
     } catch (err) {
       console.error(err);
       alert("Failed to create office");
@@ -32,7 +32,7 @@ export default function AddOfficePage() {
     }
   }
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-10">
+    <div className="flex-1 flex items-center justify-center overflow-y-auto bg-slate-50 px-4 py-10">
       <div className="w-full max-w-xl">
         <div className="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
           <div className="px-6 py-5">
