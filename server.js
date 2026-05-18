@@ -6,7 +6,6 @@ import fs from "fs";
 import path from "path";
 
 const dev = process.env.NODE_ENV !== "production";
-
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
@@ -15,7 +14,6 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
 
-    // Serve static files manually from /public
     const publicPath = path.join(process.cwd(), "public", pathname || "");
 
     if (pathname && fs.existsSync(publicPath) && fs.lstatSync(publicPath).isFile()) {
@@ -27,7 +25,6 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   });
 
-  // Socket.IO setup
   const io = new Server(httpServer, {
     cors: {
       origin: "*",
