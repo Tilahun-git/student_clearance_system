@@ -50,6 +50,7 @@ export const authOptions: AuthOptions = {
         email: {},
         password: {},
       },
+
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
@@ -61,10 +62,13 @@ export const authOptions: AuthOptions = {
           },
         });
 
-        if (!user) return null;
-        if (!user.isActive) return null;
+        if (!user || !user.isActive) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await bcrypt.compare(
+          credentials.password,
+          user.password
+        );
+
         if (!isValid) return null;
 
         const roles: string[] = user.roles.map((ur) => ur.role.name);
@@ -87,17 +91,23 @@ export const authOptions: AuthOptions = {
     signIn: "/auth/login",
   },
 
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+  },
+
   secret: process.env.NEXTAUTH_SECRET,
 
   callbacks: {
     async jwt({ token, user, trigger, session }) {
-      // ── On initial sign-in: populate token from the authorized user ──────
       if (user) {
         const u = user as AppUser;
-        token.id        = u.id;
-        token.roles     = u.roles;
-        token.activeRole = u.roles.filter((r) => r !== "STUDENT")[0] ?? u.roles[0];
+
+        token.id = u.id;
+        token.roles = u.roles;
+
+        token.activeRole =
+          u.roles.filter((r) => r !== "STUDENT")[0] ?? u.roles[0];
+
         token.mustChangePassword = (u as any).mustChangePassword ?? false;
 
         if (u.roles.includes("STUDENT")) {
@@ -105,7 +115,6 @@ export const authOptions: AuthOptions = {
         }
       }
 
-      // ── On every token refresh: re-fetch roles + isActive from DB ────────
       if (token.id) {
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
@@ -118,15 +127,20 @@ export const authOptions: AuthOptions = {
         });
 
         if (!freshUser || !freshUser.isActive) {
-          return {} as typeof token;
+          return {} as any;
         }
 
         const freshRoles = freshUser.roles.map((ur) => ur.role.name);
+
         token.roles = freshRoles;
         token.mustChangePassword = freshUser.mustChangePassword;
 
-        if (token.activeRole && !freshRoles.includes(token.activeRole as RoleType)) {
-          token.activeRole = freshRoles.filter((r) => r !== "STUDENT")[0] ?? freshRoles[0];
+        if (
+          token.activeRole &&
+          !freshRoles.includes(token.activeRole as RoleType)
+        ) {
+          token.activeRole =
+            freshRoles.filter((r) => r !== "STUDENT")[0] ?? freshRoles[0];
         }
 
         if (freshRoles.includes("STUDENT")) {
@@ -134,7 +148,6 @@ export const authOptions: AuthOptions = {
         }
       }
 
-      // ── On explicit session update (role selection) ───────────────────────
       if (trigger === "update" && session?.activeRole) {
         token.activeRole = session.activeRole;
       }
@@ -148,10 +161,11 @@ export const authOptions: AuthOptions = {
       }
 
       if (session.user) {
-        session.user.id                = token.id as string;
-        session.user.roles             = token.roles as string[];
-        session.user.activeRole        = token.activeRole as string;
-        session.user.mustChangePassword = token.mustChangePassword as boolean;
+        session.user.id = token.id as string;
+        session.user.roles = token.roles as string[];
+        session.user.activeRole = token.activeRole as string;
+        session.user.mustChangePassword =
+          token.mustChangePassword as boolean;
 
         if ((token.roles as string[])?.includes("STUDENT")) {
           session.user.studentId = token.studentId as string;
@@ -159,6 +173,24 @@ export const authOptions: AuthOptions = {
       }
 
       return session;
+    },
+
+    // 🔥 CRITICAL FIX — PREVENT localhost REDIRECTS
+    async redirect({ url, baseUrl }) {
+      const safeBase = process.env.NEXTAUTH_URL || baseUrl;
+
+      // internal route
+      if (url.startsWith("/")) {
+        return `${safeBase}${url}`;
+      }
+
+      // same origin
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      // fallback ALWAYS production URL
+      return safeBase;
     },
   },
 };
