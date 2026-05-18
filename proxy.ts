@@ -15,8 +15,6 @@ export default withAuth(
 
     if (isPublic(path)) return NextResponse.next();
 
-    // Empty token (id missing) means the JWT callback invalidated it
-    // because the user was deactivated — force back to login
     if (!token?.id) {
       return NextResponse.redirect(new URL("/auth/login", req.url));
     }
