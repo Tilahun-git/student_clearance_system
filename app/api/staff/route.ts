@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
 
 export async function GET(req: Request) {
   try {
@@ -8,13 +9,11 @@ export async function GET(req: Request) {
 
     console.log("role is:", roleName);
 
-    // ================= NO ROLE FILTER =================
     if (!roleName) {
       const staffs = await prisma.staff.findMany({
         include: {
           user: true,
           department: true,
-          faculty: true,
           school: true,
         },
       });
@@ -25,17 +24,14 @@ export async function GET(req: Request) {
       });
     }
 
-    // ================= NORMALIZE ROLE =================
     roleName = roleName.trim().toUpperCase();
-
-    // ================= FILTERED QUERY (BEST WAY) =================
     const staffs = await prisma.staff.findMany({
       where: {
         user: {
           roles: {
             some: {
               role: {
-                name: roleName, // 🔥 direct relation filter
+                name: roleName as RoleType, 
               },
             },
           },
@@ -44,7 +40,6 @@ export async function GET(req: Request) {
       include: {
         user: true,
         department: true,
-        faculty: true,
         school: true,
       },
     });

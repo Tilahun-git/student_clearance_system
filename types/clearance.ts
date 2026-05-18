@@ -104,7 +104,6 @@ export type RegisterStudentData = {
   lastName: string;
   program: string;
   year: number;
-  facultyId: string;
   schoolId: string;
   departmentId: string;
   section?: string;

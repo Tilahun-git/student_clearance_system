@@ -1,26 +1,33 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
     const roleName = searchParams.get("role");
 
-    let whereClause: any = {};
+    // validate role
+    if (!roleName || !(roleName in RoleType)) {
+      return NextResponse.json(
+        { error: "Invalid role" },
+        { status: 400 }
+      );
+    }
 
-    if (roleName) {
-      const role = await prisma.role.findUnique({
-        where: { name: roleName },
-      });
+    const role = await prisma.role.findUnique({
+      where: {
+        name: roleName as RoleType,
+      },
+    });
 
-      if (!role) {
-        return NextResponse.json(
-          { error: "Role not found in database" },
-          { status: 404 }
-        );
-      }
+    if (!role) {
+      return NextResponse.json([]);
+    }
 
-      whereClause = {
+    const advisors = await prisma.staff.findMany({
+      where: {
         user: {
           roles: {
             some: {
@@ -28,33 +35,18 @@ export async function GET(req: Request) {
             },
           },
         },
-      };
-    }
-
-    const staffs = await prisma.staff.findMany({
-      where: whereClause,
+      },
       include: {
-        user: {
-          include: {
-            roles: {
-              include: {
-                role: true,
-              },
-            },
-          },
-        },
-        department: true,
-        faculty: true,
-        school: true,
+        user: true,
       },
     });
 
-    return NextResponse.json(staffs);
+    return NextResponse.json(advisors);
   } catch (error) {
-    console.error("STAFF FETCH ERROR:", error);
+    console.error(error);
 
     return NextResponse.json(
-      { error: "Failed to fetch staff" },
+      { error: "Failed to fetch advisors" },
       { status: 500 }
     );
   }
