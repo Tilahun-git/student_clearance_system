@@ -17,7 +17,6 @@ app.prepare().then(() => {
     const parsedUrl = parse(req.url, true);
     const { pathname } = parsedUrl;
 
-    // serve static files from /public
     const publicPath = path.join(process.cwd(), "public", pathname);
 
     if (fs.existsSync(publicPath) && fs.lstatSync(publicPath).isFile()) {
@@ -46,7 +45,6 @@ app.prepare().then(() => {
 
   global.io = io;
 
-  // ✅ FIX: use Render PORT dynamically
   const port = process.env.PORT || 3000;
 
   httpServer.listen(port, "0.0.0.0", () => {
