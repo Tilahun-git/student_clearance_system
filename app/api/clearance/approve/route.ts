@@ -6,6 +6,7 @@ import { getAuthorizedStaff, hasRoleAccess } from "@/lib/clearance/approval.auth
 import { getApprovalById } from "@/lib/clearance/approval.query";
 import { processApprovalWorkflow } from "@/lib/clearance/approval.workflow";
 import { fetchApprovalsForStaff } from "@/lib/clearance/approval.fetch";
+import { RoleType } from "@prisma/client";
 
 export async function GET() {
   try {
@@ -14,11 +15,9 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Pass activeRole so the user only sees approvals for the role
-    // they are currently logged in as — not all their roles combined.
     const approvals = await fetchApprovalsForStaff(
       session.user.id,
-      session.user.activeRole,
+      session.user.activeRole as RoleType,
     );
     return NextResponse.json(approvals);
   } catch (error) {
@@ -46,12 +45,9 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Use activeRole for authorization — the user can only approve
-    // requests for the role they are currently acting as.
     const activeRole = session.user.activeRole;
     const roleNames = staff.user.roles.map((r) => r.role.name as string);
 
-    // Verify the active role is valid for this user
     if (!activeRole || !roleNames.includes(activeRole)) {
       return NextResponse.json({ error: "No active role" }, { status: 403 });
     }
@@ -63,14 +59,11 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Approval not found" }, { status: 404 });
     }
 
-    // Only allow approval if the active role matches the approval's required role
     if (!hasRoleAccess([activeRole], approval.role.name)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    // ── Library borrow check ──────────────────────────────────────────────
-    // If the library manager is trying to APPROVE, block if the student
-    // has an unreturned borrow record.
+
     if (activeRole === "LIBRARY" && status === "APPROVED") {
       const studentId = approval.clearanceRequest.student.id;
       const unreturnedBorrow = await prisma.libraryBorrow.findFirst({
