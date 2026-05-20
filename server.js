@@ -44,7 +44,7 @@ app.prepare().then(() => {
 
   global.io = io;
 
-  const port = process.env.PORT || 3000;
+  const port = process.env.NEXTAUTH_URL || 3000;
 
   httpServer.listen(port, "0.0.0.0", () => {
 console.log(`Server running on http://localhost:${port}`);  });
