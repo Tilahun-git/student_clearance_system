@@ -7,7 +7,7 @@
     "dev": "node server.js",
     "dev:turbo": "next dev --turbo",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.js",
     "seed": "ts-node prisma/seed.js"
   },
   "prisma": {

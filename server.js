@@ -27,7 +27,11 @@ app.prepare().then(() => {
   });
 
   const io = new Server(httpServer, {
-    cors: { origin: "*" },
+    path: "/api/socketio",
+    cors: {
+      origin: process.env.NEXTAUTH_URL ?? "*",
+      methods: ["GET", "POST"],
+    },
   });
 
   io.on("connection", (socket) => {
@@ -44,8 +48,9 @@ app.prepare().then(() => {
 
   global.io = io;
 
-  const port = process.env.NEXTAUTH_URL || 3000;
+  const port = parseInt(process.env.PORT ?? "3000", 10);
 
   httpServer.listen(port, "0.0.0.0", () => {
-console.log(`Server running on http://localhost:${port}`);  });
+    console.log(`Server running on http://localhost:${port}`);
+  });
 });
