@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { ApprovalStatus, ClearanceStatus } from "@prisma/client";
+import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { Reasons } from "@/lib/constants/reasons";
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
 
-    // ── Non-student roles: return their pending approval count 
     const roles = session?.user?.roles ?? [];
     const isStudent = roles.includes("STUDENT");
 
@@ -22,7 +21,7 @@ export async function GET() {
         ? await prisma.clearanceApproval.count({
             where: {
               status: ApprovalStatus.PENDING,
-              role: { name: { in: roles as any[] } },
+              role: { name: { in: roles as RoleType[] } },
             },
           })
         : 0;
@@ -54,7 +53,6 @@ export async function GET() {
       });
     }
 
-    // ── Student role 
     if (!session?.user?.id) {
       return NextResponse.json({ role: "STUDENT", requestStatus: null, approvedSteps: 0, totalSteps: 0, rejections: 0, clearanceType: "—" });
     }

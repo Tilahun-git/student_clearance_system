@@ -1,9 +1,8 @@
-import { ApprovalStatus, ClearanceStatus } from "@prisma/client";
+import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyInitialApprovers, notifyRole } from "@/lib/notification/notification.service";
 
 export async function createClearanceRequest(userId: string, body: any) {
-  //  Resolve student from session user 
   const student = await prisma.student.findUnique({ where: { userId } });
   if (!student) throw new Error("Student profile missing");
 
@@ -15,7 +14,6 @@ export async function createClearanceRequest(userId: string, body: any) {
   });
   if (activeRequest) throw new Error("You already have an active request");
 
-  //  Handle resubmission of a previously rejected request 
   const rejectedRequest = await prisma.clearanceRequest.findFirst({
     where: { studentId: student.id, status: ClearanceStatus.REJECTED },
     include: { approvals: { include: { role: true } } },
@@ -52,9 +50,8 @@ export async function createClearanceRequest(userId: string, body: any) {
     return rejectedRequest;
   }
 
-  //  Create a fresh clearance request 
   const advisorRole = await prisma.role.findUnique({
-    where: { name: "ADVISOR" as any },
+    where: { name: RoleType.ADVISOR },
   });
   if (!advisorRole) throw new Error("ADVISOR role not found in database");
 

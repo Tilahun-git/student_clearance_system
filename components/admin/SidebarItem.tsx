@@ -7,7 +7,6 @@ type Props = {
   open: boolean;
   onClick: () => void;
 };
-
 export default function SidebarItem({ icon, label, active, open, onClick }: Props) {
   return (
     <button
@@ -20,14 +19,9 @@ export default function SidebarItem({ icon, label, active, open, onClick }: Prop
           active
             ? "bg-indigo-600 text-white shadow-sm"
             : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-        }
-      `}
-    >
+        }`}>
       <div className="flex items-center justify-center w-5 shrink-0">{icon}</div>
-
       {open && <span className="text-sm font-medium truncate">{label}</span>}
-
-      {/* Tooltip when collapsed */}
       {!open && (
         <span
           className="
@@ -35,8 +29,7 @@ export default function SidebarItem({ icon, label, active, open, onClick }: Prop
             bg-slate-800 text-white rounded-lg whitespace-nowrap
             opacity-0 group-hover:opacity-100 pointer-events-none
             transition-opacity duration-150 z-50 shadow-lg
-          "
-        >
+          ">
           {label}
         </span>
       )}

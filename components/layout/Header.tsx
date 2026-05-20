@@ -70,7 +70,6 @@ export default function Header() {
     ADVISOR: Users, DEPARTMENT_HEAD: Briefcase, SCHOOL_DEAN: GraduationCap,
     REGISTRAR: CalendarCheck, LIBRARY: FileText, CAFETERIA: Briefcase,
     DORMITORY: Briefcase, CAMPUS_POLICE: Briefcase, STUDENT_DEAN: Users,
-    FINANCE: TrendingUp,
   };
   const RoleIcon = roleIconMap[primaryRole] ?? ClipboardCheck;
 

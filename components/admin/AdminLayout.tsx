@@ -7,12 +7,9 @@ import { tabs, TabKey } from "./tabConfig";
 
 export default function AdminLayout() {
   const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
-  const [sidebarOpen, setSidebarOpen] = useState(
-    typeof window !== "undefined" ? window.innerWidth >= 768 : true
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== "undefined" ? window.innerWidth >= 768 : true
   );
-
   const activeTabConfig = tabs.find((t) => t.key === activeTab);
-
   return (
     <div className="flex flex-1 overflow-hidden">
       <AdminSidebar

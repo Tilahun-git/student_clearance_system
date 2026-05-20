@@ -66,20 +66,16 @@ export default function ClearanceTable({ data }: { data: any[] }) {
           </tbody>
         </table>
       </div>
-
-      {/* Reason Modal */}
       {reason && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop"
-          onClick={(e) => e.target === e.currentTarget && setReason(null)}
-        >
+          onClick={(e) => e.target === e.currentTarget && setReason(null)}>
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden modal-panel mx-4">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="text-sm font-semibold text-slate-800">Rejection Reason</h3>
               <button
                 onClick={() => setReason(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-              >
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
                 <X size={15} />
               </button>
             </div>

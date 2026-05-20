@@ -1,6 +1,5 @@
 import { RegisterStudentData } from "@/types/clearance";
 
-// ── Student profile 
 
 export async function fetchStudentProfile() {
   const res = await fetch("/api/student/me");
@@ -8,7 +7,6 @@ export async function fetchStudentProfile() {
   return res.json();
 }
 
-// ── Students by section 
 
 export async function fetchStudentsBySection(section: string) {
   const res = await fetch(`/api/students/by-section?section=${section}`);
@@ -19,15 +17,11 @@ export async function fetchStudentsBySection(section: string) {
   return data.data;
 }
 
-// ── Clearance progress 
-
 export async function fetchClearanceProgress() {
   const res = await fetch("/api/student/clearance-progress");
   if (!res.ok) throw new Error("Failed to fetch clearance progress");
   return res.json();
 }
-
-// ── Clearance certificates 
 
 export async function fetchStudentCertificates() {
   const res = await fetch("/api/student/clearance/certificates");
@@ -38,7 +32,6 @@ export async function fetchStudentCertificates() {
   return res.json();
 }
 
-// ── Submit clearance request 
 
 export async function submitClearanceRequest(payload: {
   reason: string;
@@ -54,8 +47,6 @@ export async function submitClearanceRequest(payload: {
   if (!res.ok) throw new Error(data.error || "Failed to submit request");
   return data;
 }
-
-// ── Register student 
 
 export async function registerStudent(form: RegisterStudentData) {
   const res = await fetch("/api/registrar/register-student", {

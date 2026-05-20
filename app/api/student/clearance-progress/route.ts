@@ -7,20 +7,17 @@ import { ClearanceStatus } from "@prisma/client";
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
     if (!session?.user?.id) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
       );
     }
-
     const student = await prisma.student.findUnique({
       where: {
         userId: session.user.id,
       },
     });
-
     if (!student) {
       return NextResponse.json(
         { error: "Student not found" },
@@ -28,9 +25,6 @@ export async function GET() {
       );
     }
 
-    /**
-     * Latest request for progress display
-     */
     const latestRequest = await prisma.clearanceRequest.findFirst({
       where: {
         studentId: student.id,
@@ -47,9 +41,6 @@ export async function GET() {
       },
     });
 
-    /**
-     * Active requests block new submissions
-     */
     const activeRequest = await prisma.clearanceRequest.findFirst({
       where: {
         studentId: student.id,
@@ -61,19 +52,8 @@ export async function GET() {
         },
       },
     });
-
-    /**
-     * Student CAN request when there is
-     * NO active request.
-     *
-     * APPROVED and REJECTED requests
-     * should NOT block new submissions.
-     */
     const canRequest = !activeRequest;
 
-    /**
-     * No request yet
-     */
     if (!latestRequest) {
       return NextResponse.json({
         approvals: [],
@@ -82,9 +62,6 @@ export async function GET() {
       });
     }
 
-    /**
-     * Approval progress
-     */
     const approvals = latestRequest.approvals.map((approval) => ({
       role: approval.role.name,
       status: approval.status,
@@ -98,7 +75,6 @@ export async function GET() {
     });
   } catch (err) {
     console.error("CLEARANCE PROGRESS ERROR:", err);
-
     return NextResponse.json(
       {
         error: "Failed to fetch clearance progress",

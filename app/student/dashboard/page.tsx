@@ -7,11 +7,12 @@ import ClearanceRequestModal from "@/components/layout/ClearanceRequestModal";
 import ClearanceTable from "@/components/UI/ClearanceProgressTable";
 import { FileCheck2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
 import { fetchClearanceProgress } from "@/lib/api/student";
+import { ClearanceApprovalRequest } from "@/types/clearance";
 
 export default function StudentDashboard() {
   const router = useRouter();
   const [openRequest, setOpenRequest] = useState(false);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ClearanceApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [canRequest, setCanRequest] = useState(false);
 
@@ -75,7 +76,6 @@ export default function StudentDashboard() {
         )}
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col gap-3">
         <button
           onClick={() => { if (canRequest) setOpenRequest(true); }}

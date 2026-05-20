@@ -7,7 +7,6 @@ import path from "path";
 
 const dev = process.env.NODE_ENV !== "production";
 
-// IMPORTANT: turbopack must be false in custom server
 const app = next({ dev, turbopack: false });
 
 const handle = app.getRequestHandler();
@@ -48,6 +47,5 @@ app.prepare().then(() => {
   const port = process.env.PORT || 3000;
 
   httpServer.listen(port, "0.0.0.0", () => {
-    console.log(`Server running on port ${port}`);
-  });
+console.log(`Server running on http://localhost:${port}`);  });
 });
