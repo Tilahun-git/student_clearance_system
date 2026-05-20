@@ -11,8 +11,11 @@ function getRedirectByRole(role: string): string {
 export async function GET(req: NextRequest) {
   const role = req.nextUrl.searchParams.get("role")?.toUpperCase();
 
+  // Build redirect base from NEXTAUTH_URL — req.url is the internal address behind Render's proxy
+  const baseUrl = process.env.NEXTAUTH_URL ?? req.nextUrl.origin;
+
   if (!role) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/login", baseUrl));
   }
 
   const token = await getToken({
@@ -21,7 +24,7 @@ export async function GET(req: NextRequest) {
   });
 
   if (!token?.id) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/login", baseUrl));
   }
 
   const freshUser = await prisma.user.findUnique({
@@ -35,13 +38,13 @@ export async function GET(req: NextRequest) {
   });
 
   if (!freshUser || !freshUser.isActive) {
-    return NextResponse.redirect(new URL("/auth/login", req.url));
+    return NextResponse.redirect(new URL("/auth/login", baseUrl));
   }
 
   const freshRoles: string[] = freshUser.roles.map((ur) => ur.role.name as string);
 
   if (!freshRoles.includes(role)) {
-    return NextResponse.redirect(new URL("/unauthorized", req.url));
+    return NextResponse.redirect(new URL("/unauthorized", baseUrl));
   }
 
   const updatedToken = {
@@ -62,9 +65,9 @@ export async function GET(req: NextRequest) {
   // If the user must change their password, redirect there first
   const destination = getRedirectByRole(role);
 
-  const response = NextResponse.redirect(new URL(destination, req.url));
+  const response = NextResponse.redirect(new URL(destination, baseUrl));
 
-  const isSecure = req.url.startsWith("https");
+  const isSecure = baseUrl.startsWith("https");
   const cookieName = isSecure
     ? "__Secure-next-auth.session-token"
     : "next-auth.session-token";
