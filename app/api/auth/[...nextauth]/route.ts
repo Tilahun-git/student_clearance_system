@@ -175,7 +175,6 @@ export const authOptions: AuthOptions = {
       return session;
     },
 
-    // 🔥 CRITICAL FIX — PREVENT localhost REDIRECTS
     async redirect({ url, baseUrl }) {
       const safeBase = process.env.NEXTAUTH_URL || baseUrl;
 
