@@ -12,7 +12,6 @@ export default function ProfileSection() {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  // Close on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -23,7 +22,6 @@ export default function ProfileSection() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Close on Escape
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -39,7 +37,6 @@ export default function ProfileSection() {
   if (!session?.user) return null;
 
   const name = session.user.name || "User";
-  // Use activeRole (the role the user selected at login) not roles[0]
   const role = session.user.activeRole ?? session.user.roles?.[0] ?? "";
   const initials = name
     .split(" ")
@@ -54,7 +51,6 @@ export default function ProfileSection() {
         onClick={() => setOpen((p) => !p)}
         className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-slate-100 transition"
       >
-        {/* Avatar */}
         <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
           {initials}
         </div>
@@ -72,7 +68,6 @@ export default function ProfileSection() {
         />
       </button>
 
-      {/* Dropdown */}
       {open && (
         <div className="absolute right-0 top-full mt-2 w-52 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden modal-panel">
           <div className="px-4 py-3 border-b border-slate-100">

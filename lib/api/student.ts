@@ -1,4 +1,5 @@
 import { RegisterStudentData } from "@/types/clearance";
+import { ClearanceStatus } from "@prisma/client";
 
 export interface ClearanceApprovalRow {
   role: string;
@@ -8,7 +9,7 @@ export interface ClearanceApprovalRow {
 
 export interface ClearanceProgressData {
   approvals: ClearanceApprovalRow[];
-  requestStatus: string | null;
+  requestStatus: ClearanceStatus;
   canRequest: boolean;
   approvedCount: number;
   totalCount: number;
@@ -46,7 +47,6 @@ export async function fetchStudentCertificates() {
   }
   return res.json();
 }
-
 
 export async function submitClearanceRequest(payload: {
   reason: string;

@@ -6,6 +6,7 @@ import { FileText, Download, Printer, ArrowLeft, CheckCircle2, Award } from "luc
 import logo from "@/public/wldu_logo.jpg";
 import { Certificate } from "@/types/clearance";
 import { fetchStudentCertificates } from "@/lib/api/student";
+import { DASHBOARD_CONTAINER_CLASS } from "@/components/layout/NoSidebarDashboardLayout";
 
 export default function CertificatePage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function CertificatePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-5 py-4 space-y-2">
+    <div className={`${DASHBOARD_CONTAINER_CLASS} space-y-2`}>
       {certificates.map((cert) => {
         const student = cert.request?.student;
         const reasonName = typeof cert.request?.reason === "object"

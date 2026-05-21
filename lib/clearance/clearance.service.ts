@@ -1,6 +1,7 @@
 import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyInitialApprovers, notifyRole } from "@/lib/notification/notification.service";
+import { emitClearanceRealtime } from "@/lib/clearance/clearanceSocketIo";
 import { getOfficeCodeByRole } from "@/lib/workflow";
 
 // All 9 roles in display order — created upfront so the student sees the full pipeline immediately
@@ -61,6 +62,16 @@ export async function createClearanceRequest(userId: string, body: any) {
       rejectedRequest.id,
     );
 
+    emitClearanceRealtime(
+      {
+        requestId: rejectedRequest.id,
+        action: "resubmitted",
+        actorRole: rejectedApproval.role.name,
+        triggeredByUserId: userId,
+      },
+      { studentUserId: userId },
+    );
+
     return rejectedRequest;
   }
 
@@ -106,5 +117,11 @@ export async function createClearanceRequest(userId: string, body: any) {
   });
 
   await notifyInitialApprovers(student, result.id);
+
+  emitClearanceRealtime(
+    { requestId: result.id, action: "created", triggeredByUserId: userId },
+    { studentUserId: userId },
+  );
+
   return result;
 }

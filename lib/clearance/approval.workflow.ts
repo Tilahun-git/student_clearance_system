@@ -4,6 +4,10 @@ import { getNextRoles, getOfficeCodeByRole } from "@/lib/workflow";
 import { getApprovalById } from "./approval.query";
 import { notifyNextRoleStaff, notifyScopedRoleStaff, notifyStudent } from "./approval.notification";
 import { generateCertificate } from "@/lib/certificate/certificate.service";
+import {
+  emitClearanceRealtime,
+  type ClearanceRealtimeAction,
+} from "@/lib/clearance/clearanceSocketIo";
 
 
 const BEFORE_STUDENT_DEAN: RoleType[] = [
@@ -20,14 +24,24 @@ const BEFORE_REGISTRAR: RoleType[] = [
 ];
 
 
-export async function processApprovalWorkflow(approvalId: string,staffId: string,status: ApprovalStatus,comment?: string) {
+export async function processApprovalWorkflow(
+  approvalId: string,
+  staffId: string,
+  status: ApprovalStatus,
+  comment?: string,
+  triggeredByUserId?: string,
+) {
   
   const approval = await getApprovalById(approvalId);
   if (!approval) throw new Error("Approval not found");
 
   const request = approval.clearanceRequest;
   const roleName = approval.role.name as RoleType;
+  const studentUserId = request.student.userId ?? undefined;
+  let realtimeAction: ClearanceRealtimeAction =
+    status === ApprovalStatus.REJECTED ? "rejected" : "approved";
 
+  try {
   // 1. UPDATE CURRENT APPROVAL
   await prisma.clearanceApproval.update({
     where: { id: approvalId },
@@ -162,6 +176,7 @@ export async function processApprovalWorkflow(approvalId: string,staffId: string
       request.student.userId!,
       "Your clearance is complete! Certificate is ready."
     );
+    realtimeAction = "completed";
     return {
       message: "Clearance fully completed",
       certificate: cert,
@@ -202,6 +217,17 @@ export async function processApprovalWorkflow(approvalId: string,staffId: string
   }
 
   return { message: "Approval processed successfully" };
+  } finally {
+    emitClearanceRealtime(
+      {
+        requestId: request.id,
+        action: realtimeAction,
+        actorRole: roleName,
+        triggeredByUserId,
+      },
+      { studentUserId },
+    );
+  }
 }
 
 async function upsertNextApproval(requestId: string, nextRole: RoleType) {

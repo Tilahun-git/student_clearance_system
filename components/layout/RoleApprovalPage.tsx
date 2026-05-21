@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import toast from "react-hot-toast";
-import ApprovalTable from "@/components/UI/ApprovalTable";
+import ApprovalTable from "@/components/tables/ApprovalTable";
 import { fetchApprovals, updateApproval, bulkApproveApprovals } from "@/lib/api/clearance";
 import { fetchBlockedStudentIds } from "@/lib/api/library";
 import { ApprovalStatus, RoleType } from "@prisma/client";
@@ -11,15 +11,16 @@ import { ClipboardCheck, CheckCheck, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Pagination from "@/components/UI/Pagination";
 import { usePagination } from "@/hooks/usePagination";
+import { useClearanceSync } from "@/contexts/ClearanceRealtimeContext";
 
 const PAGE_SIZE = 10;
-
 type Props = { role: string };
 
 export default function RoleApprovalPage({ role }: Props) {
   const { status } = useSession();
   const [requests, setRequests] = useState<ClearanceApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [comment, setComment] = useState("");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -27,11 +28,30 @@ export default function RoleApprovalPage({ role }: Props) {
   const [blockedStudentIds, setBlockedStudentIds] = useState<Set<string>>(new Set());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Wait for session before fetching — avoids 401 on first render
+  const loadRequests = useCallback(async (silent = false) => {
+    try {
+      if (silent) setRefreshing(true);
+      else setLoading(true);
+
+      const data = await fetchApprovals();
+      setRequests(Array.isArray(data) ? data : []);
+    } catch {
+      if (!silent) toast.error(`Failed to load ${role} requests`);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [role]);
+
   useEffect(() => {
     if (status !== "authenticated") return;
-    loadRequests();
-  }, [role, status]);
+    loadRequests(false);
+  }, [status, loadRequests]);
+
+  useClearanceSync(() => loadRequests(true), {
+    enabled: status === "authenticated",
+  });
 
   useEffect(() => {
     if (role !== RoleType.LIBRARY || status !== "authenticated") return;
@@ -45,6 +65,7 @@ export default function RoleApprovalPage({ role }: Props) {
       setTimeout(() => textareaRef.current?.focus(), 50);
     }
   }, [rejectingId]);
+
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       if (e.key === "Escape") closeRejectModal();
@@ -53,19 +74,6 @@ export default function RoleApprovalPage({ role }: Props) {
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  async function loadRequests() {
-    try {
-      setLoading(true);
-      const data = await fetchApprovals();
-      setRequests(Array.isArray(data) ? data : []);
-    } catch {
-      toast.error(`Failed to load ${role} requests`);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function toggleSelect(id: string) {
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
@@ -73,7 +81,6 @@ export default function RoleApprovalPage({ role }: Props) {
   }
 
   function toggleSelectAll() {
-    // Only select non-blocked requests
     const selectableIds = requests
       .filter((r) => !blockedStudentIds.has(r.clearanceRequest.student.studentId))
       .map((r) => r.id);
@@ -82,24 +89,33 @@ export default function RoleApprovalPage({ role }: Props) {
   }
 
   async function approve(id: string) {
+    const previous = requests;
+    setRequests((prev) => prev.filter((r) => r.id !== id));
+    setSelectedIds((prev) => prev.filter((x) => x !== id));
+
     try {
       await updateApproval(id, ApprovalStatus.APPROVED);
       toast.success("Approved successfully");
-      setRequests((prev) => prev.filter((r) => r.id !== id));
-      setSelectedIds((prev) => prev.filter((x) => x !== id));
-    } catch (err: any) {
-      toast.error(err?.message || "Error approving request");
+    } catch (err: unknown) {
+      setRequests(previous);
+      const message = err instanceof Error ? err.message : "Error approving request";
+      toast.error(message);
     }
   }
 
   async function approveSelected() {
     if (!selectedIds.length) return toast.error("No requests selected");
+
+    const previous = requests;
+    const idsToApprove = [...selectedIds];
+    setRequests((prev) => prev.filter((r) => !idsToApprove.includes(r.id)));
+    setSelectedIds([]);
+
     try {
-      await bulkApproveApprovals(selectedIds);
+      await bulkApproveApprovals(idsToApprove);
       toast.success("Selected requests approved");
-      setRequests((prev) => prev.filter((r) => !selectedIds.includes(r.id)));
-      setSelectedIds([]);
     } catch {
+      setRequests(previous);
       toast.error("Bulk approval failed");
     }
   }
@@ -116,13 +132,18 @@ export default function RoleApprovalPage({ role }: Props) {
 
   async function submitReject() {
     if (!comment.trim()) return toast.error("Please enter a rejection reason");
+
+    const rejectId = rejectingId!;
+    const previous = requests;
+    setRequests((prev) => prev.filter((r) => r.id !== rejectId));
+    closeRejectModal();
+
     try {
       setSubmittingReject(true);
-      await updateApproval(rejectingId!, ApprovalStatus.REJECTED, comment);
+      await updateApproval(rejectId, ApprovalStatus.REJECTED, comment);
       toast.success("Request rejected");
-      setRequests((prev) => prev.filter((r) => r.id !== rejectingId));
-      closeRejectModal();
     } catch {
+      setRequests(previous);
       toast.error("Error rejecting request");
     } finally {
       setSubmittingReject(false);
@@ -133,18 +154,21 @@ export default function RoleApprovalPage({ role }: Props) {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-indigo-100">
             <ClipboardCheck className="w-5 h-5 text-indigo-600" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-slate-800">
-              Clearance Requests
-            </h1>
-            <p className="text-xs text-slate-500">
-              {role.replace(/_/g, " ")} · {requests.length} pending
+            <h1 className="text-base font-semibold text-slate-800">Clearance Requests</h1>
+            <p className="text-xs text-slate-500 flex items-center gap-2">
+              <span>{role.replace(/_/g, " ")} · {requests.length} pending</span>
+              {refreshing && (
+                <span className="inline-flex items-center gap-1 text-indigo-500">
+                  <span className="w-3 h-3 border border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Updating…
+                </span>
+              )}
             </p>
           </div>
         </div>
@@ -160,7 +184,6 @@ export default function RoleApprovalPage({ role }: Props) {
         )}
       </div>
 
-      {/* Select all bar */}
       {requests.length > 1 && (
         <div className="flex items-center gap-2">
           <input
@@ -181,7 +204,6 @@ export default function RoleApprovalPage({ role }: Props) {
         </div>
       )}
 
-      {/* Content */}
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 flex items-center justify-center">
           <div className="flex flex-col items-center gap-3">
@@ -217,6 +239,7 @@ export default function RoleApprovalPage({ role }: Props) {
           />
         </>
       )}
+
       {rejectingId && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop"
@@ -224,8 +247,6 @@ export default function RoleApprovalPage({ role }: Props) {
         >
           <div className="w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden modal-panel">
             <div className="h-1.5 w-full bg-red-500" />
-
-            {/* Header */}
             <div className="flex items-start justify-between px-5 pt-5 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-xl bg-red-100">
@@ -253,18 +274,9 @@ export default function RoleApprovalPage({ role }: Props) {
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   rows={5}
-                  className="
-                    w-full px-4 py-3 text-sm
-                    border border-slate-200 rounded-xl
-                    resize-none bg-slate-50
-                    focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-300
-                    focus:bg-white
-                    placeholder:text-slate-400
-                    transition-all duration-150
-                  "
+                  className="w-full px-4 py-3 text-sm border border-slate-200 rounded-xl resize-none bg-slate-50 focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-300 focus:bg-white placeholder:text-slate-400 transition-all duration-150"
                 />
               </div>
-
               <div className="flex justify-end gap-2 pt-1">
                 <button
                   onClick={closeRejectModal}
@@ -275,14 +287,7 @@ export default function RoleApprovalPage({ role }: Props) {
                 <button
                   onClick={submitReject}
                   disabled={submittingReject || !comment.trim()}
-                  className="
-                    inline-flex items-center gap-2
-                    px-5 py-2 text-sm font-medium rounded-xl
-                    bg-red-600 text-white
-                    hover:bg-red-700
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    transition
-                  "
+                  className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium rounded-xl bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
                 >
                   {submittingReject ? (
                     <>

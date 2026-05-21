@@ -92,7 +92,6 @@ export default function BorrowedStudents() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-xl bg-teal-100">
@@ -109,8 +108,6 @@ export default function BorrowedStudents() {
           </span>
         )}
       </div>
-
-      {/* Add form */}
       <form onSubmit={handleAdd} className="flex items-center gap-2 max-w-sm">
         <div className="relative flex-1">
           <Plus className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -132,7 +129,6 @@ export default function BorrowedStudents() {
         </button>
       </form>
 
-      {/* Search */}
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
         <input
@@ -144,7 +140,6 @@ export default function BorrowedStudents() {
         />
       </div>
 
-      {/* Table */}
       <BorrowedStudentsTable
         borrows={paged}
         loading={loading}
@@ -155,7 +150,6 @@ export default function BorrowedStudents() {
         onDelete={(b) => setPendingDelete(b)}
       />
 
-      {/* Pagination */}
       <Pagination
         page={page}
         totalPages={totalPages}
@@ -163,8 +157,6 @@ export default function BorrowedStudents() {
         pageSize={PAGE_SIZE}
         onPageChange={goTo}
       />
-
-      {/* Delete confirmation */}
       <ConfirmDeleteModal
         open={!!pendingDelete}
         title="Remove Borrow Record"

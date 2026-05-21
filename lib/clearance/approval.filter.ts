@@ -58,14 +58,12 @@ switch (roleName) {
     break;
   default:
     if (OFFICE_ROLES.includes(roleName as RoleType)) {
+      // Match by role; office link is optional (approvals created without a
+      // ClearanceStaffOffice row have officeId null and were previously excluded).
       filters.push({
-        role: {
-          name: roleName as RoleType,
-        },
+        role: { name: roleName as RoleType },
         status: ApprovalStatus.PENDING,
-        office: {
-          code: roleName,
-        },
+        OR: [{ officeId: null }, { office: { code: roleName } }],
       });
     }
     break;

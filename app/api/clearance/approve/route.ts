@@ -79,7 +79,13 @@ export async function PATCH(req: Request) {
       }
     }
 
-    const result = await processApprovalWorkflow(approvalId,staff.id,status,comment);
+    const result = await processApprovalWorkflow(
+      approvalId,
+      staff.id,
+      status,
+      comment,
+      session.user.id,
+    );
     return NextResponse.json(result);
   } catch (error) {
     console.error(error);

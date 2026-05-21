@@ -6,7 +6,7 @@ import NotificationBell from "../UI/NotificationBell";
 const DashBoardNavbar = () => {
   return (
     <nav className="sticky top-0 z-40 w-full bg-white border-b border-slate-200 shadow-sm">
-      <div className="max-w-screen-2xl mx-auto px-5 h-20 flex items-center justify-between">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-5 lg:px-6 h-20 flex items-center justify-between">
         <div className="flex items-center gap-2.5 shrink-0">
           <Image
             src={logo}

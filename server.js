@@ -38,7 +38,15 @@ app.prepare().then(() => {
     console.log("User connected:", socket.id);
 
     socket.on("join", (userId) => {
-      socket.join(userId);
+      if (userId) socket.join(String(userId));
+    });
+
+    socket.on("join_role", (role) => {
+      if (role) socket.join(`role:${String(role).toUpperCase()}`);
+    });
+
+    socket.on("leave_role", (role) => {
+      if (role) socket.leave(`role:${String(role).toUpperCase()}`);
     });
 
     socket.on("disconnect", () => {

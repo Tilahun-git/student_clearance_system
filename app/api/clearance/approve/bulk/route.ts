@@ -53,7 +53,13 @@ export async function PATCH(req: Request) {
         }
       }
 
-      await processApprovalWorkflow(id, staff.id, ApprovalStatus.APPROVED);
+      await processApprovalWorkflow(
+        id,
+        staff.id,
+        ApprovalStatus.APPROVED,
+        undefined,
+        session.user.id,
+      );
       successCount++;
     }
 
