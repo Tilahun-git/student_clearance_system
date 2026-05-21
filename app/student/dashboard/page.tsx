@@ -6,12 +6,12 @@ import Header from "@/components/layout/Header";
 import ClearanceRequestModal from "@/components/layout/ClearanceRequestModal";
 import ClearanceTable from "@/components/UI/ClearanceProgressTable";
 import { FileCheck2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
-import { fetchClearanceProgress } from "@/lib/api/student";
+import { fetchClearanceProgress, type ClearanceApprovalRow } from "@/lib/api/student";
 
 export default function StudentDashboard() {
   const router = useRouter();
   const [openRequest, setOpenRequest] = useState(false);
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<ClearanceApprovalRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [canRequest, setCanRequest] = useState(false);
   const [approvedCount, setApprovedCount] = useState(0);
@@ -41,7 +41,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-5xl mx-auto px-5 py-6 space-y-6">
-      <Header />
+      <Header /> 
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-4 border-b border-slate-100 bg-slate-50">
           <div className="flex items-center gap-2">

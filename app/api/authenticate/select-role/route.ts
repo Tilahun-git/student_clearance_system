@@ -11,7 +11,6 @@ function getRedirectByRole(role: string): string {
 export async function GET(req: NextRequest) {
   const role = req.nextUrl.searchParams.get("role")?.toUpperCase();
 
-  // Build redirect base from NEXTAUTH_URL — req.url is the internal address behind Render's proxy
   const baseUrl = process.env.NEXTAUTH_URL ?? req.nextUrl.origin;
 
   if (!role) {

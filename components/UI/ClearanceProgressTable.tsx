@@ -26,8 +26,10 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+import type { ClearanceApprovalRow } from "@/lib/api/student";
+
 type Props = {
-  data: any[];
+  data: ClearanceApprovalRow[];
   approvedCount?: number;
   totalCount?: number;
 };

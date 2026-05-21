@@ -5,10 +5,24 @@ import { prisma } from "@/lib/prisma";
 import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { Reasons } from "@/lib/constants/reasons";
 
+const DISPLAY_ORDER = [
+  "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
+  "LIBRARY", "CAFETERIA", "CAMPUS_POLICE", "DORMITORY",
+  "STUDENT_DEAN", "REGISTRAR",
+] as const;
+
+const EMPTY_STUDENT = {
+  role: "STUDENT" as const,
+  requestStatus: null,
+  approvedCount: 0,
+  totalCount: 0,
+  rejections: 0,
+  clearanceType: "—",
+};
+
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-
     const roles = session?.user?.roles ?? [];
     const isStudent = roles.includes("STUDENT");
 
@@ -54,7 +68,7 @@ export async function GET() {
     }
 
     if (!session?.user?.id) {
-      return NextResponse.json({ role: "STUDENT", requestStatus: null, approvedSteps: 0, totalSteps: 0, rejections: 0, clearanceType: "—" });
+      return NextResponse.json(EMPTY_STUDENT);
     }
 
     const student = await prisma.student.findUnique({
@@ -62,7 +76,7 @@ export async function GET() {
     });
 
     if (!student) {
-      return NextResponse.json({ role: "STUDENT", requestStatus: null, approvedSteps: 0, totalSteps: 0, rejections: 0, clearanceType: "—" });
+      return NextResponse.json(EMPTY_STUDENT);
     }
 
     const latestRequest = await prisma.clearanceRequest.findFirst({
@@ -74,27 +88,25 @@ export async function GET() {
     });
 
     if (!latestRequest) {
-      return NextResponse.json({
-        role: "STUDENT",
-        requestStatus: "NOT_STARTED",
-        approvedSteps: 0,
-        totalSteps: 0,
-        rejections: 0,
-        clearanceType: "—",
-      });
+      return NextResponse.json(EMPTY_STUDENT);
     }
 
-    const approvedSteps = latestRequest.approvals.filter(
-      (a) => a.status === ApprovalStatus.APPROVED,
-    ).length;
+    const approvals = latestRequest.approvals.map((approval) => ({
+      role: approval.role.name as string,
+      status: approval.status as string,
+    }));
 
-    const rejections = latestRequest.approvals.filter(
-      (a) => a.status === ApprovalStatus.REJECTED,
-    ).length;
+    const existingRoles = new Set(approvals.map((a) => a.role));
+    for (const role of DISPLAY_ORDER) {
+      if (!existingRoles.has(role)) {
+        approvals.push({ role, status: "PENDING" });
+      }
+    }
 
-    const totalSteps = latestRequest.approvals.length;
-
-    const reasonLabel =
+    const approvedCount = approvals.filter((a) => a.status === "APPROVED").length;
+    const totalCount = approvals.length;
+    const rejections = approvals.filter((a) => a.status === "REJECTED").length;
+    const clearanceType =
       Reasons.find((r) => r.id === latestRequest.reason)?.name ||
       latestRequest.reason ||
       "—";
@@ -102,10 +114,10 @@ export async function GET() {
     return NextResponse.json({
       role: "STUDENT",
       requestStatus: latestRequest.status,
-      approvedSteps,
-      totalSteps,
+      approvedCount,
+      totalCount,
       rejections,
-      clearanceType: reasonLabel,
+      clearanceType,
     });
   } catch (err) {
     console.error("STATUS API ERROR:", err);

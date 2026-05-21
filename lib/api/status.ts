@@ -1,8 +1,8 @@
 export interface StudentStatus {
   role: "STUDENT";
   requestStatus: string | null;
-  approvedSteps: number;
-  totalSteps: number;
+  approvedCount: number;
+  totalCount: number;
   rejections: number;
   clearanceType: string;
 }

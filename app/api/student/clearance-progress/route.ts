@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { ClearanceStatus } from "@prisma/client";
+import { Reasons } from "@/lib/constants/reasons";
+
+const DISPLAY_ORDER = [
+  "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
+  "LIBRARY", "CAFETERIA", "CAMPUS_POLICE", "DORMITORY",
+  "STUDENT_DEAN", "REGISTRAR",
+] as const;
 
 export async function GET() {
   try {
@@ -59,10 +66,13 @@ export async function GET() {
         approvals: [],
         requestStatus: null,
         canRequest: true,
+        approvedCount: 0,
+        totalCount: 0,
+        rejections: 0,
+        clearanceType: "—",
       });
     }
 
-    // Use a plain DTO type so we can push virtual PENDING rows for missing roles
     type ApprovalDTO = { role: string; status: string; comment: string | null };
 
     const approvals: ApprovalDTO[] = latestRequest.approvals.map((approval) => ({
@@ -71,16 +81,6 @@ export async function GET() {
       comment: approval.comment,
     }));
 
-    // All 9 roles in canonical display order
-    const DISPLAY_ORDER = [
-      "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
-      "LIBRARY", "CAFETERIA", "CAMPUS_POLICE", "DORMITORY",
-      "STUDENT_DEAN", "REGISTRAR",
-    ];
-
-    // Fill in any missing roles as PENDING so the student always sees all 9 stages.
-    // This handles both old requests (created before the upfront-creation change)
-    // and new requests where a role hasn't been reached yet.
     const existingRoles = new Set<string>(approvals.map((a) => a.role));
     for (const role of DISPLAY_ORDER) {
       if (!existingRoles.has(role)) {
@@ -88,13 +88,17 @@ export async function GET() {
       }
     }
 
-    // Sort into canonical display order
     approvals.sort(
-      (a, b) => DISPLAY_ORDER.indexOf(a.role) - DISPLAY_ORDER.indexOf(b.role),
+      (a, b) => DISPLAY_ORDER.indexOf(a.role as typeof DISPLAY_ORDER[number]) - DISPLAY_ORDER.indexOf(b.role as typeof DISPLAY_ORDER[number]),
     );
 
     const approvedCount = approvals.filter((a) => a.status === "APPROVED").length;
-    const totalCount    = approvals.length; // always 9
+    const totalCount = approvals.length;
+    const rejections = approvals.filter((a) => a.status === "REJECTED").length;
+    const clearanceType =
+      Reasons.find((r) => r.id === latestRequest.reason)?.name ||
+      latestRequest.reason ||
+      "—";
 
     return NextResponse.json({
       approvals,
@@ -102,6 +106,8 @@ export async function GET() {
       canRequest,
       approvedCount,
       totalCount,
+      rejections,
+      clearanceType,
     });
   } catch (err) {
     console.error("CLEARANCE PROGRESS ERROR:", err);

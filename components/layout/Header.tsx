@@ -7,10 +7,9 @@ import {
   FileText, Users, GraduationCap, Briefcase,
   TrendingUp, CalendarCheck,
 } from "lucide-react";
+import { fetchClearanceProgress, type ClearanceProgressData } from "@/lib/api/student";
 import {
   fetchClearanceStatus,
-  type StatusData,
-  type StudentStatus,
   type StaffStatus,
 } from "@/lib/api/status";
 
@@ -22,8 +21,8 @@ function statusBadgeClass(s: string | null) {
   return "bg-slate-100 text-slate-500 border-slate-200";
 }
 
-function statusLabel(s: string | null) {
-  if (!s || s === "NOT_STARTED") return "Not Started";
+function statusLabel(s: string | null, hasRequest: boolean) {
+  if (!hasRequest || !s) return "Not Started";
   return s.replace(/_/g, " ");
 }
 
@@ -53,16 +52,28 @@ function SkeletonPill() {
 
 export default function Header() {
   const { data: session, status: sessionStatus } = useSession();
-  const [data, setData] = useState<StatusData>(null);
+  const [studentData, setStudentData] = useState<ClearanceProgressData | null>(null);
+  const [staffData, setStaffData] = useState<StaffStatus | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isStudent = session?.user?.roles?.includes("STUDENT") ?? false;
 
   useEffect(() => {
     if (sessionStatus === "loading") return;
-    fetchClearanceStatus()
-      .then((json) => { if (json) setData(json); })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [sessionStatus]);
+
+    setLoading(true);
+    const load = isStudent
+      ? fetchClearanceProgress()
+          .then((json) => setStudentData(json))
+          .catch(() => setStudentData(null))
+      : fetchClearanceStatus()
+          .then((json) => {
+            if (json && json.role === "STAFF") setStaffData(json);
+          })
+          .catch(() => setStaffData(null));
+
+    load.finally(() => setLoading(false));
+  }, [sessionStatus, isStudent]);
 
   const primaryRole = session?.user?.roles?.[0] ?? "";
 
@@ -73,46 +84,66 @@ export default function Header() {
   };
   const RoleIcon = roleIconMap[primaryRole] ?? ClipboardCheck;
 
+  const hasRequest = (studentData?.approvals?.length ?? 0) > 0;
+  const progressPct =
+    studentData && studentData.totalCount > 0
+      ? Math.round((studentData.approvedCount / studentData.totalCount) * 100)
+      : 0;
+
   return (
     <div className="w-full bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5">
       <div className="flex flex-wrap items-center justify-end gap-2">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <SkeletonPill key={i} />)
-        ) : !data || data.role === "STUDENT" ? (
-          (() => {
-            const s = data as StudentStatus | null;
-            return (
+        ) : isStudent ? (
+          <>
+            <span
+              className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${statusBadgeClass(
+                hasRequest ? studentData?.requestStatus ?? null : null,
+              )}`}
+            >
+              {statusLabel(studentData?.requestStatus ?? null, hasRequest)}
+            </span>
+            {hasRequest && studentData!.totalCount > 0 && (
               <>
-                <span className={`text-xs font-semibold px-3 py-1.5 rounded-lg border ${statusBadgeClass(s?.requestStatus ?? null)}`}>
-                  {statusLabel(s?.requestStatus ?? null)}
-                </span>
                 <Pill
                   icon={CheckCircle2}
-                  label="Steps"
-                  value={s && s.totalSteps > 0 ? `${s.approvedSteps}/${s.totalSteps}` : "—"}
+                  label="Approved"
+                  value={`${studentData!.approvedCount}/${studentData!.totalCount}`}
                   valueClass="text-emerald-700"
                 />
-                {(s?.rejections ?? 0) > 0 && (
-                  <Pill icon={XCircle} label="Rejected" value={s!.rejections} valueClass="text-red-600" />
-                )}
-                {s?.clearanceType && s.clearanceType !== "—" && (
-                  <Pill icon={FileText} label="Type" value={s.clearanceType} />
-                )}
+                <Pill
+                  icon={TrendingUp}
+                  label="Progress"
+                  value={`${progressPct}%`}
+                  valueClass={progressPct === 100 ? "text-emerald-700" : "text-indigo-700"}
+                />
               </>
-            );
-          })()
-        ) : (
-          (() => {
-            const s = data as StaffStatus;
-            return (
-              <>
-                <Pill icon={Clock3} label="Pending" value={s.pendingCount} valueClass={s.pendingCount > 0 ? "text-amber-700" : "text-slate-600"} />
-                <Pill icon={CheckCircle2} label="Today" value={s.approvedToday} valueClass="text-emerald-700" />
-                <Pill icon={RoleIcon} label="Total" value={s.totalHandled} />
-              </>
-            );
-          })()
-        )}
+            )}
+            {(studentData?.rejections ?? 0) > 0 && (
+              <Pill
+                icon={XCircle}
+                label="Rejected"
+                value={studentData!.rejections}
+                valueClass="text-red-600"
+              />
+            )}
+            {studentData?.clearanceType && studentData.clearanceType !== "—" && (
+              <Pill icon={FileText} label="Type" value={studentData.clearanceType} />
+            )}
+          </>
+        ) : staffData ? (
+          <>
+            <Pill
+              icon={Clock3}
+              label="Pending"
+              value={staffData.pendingCount}
+              valueClass={staffData.pendingCount > 0 ? "text-amber-700" : "text-slate-600"}
+            />
+            <Pill icon={CheckCircle2} label="Today" value={staffData.approvedToday} valueClass="text-emerald-700" />
+            <Pill icon={RoleIcon} label="Total" value={staffData.totalHandled} />
+          </>
+        ) : null}
       </div>
     </div>
   );

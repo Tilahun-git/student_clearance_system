@@ -1,5 +1,20 @@
 import { RegisterStudentData } from "@/types/clearance";
 
+export interface ClearanceApprovalRow {
+  role: string;
+  status: string;
+  comment: string | null;
+}
+
+export interface ClearanceProgressData {
+  approvals: ClearanceApprovalRow[];
+  requestStatus: string | null;
+  canRequest: boolean;
+  approvedCount: number;
+  totalCount: number;
+  rejections: number;
+  clearanceType: string;
+}
 
 export async function fetchStudentProfile() {
   const res = await fetch("/api/student/me");
@@ -17,7 +32,7 @@ export async function fetchStudentsBySection(section: string) {
   return data.data;
 }
 
-export async function fetchClearanceProgress() {
+export async function fetchClearanceProgress(): Promise<ClearanceProgressData> {
   const res = await fetch("/api/student/clearance-progress");
   if (!res.ok) throw new Error("Failed to fetch clearance progress");
   return res.json();
