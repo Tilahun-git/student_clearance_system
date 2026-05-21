@@ -7,14 +7,15 @@ import ClearanceRequestModal from "@/components/layout/ClearanceRequestModal";
 import ClearanceTable from "@/components/UI/ClearanceProgressTable";
 import { FileCheck2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
 import { fetchClearanceProgress } from "@/lib/api/student";
-import { ClearanceApprovalRequest } from "@/types/clearance";
 
 export default function StudentDashboard() {
   const router = useRouter();
   const [openRequest, setOpenRequest] = useState(false);
-  const [data, setData] = useState<ClearanceApprovalRequest[]>([]);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [canRequest, setCanRequest] = useState(false);
+  const [approvedCount, setApprovedCount] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   const hasRequest      = data.length > 0;
   const hasRejected     = data.some((item) => item.status === "REJECTED");
@@ -27,6 +28,8 @@ export default function StudentDashboard() {
       const responseData = await fetchClearanceProgress();
       setData(responseData.approvals || []);
       setCanRequest(responseData.canRequest);
+      setApprovedCount(responseData.approvedCount ?? 0);
+      setTotalCount(responseData.totalCount ?? 0);
     } catch (error) {
       console.error("Failed to load progress:", error);
     } finally {
@@ -44,6 +47,11 @@ export default function StudentDashboard() {
           <div className="flex items-center gap-2">
             <FileCheck2 className="w-4 h-4 text-indigo-600" />
             <h2 className="text-sm font-semibold text-slate-800">Clearance Progress</h2>
+            {hasRequest && (
+              <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                {approvedCount}/{totalCount} approved
+              </span>
+            )}
           </div>
           <button
             onClick={() => isFullyApproved && router.push("/student/clearance/certificate")}
@@ -72,7 +80,7 @@ export default function StudentDashboard() {
             <p className="text-xs text-slate-400 mt-1">Submit a request to start the clearance process.</p>
           </div>
         ) : (
-          <ClearanceTable data={data} />
+          <ClearanceTable data={data} approvedCount={approvedCount} totalCount={totalCount} />
         )}
       </div>
 

@@ -26,11 +26,55 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function ClearanceTable({ data }: { data: any[] }) {
+type Props = {
+  data: any[];
+  approvedCount?: number;
+  totalCount?: number;
+};
+
+export default function ClearanceTable({ data, approvedCount = 0, totalCount = 0 }: Props) {
   const [reason, setReason] = useState<string | null>(null);
+
+  const pct = totalCount > 0 ? Math.round((approvedCount / totalCount) * 100) : 0;
+
+  // Progress bar color based on percentage
+  const barColor =
+    pct === 100
+      ? "bg-emerald-500"
+      : pct >= 60
+      ? "bg-indigo-500"
+      : pct >= 30
+      ? "bg-amber-500"
+      : "bg-slate-300";
 
   return (
     <>
+      {/* ── Progress bar ── */}
+      {totalCount > 0 && (
+        <div className="px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-slate-600">Overall Progress</span>
+            <span
+              className={`text-xs font-bold ${
+                pct === 100 ? "text-emerald-600" : "text-indigo-600"
+              }`}
+            >
+              {pct}%
+            </span>
+          </div>
+          <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ease-out ${barColor}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-[11px] text-slate-400 mt-1.5">
+            {approvedCount} of {totalCount} stages approved
+          </p>
+        </div>
+      )}
+
+      {/* ── Table ── */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-slate-50 border-b border-slate-200">
@@ -66,16 +110,20 @@ export default function ClearanceTable({ data }: { data: any[] }) {
           </tbody>
         </table>
       </div>
+
+      {/* ── Rejection reason modal ── */}
       {reason && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm modal-backdrop"
-          onClick={(e) => e.target === e.currentTarget && setReason(null)}>
+          onClick={(e) => e.target === e.currentTarget && setReason(null)}
+        >
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl overflow-hidden modal-panel mx-4">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <h3 className="text-sm font-semibold text-slate-800">Rejection Reason</h3>
               <button
                 onClick={() => setReason(null)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
                 <X size={15} />
               </button>
             </div>

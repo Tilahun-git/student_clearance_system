@@ -1,6 +1,20 @@
 import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { notifyInitialApprovers, notifyRole } from "@/lib/notification/notification.service";
+import { getOfficeCodeByRole } from "@/lib/workflow";
+
+// All 9 roles in display order — created upfront so the student sees the full pipeline immediately
+const ALL_WORKFLOW_ROLES: RoleType[] = [
+  RoleType.ADVISOR,
+  RoleType.DEPARTMENT_HEAD,
+  RoleType.SCHOOL_DEAN,
+  RoleType.LIBRARY,
+  RoleType.CAFETERIA,
+  RoleType.CAMPUS_POLICE,
+  RoleType.DORMITORY,
+  RoleType.STUDENT_DEAN,
+  RoleType.REGISTRAR,
+];
 
 export async function createClearanceRequest(userId: string, body: any) {
   const student = await prisma.student.findUnique({ where: { userId } });
@@ -50,10 +64,10 @@ export async function createClearanceRequest(userId: string, body: any) {
     return rejectedRequest;
   }
 
-  const advisorRole = await prisma.role.findUnique({
-    where: { name: RoleType.ADVISOR },
+  // Fetch all role records and office records upfront
+  const roleRecords = await prisma.role.findMany({
+    where: { name: { in: ALL_WORKFLOW_ROLES } },
   });
-  if (!advisorRole) throw new Error("ADVISOR role not found in database");
 
   const result = await prisma.$transaction(async (tx) => {
     const clearance = await tx.clearanceRequest.create({
@@ -68,13 +82,25 @@ export async function createClearanceRequest(userId: string, body: any) {
       },
     });
 
-    await tx.clearanceApproval.create({
-      data: {
-        clearanceRequestId: clearance.id,
-        roleId: advisorRole.id,
-        status: ApprovalStatus.PENDING,
-      },
-    });
+    // Create ALL approval records as PENDING upfront so the student sees the full pipeline
+    for (const roleName of ALL_WORKFLOW_ROLES) {
+      const roleRecord = roleRecords.find((r) => r.name === roleName);
+      if (!roleRecord) continue;
+
+      const officeCode = getOfficeCodeByRole(roleName);
+      const office = officeCode
+        ? await tx.clearanceStaffOffice.findUnique({ where: { code: officeCode } })
+        : null;
+
+      await tx.clearanceApproval.create({
+        data: {
+          clearanceRequestId: clearance.id,
+          roleId: roleRecord.id,
+          officeId: office?.id ?? null,
+          status: ApprovalStatus.PENDING,
+        },
+      });
+    }
 
     return clearance;
   });

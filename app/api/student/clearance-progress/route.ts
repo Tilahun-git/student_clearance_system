@@ -68,10 +68,37 @@ export async function GET() {
       comment: approval.comment,
     }));
 
+    // All 9 roles in canonical display order
+    const DISPLAY_ORDER = [
+      "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
+      "LIBRARY", "CAFETERIA", "CAMPUS_POLICE", "DORMITORY",
+      "STUDENT_DEAN", "REGISTRAR",
+    ];
+
+    // Fill in any missing roles as PENDING so the student always sees all 9 stages.
+    // This handles both old requests (created before the upfront-creation change)
+    // and new requests where a role hasn't been reached yet.
+    const existingRoles = new Set(approvals.map((a) => a.role));
+    for (const role of DISPLAY_ORDER) {
+      if (!existingRoles.has(role)) {
+        approvals.push({ role, status: "PENDING", comment: null });
+      }
+    }
+
+    // Sort into canonical display order
+    approvals.sort(
+      (a, b) => DISPLAY_ORDER.indexOf(a.role) - DISPLAY_ORDER.indexOf(b.role),
+    );
+
+    const approvedCount = approvals.filter((a) => a.status === "APPROVED").length;
+    const totalCount    = approvals.length; // always 9
+
     return NextResponse.json({
       approvals,
       requestStatus: latestRequest.status,
       canRequest,
+      approvedCount,
+      totalCount,
     });
   } catch (err) {
     console.error("CLEARANCE PROGRESS ERROR:", err);
