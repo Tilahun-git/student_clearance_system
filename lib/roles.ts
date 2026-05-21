@@ -39,6 +39,5 @@ export const ROLE_TYPES: RoleType[] = [
   "DORMITORY",
   "STUDENT_DEAN",
   "CAMPUS_POLICE",
-  "FINANCE",
 ];
 
