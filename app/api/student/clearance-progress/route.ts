@@ -62,9 +62,12 @@ export async function GET() {
       });
     }
 
-    const approvals = latestRequest.approvals.map((approval) => ({
-      role: approval.role.name,
-      status: approval.status,
+    // Use a plain DTO type so we can push virtual PENDING rows for missing roles
+    type ApprovalDTO = { role: string; status: string; comment: string | null };
+
+    const approvals: ApprovalDTO[] = latestRequest.approvals.map((approval) => ({
+      role: approval.role.name as string,
+      status: approval.status as string,
       comment: approval.comment,
     }));
 
