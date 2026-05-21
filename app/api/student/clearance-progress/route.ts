@@ -78,7 +78,7 @@ export async function GET() {
     // Fill in any missing roles as PENDING so the student always sees all 9 stages.
     // This handles both old requests (created before the upfront-creation change)
     // and new requests where a role hasn't been reached yet.
-    const existingRoles = new Set(approvals.map((a) => a.role));
+    const existingRoles = new Set<string>(approvals.map((a) => a.role));
     for (const role of DISPLAY_ORDER) {
       if (!existingRoles.has(role)) {
         approvals.push({ role, status: "PENDING", comment: null });
