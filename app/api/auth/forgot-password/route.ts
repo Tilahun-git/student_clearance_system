@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { transporter } from "@/lib/email";
-import crypto from "crypto";
+import { sendEmail } from "@/lib/email";
 import { NextResponse } from "next/server";
+import { SignJWT } from "jose";
 
 export async function POST(req: Request) {
   try {
@@ -20,19 +20,17 @@ export async function POST(req: Request) {
       });
     }
 
-    // Generate a secure random token
-    const token  = crypto.randomBytes(32).toString("hex");
-    const expiry = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
-
-    await prisma.user.update({
-      where: { email },
-      data: { resetToken: token, resetTokenExpiry: expiry },
-    });
+    // Create a signed JWT reset token — no DB storage needed
+    const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+    const token = await new SignJWT({ userId: user.id, email: user.email })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("1h")
+      .setIssuedAt()
+      .sign(secret);
 
     const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
 
-    await transporter.sendMail({
-      from: `"WDU Clearance System" <${process.env.BREVO_SMTP_USER}>`,
+    await sendEmail({
       to: email,
       subject: "Reset Your Password — WDU Clearance",
       html: `
@@ -64,6 +62,10 @@ export async function POST(req: Request) {
           </body>
         </html>
       `,
+    });
+
+    return NextResponse.json({
+      message: "If an account exists for that email, a reset link has been sent.",
     });
   } catch (error) {
     console.error("FORGOT_PASSWORD_ERROR:", error);
