@@ -4,7 +4,6 @@ import { RoleType } from "@prisma/client";
 
 export async function GET() {
   try {
-    // Find the STUDENT role to exclude student-only accounts
     const studentRole = await prisma.role.findUnique({
       where: { name: RoleType.STUDENT},
     });

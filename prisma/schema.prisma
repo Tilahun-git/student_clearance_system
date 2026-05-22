@@ -8,13 +8,16 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  name      String
-  isActive  Boolean  @default(true)
-  mustChangePassword Boolean @default(false)
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  password           String
+  createdAt          DateTime @default(now())
+  name               String
+  isActive           Boolean  @default(true)
+  mustChangePassword Boolean  @default(false)
+
+  resetToken       String?
+  resetTokenExpiry DateTime?
 
   staffProfile   Staff?
   studentProfile Student?
@@ -159,9 +162,9 @@ model ClearanceApproval {
   comment    String?
   approvedAt DateTime?
 
-  clearanceRequest ClearanceRequest @relation(fields: [clearanceRequestId], references: [id])
-  role             Role             @relation(fields: [roleId], references: [id])
-  staff            Staff?           @relation(fields: [staffId], references: [id])
+  clearanceRequest ClearanceRequest      @relation(fields: [clearanceRequestId], references: [id])
+  role             Role                  @relation(fields: [roleId], references: [id])
+  staff            Staff?                @relation(fields: [staffId], references: [id])
   office           ClearanceStaffOffice? @relation(fields: [officeId], references: [id])
 
   @@unique([clearanceRequestId, roleId])

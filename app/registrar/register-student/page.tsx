@@ -31,7 +31,6 @@ export default function Register() {
     section:      "A",
   });
 
-  // Auth guard
   useEffect(() => {
     if (status === "loading") return;
     if (!session?.user?.roles?.includes("REGISTRAR")) {
@@ -40,7 +39,6 @@ export default function Register() {
     }
   }, [session, status]);
 
-  // Load schools + departments
   useEffect(() => {
     fetchClearanceFormData()
       .then((data) => {
@@ -81,7 +79,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-white to-indigo-100">
+    <div className="min-h-screen bg-linear-to-br from-slate-100 via-white to-indigo-100">
       <div className="flex justify-center px-4 py-10">
         <form
           onSubmit={handleSubmit}

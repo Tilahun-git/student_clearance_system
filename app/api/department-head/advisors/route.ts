@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { RoleType } from "@prisma/client";
 
-// GET — fetch advisors in the same department as the authenticated dept head
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -12,7 +11,6 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Resolve the dept head's staff record to get their departmentId
     const deptHeadStaff = await prisma.staff.findUnique({
       where: { userId: session.user.id },
       select: { departmentId: true },
@@ -25,7 +23,6 @@ export async function GET() {
       );
     }
 
-    // Fetch only advisors assigned to the same department as the dept head
     const advisors = await prisma.staff.findMany({
       where: {
         departmentId: deptHeadStaff.departmentId,
@@ -43,7 +40,6 @@ export async function GET() {
   }
 }
 
-// POST — assign an advisor to one or more students
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

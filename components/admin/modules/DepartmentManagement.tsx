@@ -27,8 +27,7 @@ export default function DepartmentManagement() {
   const [headOptions, setHeadOptions] = useState<any[]>([]);
   const [assigning, setAssigning] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [pendingDelete, setPendingDelete] =
-    useState<DepartmentRow | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<DepartmentRow | null>(null);
 
   function loadDepartments() {
     setLoading(true);
@@ -42,7 +41,6 @@ export default function DepartmentManagement() {
     loadDepartments();
   }, []);
 
-  // ✅ FIXED: now receives full department object
   async function openAssign(dept: DepartmentRow) {
     setSelectedDept(dept.id);
 
@@ -51,9 +49,7 @@ export default function DepartmentManagement() {
     if (dept.id) params.append("departmentId", dept.id);
     if (dept.schoolId) params.append("schoolId", dept.schoolId);
 
-    const res = await fetch(
-      `/api/staff/by-role/DEPARTMENT_HEAD?${params.toString()}`
-    );
+    const res = await fetch(`/api/staff/by-role/DEPARTMENT_HEAD?${params.toString()}`);
 
     const data = await res.json();
     setHeadOptions(Array.isArray(data) ? data : []);

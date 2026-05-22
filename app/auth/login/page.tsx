@@ -7,15 +7,13 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { KeyRound, ShieldCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import { routes } from "@/lib/roles";
+import Link from "next/link";
 
-// ── Types 
 
 type Step =
   | "credentials"   
   | "role-picker"  
   | "change-password"; 
-
-// ── Helpers 
 
 function PasswordInput({
   value,
@@ -72,28 +70,23 @@ function StrengthBar({ password }: { password: string }) {
   );
 }
 
-// ── Main component 
 
 export default function LoginPage() {
   const router = useRouter();
   const emailRef = useRef<HTMLInputElement>(null);
 
-  // ── Shared state 
   const [step, setStep]           = useState<Step>("credentials");
   const [error, setError]         = useState("");
   const [loading, setLoading]     = useState(false);
 
-  // ── Step 1: credentials 
   const [email, setEmail]               = useState("");
   const [password, setPassword]         = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // ── Step 2: role picker 
   const [availableRoles, setAvailableRoles]   = useState<string[]>([]);
   const [selectedRole, setSelectedRole]       = useState<string | null>(null);
   const [selectingRole, setSelectingRole]     = useState<string | null>(null);
 
-  // ── Step 3: change password 
   const [pendingRole, setPendingRole]         = useState<string | null>(null);
   const [currentPwd, setCurrentPwd]           = useState("");
   const [newPwd, setNewPwd]                   = useState("");
@@ -105,7 +98,6 @@ export default function LoginPage() {
 
   useEffect(() => { emailRef.current?.focus(); }, []);
 
-  // ── Step 1: submit credentials 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -132,7 +124,6 @@ export default function LoginPage() {
       const staffRoles = userRoles.filter((r: string) => r !== "STUDENT");
 
       if (staffRoles.length === 0) {
-        // Pure student — check mustChangePassword
         if (mustChange) {
           setPendingRole("STUDENT");
           setStep("change-password");
@@ -152,7 +143,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Multiple roles — show picker first, then check mustChange after selection
       setAvailableRoles(staffRoles);
       setStep("role-picker");
     } finally {
@@ -160,11 +150,9 @@ export default function LoginPage() {
     }
   };
 
-  // ── Step 2: role selected 
   const handleRoleSelect = async (role: string) => {
     setSelectingRole(role);
     try {
-      // Re-fetch session to get mustChangePassword
       const sessionRes = await fetch("/api/auth/session");
       const session    = await sessionRes.json();
       const mustChange: boolean = session?.user?.mustChangePassword ?? false;
@@ -181,7 +169,6 @@ export default function LoginPage() {
     }
   };
 
-  // ── Step 3: change password submit 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -211,7 +198,6 @@ export default function LoginPage() {
 
       toast.success("Password changed! Redirecting…");
 
-      // Now proceed to the dashboard via select-role
       window.location.href = `/api/authenticate/select-role?role=${encodeURIComponent(pendingRole!)}`;
     } catch {
       toast.error("Server error. Please try again.");
@@ -220,7 +206,6 @@ export default function LoginPage() {
     }
   };
 
-  // ── Render 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-300 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8 relative">
@@ -228,8 +213,6 @@ export default function LoginPage() {
         <div className="flex justify-center mb-6">
           <img src="/wldu_logo.jpg" alt="University Logo" width={80} className="rounded-full shadow-md" />
         </div>
-
-        {/* ── Step 1: Login form ── */}
         {step === "credentials" && (
           <>
             <h2 className="text-3xl font-bold text-center text-gray-800 mb-4">Login</h2>
@@ -269,6 +252,12 @@ export default function LoginPage() {
                 {loading ? "Signing in…" : "Login"}
               </button>
             </form>
+            <Link
+              href="/auth/forgot-password"
+              className="text-blue-600 text-sm"
+            >
+              Forgot Password?
+            </Link>
           </>
         )}
 

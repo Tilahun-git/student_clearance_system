@@ -8,7 +8,6 @@ export async function GET(req: NextRequest) {
 
     const roleName = searchParams.get("role");
 
-    // validate role
     if (!roleName || !(roleName in RoleType)) {
       return NextResponse.json(
         { error: "Invalid role" },

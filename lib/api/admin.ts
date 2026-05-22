@@ -6,10 +6,8 @@ export async function fetchAdminStats() {
   return res.json();
 }
 
-// Fetch Users 
-
 export async function fetchUsers() {
-  const res = await fetch("/api/users");
+  const res = await fetch("/api/admin/users");
   if (!res.ok) throw new Error("Failed to fetch users");
   const data = await res.json();
   return data.users ?? [];
@@ -71,8 +69,6 @@ export async function createStudentUser(payload: {
   return data;
 }
 
-// ── Roles 
-
 export async function fetchRoles() {
   const res = await fetch("/api/admin/roles");
   if (!res.ok) throw new Error("Failed to fetch roles");
@@ -89,8 +85,6 @@ export async function createRole(name: string) {
   if (!res.ok) throw new Error(data.error || "Failed to create role");
   return data;
 }
-
-// ── Schools 
 
 export async function fetchSchools() {
   const res = await fetch("/api/school");
@@ -139,9 +133,6 @@ export async function deleteOffice(id: string) {
   return data;
 }
 
-
-// ── Departments 
-
 export async function fetchDepartments() {
   const res = await fetch("/api/department");
   if (!res.ok) throw new Error("Failed to fetch departments");
@@ -181,23 +172,17 @@ export async function deleteDepartment(id: string) {
   return data;
 }
 
-// ── Students 
-
 export async function fetchStudents() {
   const res = await fetch("/api/students");
   if (!res.ok) throw new Error("Failed to fetch students");
   return res.json();
 }
 
-// ── Clearance data (schools + departments for forms) 
-
 export async function fetchClearanceFormData() {
   const res = await fetch("/api/clearance/data");
   if (!res.ok) throw new Error("Failed to fetch clearance data");
   return res.json();
 }
-
-// ── Office manager assignment 
 
 export async function assignOfficeManager(officeId: string, staffId: string) {
   const res = await fetch("/api/admin/offices/assign-manager", {

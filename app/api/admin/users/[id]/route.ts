@@ -44,7 +44,6 @@ export async function PATCH(req: Request, { params }: Params) {
           await prisma.staff.upsert({ where: { userId: id }, create: { userId: id }, update: {} });
         }
       } else {
-        // ── Last-admin guard for preventing deletion of Admin role if only 1 admin exists
         if (normalizedRole === RoleType.ADMIN) {
           const adminCount = await prisma.userRole.count({
             where: { role: { name: RoleType.ADMIN } },
