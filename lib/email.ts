@@ -4,20 +4,14 @@ type SendEmailParams = {
   html: string;
 };
 
-export async function sendEmail({
-  to,
-  subject,
-  html,
-}: SendEmailParams) {
+export async function sendEmail({to,subject,html,}: SendEmailParams) {
+ 
   const apiKey = process.env.BREVO_API_KEY;
-
   if (!apiKey) {
     throw new Error("BREVO_API_KEY is missing in environment variables");
   }
-
   const senderEmail =
     process.env.BREVO_SENDER_EMAIL || "tilahuntareke8@gmail.com";
-
   try {
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
@@ -28,7 +22,7 @@ export async function sendEmail({
       },
       body: JSON.stringify({
         sender: {
-          name: "WDU Clearance System",
+          name: "WDU Student Clearance System",
           email: senderEmail,
         },
 
@@ -37,9 +31,7 @@ export async function sendEmail({
             email: to,
           },
         ],
-
         subject,
-
         htmlContent: html,
       }),
     });
@@ -48,7 +40,6 @@ export async function sendEmail({
 
     if (!response.ok) {
       console.error("BREVO_ERROR:", data);
-
       throw new Error(
         data?.message ||
           data?.error ||
@@ -57,7 +48,6 @@ export async function sendEmail({
     }
 
     console.log("EMAIL_SENT:", data);
-
     return data;
   } catch (error) {
     console.error("SEND_EMAIL_ERROR:", error);

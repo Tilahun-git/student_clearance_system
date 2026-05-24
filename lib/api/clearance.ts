@@ -1,8 +1,9 @@
 import { ApprovalStatus } from "@prisma/client";
 import { ClearanceApprovalRequest } from "@/types/clearance";
 
-export async function fetchApprovals(): Promise<ClearanceApprovalRequest[]> {
-  const res = await fetch("/api/clearance/approve");
+export async function fetchApprovals(role?: string): Promise<ClearanceApprovalRequest[]> {
+  const url = role ? `/api/clearance/approve?role=${encodeURIComponent(role)}` : "/api/clearance/approve";
+  const res = await fetch(url);
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || "Failed to fetch approvals");
   return data;

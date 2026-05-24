@@ -3,6 +3,55 @@ import { prisma } from "@/lib/prisma";
 import { ROLE_TYPES } from "@/lib/roles";
 import bcrypt from "bcryptjs";
 
+async function syncStaffRoleAssignments({
+  staffId,
+  selectedRoles,
+  schoolId,
+  departmentId,
+}: {
+  staffId: string;
+  selectedRoles: string[];
+  schoolId?: string;
+  departmentId?: string;
+}) {
+  const hasDepartmentHead = selectedRoles.includes("DEPARTMENT_HEAD");
+  const hasSchoolDean = selectedRoles.includes("SCHOOL_DEAN");
+
+  if (hasDepartmentHead && departmentId) {
+    await prisma.department.updateMany({
+      where: { headId: staffId },
+      data: { headId: null },
+    });
+
+    await prisma.department.update({
+      where: { id: departmentId },
+      data: { headId: staffId },
+    });
+  } else {
+    await prisma.department.updateMany({
+      where: { headId: staffId },
+      data: { headId: null },
+    });
+  }
+
+  if (hasSchoolDean && schoolId) {
+    await prisma.school.updateMany({
+      where: { school_deanId: staffId },
+      data: { school_deanId: null },
+    });
+
+    await prisma.school.update({
+      where: { id: schoolId },
+      data: { school_deanId: staffId },
+    });
+  } else {
+    await prisma.school.updateMany({
+      where: { school_deanId: staffId },
+      data: { school_deanId: null },
+    });
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const { name, email, password, roles, schoolId, departmentId } = await req.json();
@@ -68,25 +117,25 @@ export async function POST(req: Request) {
     // Auto-create Staff record for any non-student user
     const isStaff = selectedRoles.some((r) => r !== "STUDENT");
     if (isStaff) {
-      const existingStaff = await prisma.staff.findUnique({ where: { userId: user.id } });
-      if (!existingStaff) {
-        await prisma.staff.create({
-          data: {
-            userId: user.id,
-            schoolId:     schoolId     || null,
-            departmentId: departmentId || null,
-          },
-        });
-      } else {
-        // Update existing staff with school/dept if provided
-        await prisma.staff.update({
-          where: { userId: user.id },
-          data: {
-            ...(schoolId     && { schoolId }),
-            ...(departmentId && { departmentId }),
-          },
-        });
-      }
+      const staff = await prisma.staff.upsert({
+        where: { userId: user.id },
+        create: {
+          userId: user.id,
+          schoolId: schoolId || null,
+          departmentId: departmentId || null,
+        },
+        update: {
+          ...(schoolId && { schoolId }),
+          ...(departmentId && { departmentId }),
+        },
+      });
+
+      await syncStaffRoleAssignments({
+        staffId: staff.id,
+        selectedRoles,
+        schoolId,
+        departmentId,
+      });
     }
 
     return NextResponse.json({ success: true, user });

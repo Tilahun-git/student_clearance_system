@@ -33,7 +33,7 @@ export default function RoleApprovalPage({ role }: Props) {
       if (silent) setRefreshing(true);
       else setLoading(true);
 
-      const data = await fetchApprovals();
+      const data = await fetchApprovals(role);
       setRequests(Array.isArray(data) ? data : []);
     } catch {
       if (!silent) toast.error(`Failed to load ${role} requests`);

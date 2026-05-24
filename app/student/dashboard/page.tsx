@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 import Header from "@/components/layout/Header";
 import { DASHBOARD_CONTAINER_CLASS } from "@/components/layout/NoSidebarDashboardLayout";
 import ClearanceRequestModal from "@/components/layout/ClearanceRequestModal";
 import ClearanceTable from "@/components/tables/ClearanceProgressTable";
 import { FileCheck2, Send, AlertCircle, CheckCircle2 } from "lucide-react";
 import {
+  ApiFetchError,
   fetchClearanceProgress,
   type ClearanceApprovalRow,
   type ClearanceProgressData,
@@ -45,13 +47,22 @@ export default function StudentDashboard() {
         const responseData = await fetchClearanceProgress();
         applyProgress(responseData);
       } catch (error) {
+        if (error instanceof ApiFetchError && error.status === 401) {
+          toast.error("Your session has expired. Please sign in again.");
+          router.replace("/auth/login");
+          return;
+        }
+
         console.error("Failed to load progress:", error);
+        if (error instanceof Error) {
+          toast.error(error.message);
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [applyProgress],
+    [applyProgress, router],
   );
 
   useEffect(() => {

@@ -6,30 +6,23 @@ import { SignJWT } from "jose";
 export async function POST(req: Request) {
   try {
     const { email } = await req.json();
-
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
-
     const user = await prisma.user.findUnique({ where: { email } });
 
-    // Always return the same message to prevent email enumeration
     if (!user) {
       return NextResponse.json({
         message: "If an account exists for that email, a reset link has been sent.",
       });
     }
-
-    // Create a signed JWT reset token — no DB storage needed
     const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
     const token = await new SignJWT({ userId: user.id, email: user.email })
       .setProtectedHeader({ alg: "HS256" })
-      .setExpirationTime("1h")
+      .setExpirationTime("15 min")
       .setIssuedAt()
       .sign(secret);
-
     const resetLink = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${token}`;
-
     await sendEmail({
       to: email,
       subject: "Reset Your Password — WDU Clearance",

@@ -9,17 +9,48 @@ export interface ClearanceApprovalRow {
 
 export interface ClearanceProgressData {
   approvals: ClearanceApprovalRow[];
-  requestStatus: ClearanceStatus;
+  requestStatus: ClearanceStatus | null;
   canRequest: boolean;
   approvedCount: number;
   totalCount: number;
   rejections: number;
   clearanceType: string;
+  previousReason: string | null;
+}
+
+export class ApiFetchError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public details?: unknown,
+  ) {
+    super(message);
+    this.name = "ApiFetchError";
+  }
+}
+
+async function getErrorResponseMessage(res: Response) {
+  try {
+    const body = await res.json();
+    if (typeof body?.error === "string") return body.error;
+    if (typeof body?.message === "string") return body.message;
+  } catch {
+    // ignore invalid JSON body
+  }
+
+  return `Request failed with status ${res.status}`;
+}
+
+async function ensureOk(res: Response, fallbackMessage: string) {
+  if (!res.ok) {
+    const message = await getErrorResponseMessage(res);
+    throw new ApiFetchError(message || fallbackMessage, res.status);
+  }
 }
 
 export async function fetchStudentProfile() {
-  const res = await fetch("/api/student/me");
-  if (!res.ok) throw new Error("Failed to fetch student info");
+  const res = await fetch("/api/student/me", { cache: "no-store" });
+  await ensureOk(res, "Failed to fetch student info");
   return res.json();
 }
 
@@ -34,16 +65,20 @@ export async function fetchStudentsBySection(section: string) {
 }
 
 export async function fetchClearanceProgress(): Promise<ClearanceProgressData> {
-  const res = await fetch("/api/student/clearance-progress");
-  if (!res.ok) throw new Error("Failed to fetch clearance progress");
+  const res = await fetch("/api/student/clearance-progress", { cache: "no-store" });
+  await ensureOk(res, "Failed to fetch clearance progress");
   return res.json();
 }
 
 export async function fetchStudentCertificates() {
-  const res = await fetch("/api/student/clearance/certificates");
+  const res = await fetch("/api/student/clearance/certificates", { cache: "no-store" });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || "Failed to fetch certificates");
+    throw new ApiFetchError(
+      typeof data?.error === "string" ? data.error : "Failed to fetch certificates",
+      res.status,
+      data,
+    );
   }
   return res.json();
 }
@@ -58,8 +93,14 @@ export async function submitClearanceRequest(payload: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Failed to submit request");
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new ApiFetchError(
+      typeof data?.error === "string" ? data.error : "Failed to submit request",
+      res.status,
+      data,
+    );
+  }
   return data;
 }
 
@@ -69,7 +110,13 @@ export async function registerStudent(form: RegisterStudentData) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(form),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Failed to register student");
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new ApiFetchError(
+      typeof data?.error === "string" ? data.error : "Failed to register student",
+      res.status,
+      data,
+    );
+  }
   return data;
 }

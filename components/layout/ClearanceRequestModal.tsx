@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { fetchStudentProfile, submitClearanceRequest } from "@/lib/api/student";
+import { fetchClearanceProgress, fetchStudentProfile, submitClearanceRequest } from "@/lib/api/student";
 import { Reasons } from "@/lib/constants/reasons";
+import { getEthiopianAcademicContext } from "@/lib/clearance/academicCalendar";
 import { X } from "lucide-react";
+
+const DEFAULT_CONTEXT = getEthiopianAcademicContext();
 
 export default function ClearanceRequestModal({
   onClose,
@@ -18,29 +21,27 @@ export default function ClearanceRequestModal({
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
-    reason:       "",
-    academicYear: "",
-    semester:     "",
+    reason: "",
+    academicYear: DEFAULT_CONTEXT.academicYear,
+    semester: DEFAULT_CONTEXT.semester,
   });
 
   useEffect(() => {
-    fetchStudentProfile()
-      .then((data) => setStudent(data))
+    Promise.all([fetchStudentProfile(), fetchClearanceProgress()])
+      .then(([profile, progress]) => {
+        setStudent(profile);
+        setForm((current) => ({
+          ...current,
+          reason: progress.previousReason ?? current.reason,
+        }));
+      })
       .catch(() => toast.error("Failed to load student info"))
       .finally(() => setLoading(false));
   }, []);
 
   function handleChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const { name, value } = e.target;
-    if (name === "academicYear") {
-      setForm((p) => ({ ...p, academicYear: value, semester: "" }));
-      return;
-    }
     setForm((p) => ({ ...p, [name]: value }));
-  }
-  function getYears() {
-    const y = new Date().getFullYear();
-    return [`${y - 1}/${y}`, `${y}/${y + 1}`];
   }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -116,23 +117,17 @@ export default function ClearanceRequestModal({
                       <option key={r.id} value={r.id}>{r.name}</option>
                     ))}
                   </select>
-                  <select name="academicYear" value={form.academicYear} onChange={handleChange} className="input" required>
-                    <option value="">Academic Year</option>
-                    {getYears().map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
+                  <select name="academicYear" value={form.academicYear} className="input" disabled required>
+                    <option value={form.academicYear}>{form.academicYear}</option>
                   </select>
                   <select
                     name="semester"
                     value={form.semester}
-                    onChange={handleChange}
                     className="input"
-                    disabled={!form.academicYear}
+                    disabled
                     required
                   >
-                    <option value="">Semester</option>
-                    <option value="1st">First Semester</option>
-                    <option value="2nd">Second Semester</option>
+                    <option value={form.semester}>{form.semester === "1st" ? "First Semester" : "Second Semester"}</option>
                   </select>
                 </div>
               </section>

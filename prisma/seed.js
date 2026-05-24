@@ -28,7 +28,7 @@ async function main() {
     });
   }
 
-  console.log("✅ Roles seeded");
+  console.log("Roles seeded");
 }
 
 main()

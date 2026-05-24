@@ -8,17 +8,18 @@ import { processApprovalWorkflow } from "@/lib/clearance/approval.workflow";
 import { fetchApprovalsForStaff } from "@/lib/clearance/approval.fetch";
 import { RoleType } from "@prisma/client";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const approvals = await fetchApprovalsForStaff(
-      session.user.id,
-      session.user.activeRole as RoleType,
-    );
+    const { searchParams } = new URL(req.url);
+    const requestedRole = searchParams.get("role") as RoleType | null;
+    const activeRole = requestedRole ?? (session.user.activeRole as RoleType | undefined);
+
+    const approvals = await fetchApprovalsForStaff(session.user.id, activeRole);
     return NextResponse.json(approvals);
   } catch (error) {
     console.error(error);

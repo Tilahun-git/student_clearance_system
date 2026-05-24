@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
-import { ClearanceStatus } from "@prisma/client";
+import { ApprovalStatus, ClearanceStatus } from "@prisma/client";
 import { Reasons } from "@/lib/constants/reasons";
+import { canStudentSubmitClearanceRequest } from "@/lib/clearance/requestEligibility";
 
 const DISPLAY_ORDER = [
   "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
@@ -48,28 +49,18 @@ export async function GET() {
       },
     });
 
-    const activeRequest = await prisma.clearanceRequest.findFirst({
-      where: {
-        studentId: student.id,
-        status: {
-          in: [
-            ClearanceStatus.PENDING,
-            ClearanceStatus.IN_PROGRESS,
-          ],
-        },
-      },
-    });
-    const canRequest = !activeRequest;
+    const canRequest = await canStudentSubmitClearanceRequest(student.id);
 
     if (!latestRequest) {
       return NextResponse.json({
         approvals: [],
         requestStatus: null,
-        canRequest: true,
+        canRequest,
         approvedCount: 0,
         totalCount: 0,
         rejections: 0,
         clearanceType: "—",
+        previousReason: null,
       });
     }
 
@@ -84,7 +75,7 @@ export async function GET() {
     const existingRoles = new Set<string>(approvals.map((a) => a.role));
     for (const role of DISPLAY_ORDER) {
       if (!existingRoles.has(role)) {
-        approvals.push({ role, status: "PENDING", comment: null });
+        approvals.push({ role, status: ApprovalStatus.WAITING, comment: null });
       }
     }
 
@@ -108,6 +99,7 @@ export async function GET() {
       totalCount,
       rejections,
       clearanceType,
+      previousReason: latestRequest.reason ?? null,
     });
   } catch (err) {
     console.error("CLEARANCE PROGRESS ERROR:", err);

@@ -26,6 +26,7 @@ export async function GET(
       ...(schoolId ? { schoolId } : {}),
       ...(departmentId ? { departmentId } : {}),
       user: {
+        isActive: true,
         roles: {
           some: {
             role: { name: normalizedRole as RoleType },

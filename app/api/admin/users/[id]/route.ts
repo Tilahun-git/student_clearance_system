@@ -3,7 +3,68 @@ import { prisma } from "@/lib/prisma";
 import { ROLE_TYPES } from "@/lib/roles";
 import { RoleType } from "@prisma/client";
 
+const OFFICE_ROLE_NAMES = new Set<string>([
+  RoleType.CAFETERIA,
+  RoleType.CAMPUS_POLICE,
+  RoleType.LIBRARY,
+  RoleType.DORMITORY,
+  RoleType.STUDENT_DEAN,
+  RoleType.REGISTRAR,
+]);
+
 type Params = { params: Promise<{ id: string }> };
+
+async function clearRoleAssignmentsForStaff(staffId: string, roleName: string) {
+  const updates = [];
+
+  if (roleName === RoleType.DEPARTMENT_HEAD) {
+    updates.push(
+      prisma.department.updateMany({
+        where: { headId: staffId },
+        data: { headId: null },
+      }),
+    );
+  }
+
+  if (roleName === RoleType.SCHOOL_DEAN) {
+    updates.push(
+      prisma.school.updateMany({
+        where: { school_deanId: staffId },
+        data: { school_deanId: null },
+      }),
+    );
+  }
+
+  if (OFFICE_ROLE_NAMES.has(roleName)) {
+    updates.push(
+      prisma.clearanceStaffOffice.updateMany({
+        where: { managerId: staffId },
+        data: { managerId: null },
+      }),
+    );
+  }
+
+  if (updates.length > 0) {
+    await prisma.$transaction(updates);
+  }
+}
+
+async function clearAllStaffAssignments(staffId: string) {
+  await prisma.$transaction([
+    prisma.department.updateMany({
+      where: { headId: staffId },
+      data: { headId: null },
+    }),
+    prisma.school.updateMany({
+      where: { school_deanId: staffId },
+      data: { school_deanId: null },
+    }),
+    prisma.clearanceStaffOffice.updateMany({
+      where: { managerId: staffId },
+      data: { managerId: null },
+    }),
+  ]);
+}
 
 export async function PATCH(req: Request, { params }: Params) {
   try {
@@ -17,6 +78,15 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: "action is required" }, { status: 400 });
     }
     if (action === "activate" || action === "deactivate") {
+      const staff = await prisma.staff.findUnique({
+        where: { userId: id },
+        select: { id: true },
+      });
+
+      if (action === "deactivate" && staff) {
+        await clearAllStaffAssignments(staff.id);
+      }
+
       const updated = await prisma.user.update({
         where: { id },
         data: { isActive: action === "activate" },
@@ -55,6 +125,16 @@ export async function PATCH(req: Request, { params }: Params) {
             );
           }
         }
+
+        const staff = await prisma.staff.findUnique({
+          where: { userId: id },
+          select: { id: true },
+        });
+
+        if (staff) {
+          await clearRoleAssignmentsForStaff(staff.id, normalizedRole);
+        }
+
         await prisma.userRole
           .delete({ where: { userId_roleId: { userId: id, roleId: roleRecord.id } } })
           .catch(() => {});
@@ -76,6 +156,15 @@ export async function PATCH(req: Request, { params }: Params) {
 export async function DELETE(req: Request, { params }: Params) {
   try {
     const { id } = await params;
+    const staff = await prisma.staff.findUnique({
+      where: { userId: id },
+      select: { id: true },
+    });
+
+    if (staff) {
+      await clearAllStaffAssignments(staff.id);
+    }
+
     await prisma.user.update({
       where: { id },
       data: { isActive: false },

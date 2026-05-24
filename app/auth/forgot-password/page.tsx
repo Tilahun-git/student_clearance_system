@@ -35,14 +35,10 @@ export default function ForgotPasswordPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-300 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-
-        {/* Logo */}
         <div className="flex justify-center mb-6">
           <img src="/wldu_logo.jpg" alt="University Logo" width={70} className="rounded-full shadow-md" />
         </div>
-
         {sent ? (
-          /* ── Success state ── */
           <div className="text-center space-y-4">
             <div className="flex justify-center">
               <div className="w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
@@ -54,7 +50,7 @@ export default function ForgotPasswordPage() {
               If an account exists for <span className="font-medium text-gray-700">{email}</span>,
               we sent a password reset link. Check your inbox and spam folder.
             </p>
-            <p className="text-xs text-gray-400">The link expires in 1 hour.</p>
+            <p className="text-xs text-gray-400">The link expires in 15 minutes.</p>
             <Link
               href="/auth/login"
               className="inline-flex items-center gap-2 mt-2 text-sm text-blue-900 font-semibold hover:underline"
@@ -64,7 +60,6 @@ export default function ForgotPasswordPage() {
             </Link>
           </div>
         ) : (
-          /* ── Form state ── */
           <>
             <h2 className="text-2xl font-bold text-center text-gray-800 mb-1">Forgot Password</h2>
             <p className="text-sm text-center text-gray-500 mb-6">
