@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Bell, AlertTriangle, CheckCircle2 } from "lucide-react";
 
@@ -39,9 +40,9 @@ export default function NotificationModal({
   const isRejection = data?.extraData?.comment;
   const isApproved = data?.notification?.message?.toLowerCase().includes("approved");
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
@@ -136,4 +137,6 @@ export default function NotificationModal({
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

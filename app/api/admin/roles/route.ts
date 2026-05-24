@@ -2,10 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ROLE_TYPES } from "@/lib/roles";
 import { RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
 const VALID_ROLES = ROLE_TYPES;
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { name } = await req.json();
     if (!name) {
@@ -32,7 +36,10 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const roles = await prisma.role.findMany({ orderBy: { name: "asc" } });
     return NextResponse.json(roles);

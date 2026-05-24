@@ -1,7 +1,8 @@
 import { RoleType } from "@prisma/client";
+
 export const routes = [
   { prefix: "/student-dean",    role: "STUDENT_DEAN" as RoleType,    redirect: "/student-dean/dashboard" },
-  { prefix: "/school-dean",    role: "SCHOOL_DEAN" as RoleType,     redirect: "/school-dean/dashboard" },
+  { prefix: "/school-dean",     role: "SCHOOL_DEAN" as RoleType,     redirect: "/school-dean/dashboard" },
   { prefix: "/department-head", role: "DEPARTMENT_HEAD" as RoleType, redirect: "/department-head/dashboard" },
   { prefix: "/campus-police",   role: "CAMPUS_POLICE" as RoleType,   redirect: "/campus-police/dashboard" },
   { prefix: "/dormitory",       role: "DORMITORY" as RoleType,       redirect: "/dormitory/dashboard" },
@@ -11,6 +12,7 @@ export const routes = [
   { prefix: "/admin",           role: "ADMIN" as RoleType,           redirect: "/admin/dashboard" },
   { prefix: "/registrar",       role: "REGISTRAR" as RoleType,       redirect: "/registrar/dashboard" },
   { prefix: "/library",         role: "LIBRARY" as RoleType,         redirect: "/library/dashboard" },
+  { prefix: "/super-proctor",   role: "SUPER_PROCTOR" as  RoleType,   redirect: "/super-proctor/dashboard" },
 ] as const;
 
 export type RoleRoute = (typeof routes)[number];
@@ -27,7 +29,7 @@ export function hasRole(
   return user.roles?.some((r) => r.role.name === roleName) ?? false;
 }
 
-export const ROLE_TYPES: RoleType[] = [
+export const ROLE_TYPES: string[] = [
   "STUDENT",
   "ADVISOR",
   "DEPARTMENT_HEAD",
@@ -39,5 +41,5 @@ export const ROLE_TYPES: RoleType[] = [
   "DORMITORY",
   "STUDENT_DEAN",
   "CAMPUS_POLICE",
+  "SUPER_PROCTOR",
 ];
-

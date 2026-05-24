@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ROLE_TYPES } from "@/lib/roles";
 import bcrypt from "bcryptjs";
+import { requireAuth } from "@/lib/apiAuth";
+import { RoleType } from "@prisma/client";
 
+// ... (syncStaffRoleAssignments unchanged)
 async function syncStaffRoleAssignments({
   staffId,
   selectedRoles,
@@ -53,6 +56,9 @@ async function syncStaffRoleAssignments({
 }
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { name, email, password, roles, schoolId, departmentId } = await req.json();
 
@@ -114,8 +120,47 @@ export async function POST(req: Request) {
       },
     });
 
-    // Auto-create Staff record for any non-student user
-    const isStaff = selectedRoles.some((r) => r !== "STUDENT");
+    // Auto-create Staff record for any non-student, non-proctor user
+    const isSuperProctor = selectedRoles.includes("SUPER_PROCTOR");
+    const isDormitory    = selectedRoles.includes("DORMITORY");
+    const isStaff        = selectedRoles.some((r) => r !== "STUDENT" && r !== "SUPER_PROCTOR");
+
+    // SUPER_PROCTOR → create Proctor record (isSuperProctor: true)
+    if (isSuperProctor) {
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] ?? name;
+      const lastName  = nameParts.slice(1).join(" ") || firstName;
+      await prisma.proctor.upsert({
+        where: { userId: user.id },
+        create: {
+          userId:        user.id,
+          firstName,
+          lastName,
+          email,
+          isSuperProctor: true,
+        },
+        update: {},
+      });
+    }
+
+    // DORMITORY → create Proctor record (isSuperProctor: false) — these are the assignable proctors
+    if (isDormitory && !isSuperProctor) {
+      const nameParts = name.trim().split(" ");
+      const firstName = nameParts[0] ?? name;
+      const lastName  = nameParts.slice(1).join(" ") || firstName;
+      await prisma.proctor.upsert({
+        where: { userId: user.id },
+        create: {
+          userId:        user.id,
+          firstName,
+          lastName,
+          email,
+          isSuperProctor: false,
+        },
+        update: {},
+      });
+    }
+
     if (isStaff) {
       const staff = await prisma.staff.upsert({
         where: { userId: user.id },

@@ -2,9 +2,14 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
 // GET — list all borrowed students recorded by this library manager
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAuth(req, [RoleType.LIBRARY]);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -35,6 +40,9 @@ export async function GET() {
 
 // POST — add a student to the borrowed list by studentId string
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.LIBRARY]);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

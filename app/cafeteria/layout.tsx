@@ -1,5 +1,8 @@
 import NoSidebarDashboardLayout from "@/components/layout/NoSidebarDashboardLayout";
+import { requireRole } from "@/lib/serverAuth";
 
-export default function CafeteriaLayout({ children }: { children: React.ReactNode }) {
+export default async function CafeteriaLayout({ children }: { children: React.ReactNode }) {
+  await requireRole("CAFETERIA");
+
   return <NoSidebarDashboardLayout>{children}</NoSidebarDashboardLayout>;
 }

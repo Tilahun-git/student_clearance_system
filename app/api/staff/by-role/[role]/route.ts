@@ -1,11 +1,15 @@
 import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
 import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/apiAuth";
 
 export async function GET(
   req: Request,
   context: { params: Promise<{ role: string }> }
 ) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   const { role } = await context.params;
   const { searchParams } = new URL(req.url);
 

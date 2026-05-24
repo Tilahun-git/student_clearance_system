@@ -18,6 +18,7 @@ model User {
   notifications      Notification[]
   staffProfile       Staff?
   studentProfile     Student?
+  proctorProfile     Proctor?
   roles              UserRole[]
 }
 
@@ -37,11 +38,26 @@ model UserRole {
   @@id([userId, roleId])
 }
 
+model Proctor {
+  id                String                @id @default(uuid())
+  userId            String                @unique
+  firstName         String
+  lastName          String
+  middleName        String?
+  email             String                @unique
+  blockNumber       Int?                  @unique
+  isSuperProctor    Boolean               @default(false)
+  students          Student[]
+  user              User?                  @relation(fields: [userId], references: [id])
+
+}
+
 model Student {
   id                String                 @id @default(uuid())
   userId            String?                @unique
   advisorId         String?
   departmentId      String
+  proctorId         String?        
   program           String
   year              Int
   studentId         String                 @unique
@@ -57,6 +73,7 @@ model Student {
   department        Department             @relation(fields: [departmentId], references: [id])
   school            School?                @relation(fields: [schoolId], references: [id])
   user              User?                  @relation(fields: [userId], references: [id])
+  proctor           Proctor?               @relation(fields: [proctorId], references: [id])
 }
 
 model Staff {
@@ -203,4 +220,5 @@ enum RoleType {
   DORMITORY
   STUDENT_DEAN
   CAMPUS_POLICE
+  SUPER_PROCTOR
 }

@@ -21,9 +21,13 @@ export async function GET(req: Request) {
 
     const approvals = await fetchApprovalsForStaff(session.user.id, activeRole);
     return NextResponse.json(approvals);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Failed to fetch approvals" }, { status: 500 });
+  } catch (error: any) {
+    console.error("FETCH_APPROVALS_ERROR:", error?.message ?? error);
+    // Return the descriptive message so the client can show it
+    return NextResponse.json(
+      { error: error?.message ?? "Failed to fetch approvals" },
+      { status: error?.message?.includes("not found") ? 404 : 500 },
+    );
   }
 }
 
@@ -82,17 +86,19 @@ export async function PATCH(req: Request) {
 
     const result = await processApprovalWorkflow(
       approvalId,
-      staff.id,
+      // Proctor-based users have no Staff record — pass null so the FK is not violated.
+      // Staff-based users pass their real Staff.id.
+      staff.isProctor ? null : staff.id,
       status,
       comment,
       session.user.id,
     );
     return NextResponse.json(result);
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    console.error("PATCH_APPROVAL_ERROR:", error?.message ?? error);
     return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
+      { error: error?.message ?? "Internal server error" },
+      { status: 500 },
     );
   }
 }

@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { ApprovalStatus } from "@prisma/client";
+import { ApprovalStatus, RoleType } from "@prisma/client";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { getAuthorizedStaff, hasRoleAccess } from "@/lib/clearance/approval.authorization";
 import { getApprovalById } from "@/lib/clearance/approval.query";
 import { processApprovalWorkflow } from "@/lib/clearance/approval.workflow";
+import { requireAuth } from "@/lib/apiAuth";
 
 export async function PATCH(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
