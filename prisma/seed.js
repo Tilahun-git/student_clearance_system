@@ -1,4 +1,7 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+
+dotenv.config({ path: ".env" });
+
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -17,7 +20,8 @@ async function main() {
     "SCHOOL_DEAN",
     "CAFETERIA",
     "DORMITORY",
-    "STUDENT_DEAN"
+    "STUDENT_DEAN",
+    "SUPER_PROCTOR"
   ];
 
   for (const role of roles) {

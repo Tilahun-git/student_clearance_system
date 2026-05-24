@@ -34,7 +34,6 @@ const BulkImportSchema = z.object({
 
 type StudentInput = z.infer<typeof StudentImportSchema>;
 
-// ── Result Types ───────────────────────────────────────────────────────────────
 interface ImportResult {
   success: boolean;
   studentId: string;
@@ -45,7 +44,7 @@ interface ImportResult {
   error?: string;
 }
 
-// ── POST /api/students/import ──────────────────────────────────────────────────
+// ── POST /api/students/import 
 export async function POST(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN, RoleType.REGISTRAR]);
   if (!auth.ok) return auth.response;
