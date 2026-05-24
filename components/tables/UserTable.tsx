@@ -177,10 +177,10 @@ export default function UserTable({
                   <tr key={u.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
-                        <span className="font-medium text-slate-800 truncate max-w-[120px]">{u.name}</span>
+                        <span className="font-medium text-slate-800 truncate max-w-120px">{u.name}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-slate-500 text-xs truncate max-w-[160px]">{u.email}</td>
+                    <td className="px-5 py-3.5 text-slate-500 text-xs truncate max-w-160px">{u.email}</td>
                     <td className="px-5 py-3.5">
                       <div className="flex flex-wrap gap-1.5">
                         {roleNames.length ? (

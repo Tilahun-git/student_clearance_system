@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import toast from "react-hot-toast";
 import { createOffice } from "@/lib/api/offices";
 import { useRouter } from "next/navigation";
 
@@ -13,20 +14,26 @@ export default function AddOfficePage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!officeName || !code) return;
+    const trimmedOfficeName = officeName.trim();
+    const trimmedCode = code.trim().toUpperCase();
+
+    if (!trimmedOfficeName || !trimmedCode) {
+      toast.error("Please fill in both office fields");
+      return;
+    }
 
     try {
       setLoading(true);
       await createOffice({
-        office_name: officeName,
-        code: code.toUpperCase(),
+        office_name: trimmedOfficeName,
+        code: trimmedCode,
       });
+      toast.success(`Office ${trimmedOfficeName} created successfully`);
       setOfficeName("");
       setCode("");
-      // router.push("/admin/dashboard");
     } catch (err) {
-      console.error(err);
-      alert("Failed to create office");
+      const message = err instanceof Error ? err.message : "Failed to create office";
+      toast.error(message);
     } finally {
       setLoading(false);
     }

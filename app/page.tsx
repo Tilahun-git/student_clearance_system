@@ -16,19 +16,23 @@ const router = useRouter()
     router.push("/auth/login")
   }
 
+
+  console.log("NEXTAUTH_URL:", process.env.NEXTAUTH_URL)
+
   return (
     <div className="min-h-screen w-screen bg-linear-to-br from-slate-100 via-white to-indigo-100 text-slate-800">
-
       <nav className="sticky top-0 z-30 bg-white/70 backdrop-blur-lg border-b border-gray-200 px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <Image
-            src={logo}
-            alt="University Logo"
-            width={45}
-            height={45}
-            style={{height:"auto"}}
-            className="rounded-md"
-          />
+          <Link href="/" aria-label="Go to homepage" className="inline-flex items-center">
+            <Image
+              src={logo}
+              alt="University Logo"
+              width={45}
+              height={45}
+              style={{height:"auto"}}
+              className="rounded-md"
+            />
+          </Link>
           <span className="font-semibold text-lg text-slate-800 hidden sm:block">
             Woldia University
           </span>

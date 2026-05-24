@@ -1,5 +1,9 @@
 import DashBoardNavbar from "@/components/layout/DashBoardNavbar";
 import Footer from "@/components/layout/Footer";
+import type { Metadata } from "next";
+import { roleMetadataMap } from "@/lib/routeMetadata";
+
+export const metadata: Metadata = roleMetadataMap.library;
 
 export default function LibraryLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -5,7 +5,7 @@ import toast from "react-hot-toast";
 import { School, Save } from "lucide-react";
 
 export default function AddSchool() {
-  const [name, setName]           = useState("");
+  const [name, setName]  = useState("");
 
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +38,7 @@ export default function AddSchool() {
           </div>
           <h2 className="text-xl font-bold text-slate-900">Add School</h2>
           <p className="text-sm text-slate-600">
-            Create a school — assign a dean from the Schools table afterwards
+            Create a school and assign a dean from the Schools table afterwards
           </p>
         </div>
         <input

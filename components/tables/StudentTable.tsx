@@ -28,19 +28,23 @@ type Props = {
 };
 
 export default function StudentTable({ students, loading, search }: Props) {
+  const hasRows = !loading && students.length > 0;
+
   return (
     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
-          <thead className="bg-slate-50 border-b border-slate-200">
-            <tr className="text-left text-xs uppercase tracking-wider text-slate-500">
-              <th className="px-5 py-3.5">Student ID</th>
-              <th className="px-5 py-3.5">Name</th>
-              <th className="px-5 py-3.5">Year</th>
-              <th className="px-5 py-3.5">Department</th>
-              <th className="px-5 py-3.5 text-center">Account</th>
-            </tr>
-          </thead>
+          {hasRows && (
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr className="text-left text-xs uppercase tracking-wider text-slate-500">
+                <th className="px-5 py-3.5">Student ID</th>
+                <th className="px-5 py-3.5">Name</th>
+                <th className="px-5 py-3.5">Year</th>
+                <th className="px-5 py-3.5">Department</th>
+                <th className="px-5 py-3.5 text-center">Account</th>
+              </tr>
+            </thead>
+          )}
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)

@@ -23,7 +23,14 @@ export async function createOffice(data: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
   });
-  return res.json();
+
+  const payload = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(payload?.error || "Failed to create office");
+  }
+
+  return payload;
 }
 
 export async function updateOffice(
