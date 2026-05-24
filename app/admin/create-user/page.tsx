@@ -34,6 +34,7 @@ const ROLE_COLORS: Record<string, string> = {
   CAFETERIA:       "bg-orange-50 text-orange-700 border-orange-200",
   DORMITORY:       "bg-cyan-50 text-cyan-700 border-cyan-200",
   CAMPUS_POLICE:   "bg-slate-50 text-slate-700 border-slate-200",
+  SUPER_PROCTOR:   "bg-violet-50 text-violet-700 border-violet-200",
 };
 
 const inputClass =

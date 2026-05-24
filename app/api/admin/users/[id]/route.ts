@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { ROLE_TYPES } from "@/lib/roles";
 import { RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
+// ... helpers unchanged
 const OFFICE_ROLE_NAMES = new Set<string>([
   RoleType.CAFETERIA,
   RoleType.CAMPUS_POLICE,
@@ -67,6 +69,9 @@ async function clearAllStaffAssignments(staffId: string) {
 }
 
 export async function PATCH(req: Request, { params }: Params) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -154,6 +159,9 @@ export async function PATCH(req: Request, { params }: Params) {
 
 // soft delete (sets isActive=false, keeps data)
 export async function DELETE(req: Request, { params }: Params) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await params;
     const staff = await prisma.staff.findUnique({

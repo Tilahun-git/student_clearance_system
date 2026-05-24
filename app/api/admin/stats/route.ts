@@ -1,8 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { ClearanceStatus, ApprovalStatus } from "@prisma/client";
+import { ClearanceStatus, ApprovalStatus, RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const [
       totalStudents,

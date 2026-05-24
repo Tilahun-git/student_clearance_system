@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
 // POST — create school (no dean required at creation time)
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { name } = await req.json();
 
@@ -32,6 +37,9 @@ export async function POST(req: Request) {
 
 // PATCH — assign or reassign school dean
 export async function PATCH(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { schoolId, deanId } = await req.json();
 
@@ -75,6 +83,9 @@ export async function PATCH(req: Request) {
 
 // DELETE — hard delete a school (only if no students or departments)
 export async function DELETE(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });
