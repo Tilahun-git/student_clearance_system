@@ -36,30 +36,3 @@ export async function GET(req: Request) {
     );
   }
 }
-      where: {
-        roles: {
-          some: {
-            role: {
-              name: RoleType.STUDENT,
-            },
-          },
-        },
-        studentProfile: null,
-      },
-      include: {
-        roles: {
-          include: {
-            role: true,
-          },
-        },
-      },
-    });
-
-    return Response.json(users);
-  } catch (error) {
-    return Response.json(
-      { error: "Failed to fetch users" },
-      { status: 500 }
-    );
-  }
-}
