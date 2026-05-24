@@ -21,12 +21,13 @@ import {
   type ClearanceRealtimeAction,
 } from "@/lib/clearance/clearanceSocketIo";
 
-const STAGE_ONE_ROLES = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE] as const;
-const STAGE_TWO_ROLES = [RoleType.LIBRARY, RoleType.DORMITORY] as const;
-const FINAL_STAGE_ROLES = [
-  RoleType.STUDENT_DEAN,
-  ...STAGE_TWO_ROLES,
-] as const;
+// ── Stage definitions ─────────────────────────────────────────────────────────
+// After SCHOOL_DEAN all four activate in parallel
+const PARALLEL_ROLES   = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE, RoleType.LIBRARY, RoleType.DORMITORY] as const;
+// STUDENT_DEAN unlocks when CAFETERIA + CAMPUS_POLICE both approved
+const STUDENT_DEAN_GATE = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE] as const;
+// REGISTRAR unlocks when LIBRARY + DORMITORY + STUDENT_DEAN all approved
+const REGISTRAR_GATE    = [RoleType.LIBRARY, RoleType.DORMITORY, RoleType.STUDENT_DEAN] as const;
 
 async function getRoleApprovals(requestId: string, roleNames: readonly RoleType[]) {
   return prisma.clearanceApproval.findMany({
@@ -105,7 +106,7 @@ async function sendCompletionEmail(studentUserId: string | null, studentId: stri
 
 export async function processApprovalWorkflow(
   approvalId: string,
-  staffId: string,
+  staffId: string | null,   // null for proctor-based actors (no Staff FK)
   status: ApprovalStatus,
   comment?: string,
   triggeredByUserId?: string,
@@ -155,6 +156,7 @@ export async function processApprovalWorkflow(
         comment,
       );
       if (staffId) {
+        // Only send staff rejection email when there is a real Staff record
         await sendStaffRejectionEmail(
           staffId,
           request.student.studentId,
@@ -165,55 +167,33 @@ export async function processApprovalWorkflow(
       return { message: "Rejected" };
     }
     if (roleName === RoleType.ADVISOR) {
-      await activatePendingRoles(
-        request.id,
-        [RoleType.DEPARTMENT_HEAD],
-        request.student.studentId,
-      );
+      // ADVISOR → DEPARTMENT_HEAD
+      await activatePendingRoles(request.id, [RoleType.DEPARTMENT_HEAD], request.student.studentId);
+
     } else if (roleName === RoleType.DEPARTMENT_HEAD) {
-      await activatePendingRoles(
-        request.id,
-        [RoleType.SCHOOL_DEAN],
-        request.student.studentId,
-      );
+      // DEPARTMENT_HEAD → SCHOOL_DEAN
+      await activatePendingRoles(request.id, [RoleType.SCHOOL_DEAN], request.student.studentId);
+
     } else if (roleName === RoleType.SCHOOL_DEAN) {
-      await activatePendingRoles(
-        request.id,
-        [...STAGE_ONE_ROLES, ...STAGE_TWO_ROLES],
-        request.student.studentId,
-      );
-    } else if (
-      roleName === RoleType.CAFETERIA ||
-      roleName === RoleType.CAMPUS_POLICE
-    ) {
-      const stageOneComplete = await allRoleApprovalsApproved(
-        request.id,
-        STAGE_ONE_ROLES,
-      );
+      // SCHOOL_DEAN → all four parallel actors
+      await activatePendingRoles(request.id, [...PARALLEL_ROLES], request.student.studentId);
 
-      if (stageOneComplete) {
-        await activatePendingRoles(
-          request.id,
-          [RoleType.STUDENT_DEAN],
-          request.student.studentId,
-        );
+    } else if (roleName === RoleType.CAFETERIA || roleName === RoleType.CAMPUS_POLICE) {
+      // Gate: STUDENT_DEAN activates only when CAFETERIA + CAMPUS_POLICE both approved
+      const studentDeanGateMet = await allRoleApprovalsApproved(request.id, STUDENT_DEAN_GATE);
+      if (studentDeanGateMet) {
+        await activatePendingRoles(request.id, [RoleType.STUDENT_DEAN], request.student.studentId);
       }
-    } else if (
-      roleName === RoleType.STUDENT_DEAN ||
-      roleName === RoleType.LIBRARY ||
-      roleName === RoleType.DORMITORY
-    ) {
-      const finalStageComplete = await allRoleApprovalsApproved(
-        request.id,
-        FINAL_STAGE_ROLES,
-      );
 
-      if (finalStageComplete) {
-        await activatePendingRoles(
-          request.id,
-          [RoleType.REGISTRAR],
-          request.student.studentId,
-        );
+    } else if (
+      roleName === RoleType.LIBRARY    ||
+      roleName === RoleType.DORMITORY  ||
+      roleName === RoleType.STUDENT_DEAN
+    ) {
+      // Gate: REGISTRAR activates only when LIBRARY + DORMITORY + STUDENT_DEAN all approved
+      const registrarGateMet = await allRoleApprovalsApproved(request.id, REGISTRAR_GATE);
+      if (registrarGateMet) {
+        await activatePendingRoles(request.id, [RoleType.REGISTRAR], request.student.studentId);
       }
     }
 

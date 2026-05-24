@@ -117,7 +117,6 @@ export default function DeptHeadSidebar(props: Props) {
           ${open ? "w-56" : "w-14"}
         `}
       >
-        {/* Toggle button */}
         <div className={`flex items-center border-b border-slate-100 px-2 py-3 ${open ? "justify-end" : "justify-center"}`}>
           <button
             onClick={() => setOpen(!open)}

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ApprovalStatus, RoleType } from "@prisma/client";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { requireAuth } from "@/lib/apiAuth";
 
 // GET — fetch pending DEPARTMENT_HEAD approvals for the authenticated staff's department
 export async function GET() {
@@ -47,6 +48,9 @@ export async function GET() {
 
 // POST — create a new department (no head required at creation time)
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { name, schoolId } = await req.json();
 
@@ -75,6 +79,9 @@ export async function POST(req: Request) {
 
 // PATCH — assign or reassign department head
 export async function PATCH(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { departmentId, headId } = await req.json();
 
@@ -126,6 +133,9 @@ export async function PATCH(req: Request) {
 
 // DELETE — hard delete a department (only if no students or clearance requests)
 export async function DELETE(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { id } = await req.json();
     if (!id) return NextResponse.json({ error: "id is required" }, { status: 400 });

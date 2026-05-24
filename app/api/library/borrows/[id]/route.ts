@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
+import { RoleType } from "@prisma/client";
+import { requireAuth } from "@/lib/apiAuth";
 
 type Params = { params: Promise<{ id: string }> };
 
 // PATCH — toggle returned status
 export async function PATCH(req: Request, { params }: Params) {
+  const auth = await requireAuth(req, [RoleType.LIBRARY]);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -29,7 +34,10 @@ export async function PATCH(req: Request, { params }: Params) {
 }
 
 // DELETE — remove a borrow record
-export async function DELETE(_req: Request, { params }: Params) {
+export async function DELETE(req: Request, { params }: Params) {
+  const auth = await requireAuth(req, [RoleType.LIBRARY]);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {

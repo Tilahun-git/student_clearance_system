@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { requireAuth } from "@/lib/apiAuth";
+import { RoleType } from "@prisma/client";
 
 export async function POST(req: Request) {
+  const auth = await requireAuth(req, [RoleType.ADMIN]);
+  if (!auth.ok) return auth.response;
+
   try {
     const { name, email, password, studentId } = await req.json();
 
@@ -49,7 +54,7 @@ export async function POST(req: Request) {
         email,
         password: hashedPassword,
         mustChangePassword: true,   // force password change on first login
-        roles: { create: { roleId: studentRole.id } },
+        roles: { create: { roleId: "6278826b-ad31-9f68-d8fb-fee09c0edab8" } },
       },
       select: {
         id: true,

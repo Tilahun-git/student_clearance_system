@@ -4,6 +4,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { prisma } from "@/lib/prisma";
 import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { Reasons } from "@/lib/constants/reasons";
+import { requireAuth } from "@/lib/apiAuth";
 
 const DISPLAY_ORDER = [
   "ADVISOR", "DEPARTMENT_HEAD", "SCHOOL_DEAN",
@@ -20,7 +21,10 @@ const EMPTY_STUDENT = {
   clearanceType: "—",
 };
 
-export async function GET() {
+export async function GET(req: Request) {
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const session = await getServerSession(authOptions);
     const roles = session?.user?.roles ?? [];

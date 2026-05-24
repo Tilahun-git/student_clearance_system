@@ -1,5 +1,8 @@
 import NoSidebarDashboardLayout from "@/components/layout/NoSidebarDashboardLayout";
+import { requireRole } from "@/lib/serverAuth";
 
-export default function FacultyDeanLayout({ children }: { children: React.ReactNode }) {
+export default async function SchoolDeanLayout({ children }: { children: React.ReactNode }) {
+  await requireRole("SCHOOL_DEAN");
+
   return <NoSidebarDashboardLayout>{children}</NoSidebarDashboardLayout>;
 }

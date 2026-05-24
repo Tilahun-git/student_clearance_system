@@ -1,18 +1,22 @@
 import { RoleType } from "@prisma/client";
 
 export const WORKFLOW: Partial<Record<RoleType, RoleType[]>> = {
-  ADVISOR: [RoleType.DEPARTMENT_HEAD],
+  // Sequential chain
+  ADVISOR:         [RoleType.DEPARTMENT_HEAD],
   DEPARTMENT_HEAD: [RoleType.SCHOOL_DEAN],
+  // After school dean: all four parallel actors activate
   SCHOOL_DEAN: [
     RoleType.CAFETERIA,
     RoleType.CAMPUS_POLICE,
     RoleType.LIBRARY,
     RoleType.DORMITORY,
   ],
-  CAFETERIA: [RoleType.STUDENT_DEAN],
+  // CAFETERIA + CAMPUS_POLICE both done → STUDENT_DEAN activates
+  CAFETERIA:     [RoleType.STUDENT_DEAN],
   CAMPUS_POLICE: [RoleType.STUDENT_DEAN],
-  LIBRARY: [RoleType.REGISTRAR],
-  DORMITORY: [RoleType.REGISTRAR],
+  // LIBRARY + DORMITORY + STUDENT_DEAN all done → REGISTRAR activates
+  LIBRARY:      [RoleType.REGISTRAR],
+  DORMITORY:    [RoleType.REGISTRAR],
   STUDENT_DEAN: [RoleType.REGISTRAR],
   REGISTRAR: [],
 };
