@@ -3,24 +3,35 @@
 import { useState } from "react";
 import { X, CheckCircle2, XCircle, Clock } from "lucide-react";
 import type { ClearanceApprovalRow } from "@/lib/api/student";
+import { ApprovalStatus } from "@prisma/client";
 
-function StatusBadge({ status }: { status: string }) {
-  if (status === "APPROVED")
+function StatusBadge({ status }: { status: ApprovalStatus }) {
+  if (status === ApprovalStatus.APPROVED)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
         <CheckCircle2 size={11} />
         Approved
       </span>
     );
-  if (status === "REJECTED")
+
+  if (status === ApprovalStatus.REJECTED)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-100">
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-700 border border-rose-200">
         <XCircle size={11} />
         Rejected
       </span>
     );
+
+  if (status === ApprovalStatus.WAITING)
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700 border border-sky-200">
+        <Clock size={11} />
+        Waiting
+      </span>
+    );
+
   return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
+    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
       <Clock size={11} />
       Pending
     </span>

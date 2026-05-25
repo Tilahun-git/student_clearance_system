@@ -146,14 +146,12 @@ export default function StudentDashboard() {
               ? "Resubmit Clearance Request"
               : "Submit Clearance Request"}
           </button>
-
           {hasRejected && (
             <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-100 px-4 py-3 rounded-xl w-fit">
               <AlertCircle size={15} />
               Your previous request was rejected. Review the reason and resubmit your clearance request.
             </div>
           )}
-
           {isFullyApproved && (
             <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-100 px-4 py-3 rounded-xl w-fit">
               <CheckCircle2 size={15} />
@@ -161,7 +159,6 @@ export default function StudentDashboard() {
             </div>
           )}
         </div>
-
         {openRequest && (
           <ClearanceRequestModal
             onClose={() => setOpenRequest(false)}

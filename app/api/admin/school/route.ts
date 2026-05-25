@@ -3,7 +3,6 @@ import { prisma } from "@/lib/prisma";
 import { RoleType } from "@prisma/client";
 import { requireAuth } from "@/lib/apiAuth";
 
-// POST — create school (no dean required at creation time)
 export async function POST(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN]);
   if (!auth.ok) return auth.response;
@@ -58,7 +57,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Selected staff is not a School Dean" }, { status: 400 });
     }
 
-    // Remove dean from their previous school if any
     await prisma.school.updateMany({
       where: { school_deanId: deanId },
       data: { school_deanId: null },

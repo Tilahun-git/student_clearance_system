@@ -45,7 +45,6 @@ export async function GET() {
   }
 }
 
-// POST — create a new department (no head required at creation time)
 export async function POST(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN]);
   if (!auth.ok) return auth.response;

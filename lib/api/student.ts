@@ -1,9 +1,10 @@
 import { RegisterStudentData } from "@/types/clearance";
-import { ClearanceStatus } from "@prisma/client";
+import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
+import { RoleRoute } from "../roles";
 
 export interface ClearanceApprovalRow {
   role: string;
-  status: string;
+  status: ApprovalStatus;
   comment: string | null;
 }
 
@@ -35,7 +36,6 @@ async function getErrorResponseMessage(res: Response) {
     if (typeof body?.error === "string") return body.error;
     if (typeof body?.message === "string") return body.message;
   } catch {
-    // ignore invalid JSON body
   }
 
   return `Request failed with status ${res.status}`;

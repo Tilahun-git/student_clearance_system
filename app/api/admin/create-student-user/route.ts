@@ -38,7 +38,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Student already has an account" }, { status: 400 });
     }
 
-    const studentRole = await prisma.role.findUnique({ where: { name: "STUDENT" as any } });
+    const studentRole = await prisma.role.findUnique({ where: { name: RoleType.STUDENT} });
     if (!studentRole) {
       return NextResponse.json(
         { error: "STUDENT role not seeded in database" },
@@ -53,8 +53,8 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
-        mustChangePassword: true,   // force password change on first login
-        roles: { create: { roleId: "6278826b-ad31-9f68-d8fb-fee09c0edab8" } },
+        mustChangePassword: true, // force password change on first login
+        roles: { create: { roleId: studentRole.id } },
       },
       select: {
         id: true,
@@ -70,12 +70,13 @@ export async function POST(req: Request) {
       data: { userId: user.id },
     });
 
+    console.log("created student is :", user)
     return NextResponse.json(
       { message: "Student account created successfully", user },
       { status: 201 },
     );
   } catch (error: any) {
     console.error("CREATE STUDENT USER ERROR:", error);
-    return NextResponse.json({ error: "Server error" }, { status: 500 });
+    return NextResponse.json({ error: "Server errorrrrrrrrrrrrrrrrr" }, { status: 500 });
   }
 }
