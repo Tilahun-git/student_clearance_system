@@ -18,7 +18,6 @@ declare module "next-auth" {
     roles?: string[];
     studentId?: string;
   }
-
   interface Session {
     user: {
       id: string;
@@ -31,7 +30,6 @@ declare module "next-auth" {
     };
   }
 }
-
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
@@ -41,7 +39,6 @@ declare module "next-auth/jwt" {
     mustChangePassword?: boolean;
   }
 }
-
 export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
@@ -50,10 +47,8 @@ export const authOptions: AuthOptions = {
         email: {},
         password: {},
       },
-
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
-
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
           include: {
@@ -63,16 +58,13 @@ export const authOptions: AuthOptions = {
         });
 
         if (!user || !user.isActive) return null;
-
         const isValid = await bcrypt.compare(
           credentials.password,
           user.password
         );
 
         if (!isValid) return null;
-
         const roles: string[] = user.roles.map((ur) => ur.role.name);
-
         return {
           id: user.id,
           name: user.name,
@@ -86,35 +78,28 @@ export const authOptions: AuthOptions = {
       },
     }),
   ],
-
   pages: {
     signIn: "/auth/login",
   },
-
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60, 
+
   },
-
   secret: process.env.NEXTAUTH_SECRET,
-
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
         const u = user as AppUser;
-
         token.id = u.id;
         token.roles = u.roles;
-
         token.activeRole =
           u.roles.filter((r) => r !== "STUDENT")[0] ?? u.roles[0];
-
         token.mustChangePassword = (u as any).mustChangePassword ?? false;
-
         if (u.roles.includes("STUDENT")) {
           token.studentId = u.studentId;
         }
       }
-
       if (token.id) {
         const freshUser = await prisma.user.findUnique({
           where: { id: token.id as string },
@@ -129,9 +114,7 @@ export const authOptions: AuthOptions = {
         if (!freshUser || !freshUser.isActive) {
           return {} as any;
         }
-
         const freshRoles = freshUser.roles.map((ur) => ur.role.name);
-
         token.roles = freshRoles;
         token.mustChangePassword = freshUser.mustChangePassword;
 
@@ -142,7 +125,6 @@ export const authOptions: AuthOptions = {
           token.activeRole =
             freshRoles.filter((r) => r !== "STUDENT")[0] ?? freshRoles[0];
         }
-
         if (freshRoles.includes("STUDENT")) {
           token.studentId = freshUser.studentProfile?.studentId;
         }
@@ -171,24 +153,16 @@ export const authOptions: AuthOptions = {
           session.user.studentId = token.studentId as string;
         }
       }
-
       return session;
     },
-
     async redirect({ url, baseUrl }) {
       const safeBase = process.env.NEXTAUTH_URL || baseUrl;
-
-      // internal route
       if (url.startsWith("/")) {
         return `${safeBase}${url}`;
       }
-
-      // same origin
       if (url.startsWith(baseUrl)) {
         return url;
       }
-
-      // fallback ALWAYS production URL
       return safeBase;
     },
   },

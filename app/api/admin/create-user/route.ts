@@ -5,27 +5,19 @@ import bcrypt from "bcryptjs";
 import { requireAuth } from "@/lib/apiAuth";
 import { RoleType } from "@prisma/client";
 
-// ... (syncStaffRoleAssignments unchanged)
-async function syncStaffRoleAssignments({
-  staffId,
-  selectedRoles,
-  schoolId,
-  departmentId,
-}: {
+async function syncStaffRoleAssignments({staffId, selectedRoles, schoolId, departmentId,}: {
   staffId: string;
   selectedRoles: string[];
   schoolId?: string;
   departmentId?: string;
 }) {
-  const hasDepartmentHead = selectedRoles.includes("DEPARTMENT_HEAD");
-  const hasSchoolDean = selectedRoles.includes("SCHOOL_DEAN");
-
+  const hasDepartmentHead = selectedRoles.includes(RoleType.DEPARTMENT_HEAD);
+  const hasSchoolDean = selectedRoles.includes(RoleType.SCHOOL_DEAN);
   if (hasDepartmentHead && departmentId) {
     await prisma.department.updateMany({
       where: { headId: staffId },
       data: { headId: null },
     });
-
     await prisma.department.update({
       where: { id: departmentId },
       data: { headId: staffId },
@@ -66,7 +58,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Check for existing account with this email (including soft-deleted/inactive ones)
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
       const hint = existing.isActive
@@ -76,7 +67,6 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
     const selectedRoles: string[] =
       Array.isArray(roles) && roles.length > 0
         ? roles.map((r: string) => r.toUpperCase().trim())
@@ -106,7 +96,7 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
-        mustChangePassword: true,   // force password change on first login
+        mustChangePassword: true, 
         roles: {
           create: roleRecords.map((role) => ({ roleId: role.id })),
         },
@@ -120,12 +110,10 @@ export async function POST(req: Request) {
       },
     });
 
-    // Auto-create Staff record for any non-student, non-proctor user
     const isSuperProctor = selectedRoles.includes("SUPER_PROCTOR");
     const isDormitory    = selectedRoles.includes("DORMITORY");
     const isStaff        = selectedRoles.some((r) => r !== "STUDENT" && r !== "SUPER_PROCTOR");
 
-    // SUPER_PROCTOR → create Proctor record (isSuperProctor: true)
     if (isSuperProctor) {
       const nameParts = name.trim().split(" ");
       const firstName = nameParts[0] ?? name;
@@ -160,7 +148,6 @@ export async function POST(req: Request) {
         update: {},
       });
     }
-
     if (isStaff) {
       const staff = await prisma.staff.upsert({
         where: { userId: user.id },

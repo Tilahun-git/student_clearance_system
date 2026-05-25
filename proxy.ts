@@ -98,17 +98,12 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
-        // Public paths are always authorized
         if (
           PUBLIC_PAGE_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
           PUBLIC_API_PATHS.some((p) => pathname === p || pathname.startsWith(p + "/"))
         ) {
           return true;
         }
-        // For everything else, we need a token — but we handle the redirect
-        // ourselves in the middleware function above, so return true regardless
-        // to prevent withAuth from redirecting to /api/auth/signin (which would
-        // bypass our custom /auth/login page).
         return true;
       },
     },

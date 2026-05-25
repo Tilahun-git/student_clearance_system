@@ -5,7 +5,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { requireAuth } from "@/lib/apiAuth";
 
-// GET — fetch pending DEPARTMENT_HEAD approvals for the authenticated staff's department
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
@@ -14,7 +13,7 @@ export async function GET() {
     }
 
     const staff = await prisma.staff.findUnique({ where: { userId: session.user.id } });
-    if (!staff) {
+    if (!staff) { 
       return NextResponse.json({ error: "Staff not found" }, { status: 403 });
     }
     if (!staff.departmentId) {
@@ -77,7 +76,6 @@ export async function POST(req: Request) {
   }
 }
 
-// PATCH — assign or reassign department head
 export async function PATCH(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN]);
   if (!auth.ok) return auth.response;
@@ -105,7 +103,6 @@ export async function PATCH(req: Request) {
       );
     }
 
-    // Remove head from their previous department if any
     await prisma.department.updateMany({
       where: { headId },
       data: { headId: null },
@@ -131,7 +128,6 @@ export async function PATCH(req: Request) {
   }
 }
 
-// DELETE — hard delete a department (only if no students or clearance requests)
 export async function DELETE(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN]);
   if (!auth.ok) return auth.response;
@@ -148,7 +144,6 @@ export async function DELETE(req: Request) {
       );
     }
 
-    // Clear head reference before deleting
     await prisma.department.update({ where: { id }, data: { headId: null } });
     await prisma.department.delete({ where: { id } });
 
