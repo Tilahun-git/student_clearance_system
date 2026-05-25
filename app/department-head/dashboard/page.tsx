@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
 import RoleApprovalPage from "@/components/layout/RoleApprovalPage";
+import RoleScopeDashboardHeader from "@/components/layout/RoleScopeDashboardHeader";
 import AssignAdvisorSection from "@/components/department/AssignAdvisorSection";
 import DeptHeadSidebar, { DeptHeadTab } from "@/components/department-head/DeptHeadSidebar";
 
@@ -56,12 +57,15 @@ export default function DepartmentHeadPage() {
 
         {/* Page body — scrollable */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50">
-          {activeTab === "approvals" && (
-            <RoleApprovalPage role="DEPARTMENT_HEAD" />
-          )}
-          {activeTab === "assign-advisor" && (
-            <AssignAdvisorSection section={selectedSection} />
-          )}
+          <div className="space-y-5">
+            <RoleScopeDashboardHeader role="DEPARTMENT_HEAD" />
+            {activeTab === "approvals" && (
+              <RoleApprovalPage role="DEPARTMENT_HEAD" />
+            )}
+            {activeTab === "assign-advisor" && (
+              <AssignAdvisorSection section={selectedSection} />
+            )}
+          </div>
         </div>
       </main>
     </div>

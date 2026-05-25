@@ -85,15 +85,12 @@ export default function CreateUserPage() {
     setUser((prev) => ({ ...prev, schoolId, departmentId: "" }));
     setFilteredDepts(departments.filter((d) => d.schoolId === schoolId));
   }
-
   function clearForm() {
     setUser({ name: "", email: "", password: "", roles: [], schoolId: "", departmentId: "" });
     setFilteredDepts([]);
   }
-
   const needsSchool = user.roles.some((r) => SCHOOL_ROLES.includes(r));
   const needsDept   = user.roles.some((r) => DEPT_ROLES.includes(r));
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
@@ -111,16 +108,10 @@ export default function CreateUserPage() {
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 px-4 py-8">
       <div className="max-w-xl mx-auto">
-
         <div className="mb-6">
-          <h1 className="text-xl font-semibold text-slate-800">Create Staff Account</h1>
-          <p className="text-sm text-slate-500 mt-0.5">
-            Fill in the details below to create a new staff user account.
-          </p>
+          <h1 className="text-xl text-center font-semibold text-slate-800">Create Staff Account</h1>
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-5">
-
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Account Details
@@ -166,25 +157,20 @@ export default function CreateUserPage() {
                   onChange={(e) => setUser((p) => ({ ...p, password: e.target.value }))}
                   required
                   minLength={8}
-                  className={`${inputClass} pr-10`}
-                />
+                  className={`${inputClass} pr-10`}/>
                 <button
                   type="button"
                   onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition"
-                >
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition">
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
           </div>
-
           <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-5 space-y-4">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
               Role Assignment
             </p>
-
-            {/* Role multi-select */}
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1.5">Roles</label>
               <div className="relative">
@@ -205,7 +191,6 @@ export default function CreateUserPage() {
                     className={`text-slate-400 transition-transform ${showRoleDropdown ? "rotate-180" : ""}`}
                   />
                 </button>
-
                 {showRoleDropdown && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setShowRoleDropdown(false)} />
@@ -239,8 +224,6 @@ export default function CreateUserPage() {
                   </>
                 )}
               </div>
-
-              {/* Selected role badges */}
               {user.roles.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {user.roles.map((r) => {

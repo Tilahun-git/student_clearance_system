@@ -23,8 +23,6 @@ export default function AssignAdvisorSection({ section }: Props) {
   const [advisorId, setAdvisorId]             = useState("");
   const [loading, setLoading]                 = useState(false);
   const [assigning, setAssigning]             = useState(false);
-
-  // Reassign modal state
   const [reassignTarget, setReassignTarget]   = useState<Student | null>(null);
   const [reassignAdvisorId, setReassignAdvisorId] = useState("");
   const [reassigning, setReassigning]         = useState(false);
@@ -52,10 +50,9 @@ export default function AssignAdvisorSection({ section }: Props) {
     }
   }
 
-  // ── Selection helpers (only unassigned students can be selected) ──────────
   function toggleStudent(studentId: string) {
     const student = students.find((s) => s.studentId === studentId);
-    if (student?.advisorId) return; // guard: already assigned
+    if (student?.advisorId) return; 
     setSelectedStudents((prev) =>
       prev.includes(studentId)
         ? prev.filter((id) => id !== studentId)
@@ -72,8 +69,6 @@ export default function AssignAdvisorSection({ section }: Props) {
   function clearSelection() {
     setSelectedStudents([]);
   }
-
-  // ── Assign (bulk, unassigned only) ────────────────────────────────────────
   async function assignAdvisor() {
     if (!advisorId)            return toast.error("Please select an advisor first");
     if (!selectedStudents.length) return toast.error("Please select at least one student");
@@ -122,19 +117,13 @@ export default function AssignAdvisorSection({ section }: Props) {
       setReassigning(false);
     }
   }
-
-  // ── Derived values ────────────────────────────────────────────────────────
   const someSelected    = selectedStudents.length > 0;
   const unassignedCount = students.filter((s) => !s.advisorId).length;
-
   const { page, totalPages, totalItems, paged, goTo } = usePagination(students, PAGE_SIZE);
-
   return (
     <div className="space-y-4">
-      {/* ── Header card ───────────────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          {/* Title */}
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-indigo-100">
               <Users className="w-4 h-4 text-indigo-600" />
@@ -148,10 +137,7 @@ export default function AssignAdvisorSection({ section }: Props) {
               </p>
             </div>
           </div>
-
-          {/* Controls */}
           <div className="flex flex-wrap items-center gap-2">
-            {/* Select All unassigned */}
             {unassignedCount > 0 && (
               <button
                 onClick={toggleAll}
@@ -161,8 +147,6 @@ export default function AssignAdvisorSection({ section }: Props) {
                 {selectedStudents.length === unassignedCount ? "Clear All" : "Select Unassigned"}
               </button>
             )}
-
-            {/* Advisor selector */}
             <select
               value={advisorId}
               onChange={(e) => setAdvisorId(e.target.value)}
@@ -175,8 +159,6 @@ export default function AssignAdvisorSection({ section }: Props) {
                 </option>
               ))}
             </select>
-
-            {/* Assign button */}
             <button
               onClick={assignAdvisor}
               disabled={assigning || !someSelected || !advisorId}
@@ -190,8 +172,6 @@ export default function AssignAdvisorSection({ section }: Props) {
             </button>
           </div>
         </div>
-
-        {/* Selection summary bar */}
         {someSelected && (
           <div className="mt-3 flex items-center gap-2 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-3 py-2">
             <CheckCheck size={12} />
@@ -212,7 +192,6 @@ export default function AssignAdvisorSection({ section }: Props) {
         )}
       </div>
 
-      {/* ── Student table ─────────────────────────────────────────────────── */}
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-10 flex items-center justify-center">
           <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
@@ -236,7 +215,6 @@ export default function AssignAdvisorSection({ section }: Props) {
         </>
       )}
 
-      {/* ── Reassign modal (portal) ────────────────────────────────────────── */}
       {reassignTarget &&
         createPortal(
           <div
@@ -244,10 +222,8 @@ export default function AssignAdvisorSection({ section }: Props) {
             onClick={(e) => e.target === e.currentTarget && closeReassign()}
           >
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
-              {/* Top accent */}
               <div className="h-1.5 w-full bg-amber-400" />
 
-              {/* Header */}
               <div className="flex items-start justify-between px-5 pt-5 pb-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-xl bg-amber-100">
@@ -268,18 +244,13 @@ export default function AssignAdvisorSection({ section }: Props) {
                   <X size={15} />
                 </button>
               </div>
-
-              {/* Body */}
               <div className="px-5 pb-5 space-y-4">
-                {/* Current advisor info */}
                 <div className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs text-slate-600">
                   <span className="font-medium text-slate-500">Current advisor: </span>
                   <span className="font-semibold text-slate-700">
                     {reassignTarget.advisor?.user?.name ?? "—"}
                   </span>
                 </div>
-
-                {/* New advisor selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-slate-600">New Advisor</label>
                   <select
@@ -301,7 +272,6 @@ export default function AssignAdvisorSection({ section }: Props) {
                   </select>
                 </div>
 
-                {/* Actions */}
                 <div className="flex justify-end gap-2 pt-1">
                   <button
                     onClick={closeReassign}
