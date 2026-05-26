@@ -21,12 +21,8 @@ import {
   type ClearanceRealtimeAction,
 } from "@/lib/clearance/clearanceSocketIo";
 
-// ── Stage definitions ─────────────────────────────────────────────────────────
-// After SCHOOL_DEAN all four activate in parallel
 const PARALLEL_ROLES   = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE, RoleType.LIBRARY, RoleType.DORMITORY] as const;
-// STUDENT_DEAN unlocks when CAFETERIA + CAMPUS_POLICE both approved
 const STUDENT_DEAN_GATE = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE] as const;
-// REGISTRAR unlocks when LIBRARY + DORMITORY + STUDENT_DEAN all approved
 const REGISTRAR_GATE    = [RoleType.LIBRARY, RoleType.DORMITORY, RoleType.STUDENT_DEAN] as const;
 
 async function getRoleApprovals(requestId: string, roleNames: readonly RoleType[]) {
@@ -41,7 +37,6 @@ async function getRoleApprovals(requestId: string, roleNames: readonly RoleType[
 
 async function allRoleApprovalsApproved(requestId: string, roleNames: readonly RoleType[]) {
   const approvals = await getRoleApprovals(requestId, roleNames);
-
   return roleNames.every((roleName) =>
     approvals.some(
       (approval) =>
@@ -50,7 +45,6 @@ async function allRoleApprovalsApproved(requestId: string, roleNames: readonly R
     ),
   );
 }
-
 async function activatePendingRoles(
   requestId: string,
   roleNames: readonly RoleType[],
@@ -75,12 +69,10 @@ async function activatePendingRoles(
     await notifyNextRoleStaffByEmail(roleName, studentId);
   }
 }
-
 async function sendCompletionEmail(studentUserId: string | null, studentId: string) {
   if (!studentUserId) {
     return;
   }
-
   const studentUser = await prisma.user.findUnique({
     where: { id: studentUserId },
     select: { email: true },
@@ -106,7 +98,7 @@ async function sendCompletionEmail(studentUserId: string | null, studentId: stri
 
 export async function processApprovalWorkflow(
   approvalId: string,
-  staffId: string | null,   // null for proctor-based actors (no Staff FK)
+  staffId: string | null,   
   status: ApprovalStatus,
   comment?: string,
   triggeredByUserId?: string,
@@ -156,7 +148,6 @@ export async function processApprovalWorkflow(
         comment,
       );
       if (staffId) {
-        // Only send staff rejection email when there is a real Staff record
         await sendStaffRejectionEmail(
           staffId,
           request.student.studentId,
@@ -167,19 +158,14 @@ export async function processApprovalWorkflow(
       return { message: "Rejected" };
     }
     if (roleName === RoleType.ADVISOR) {
-      // ADVISOR → DEPARTMENT_HEAD
       await activatePendingRoles(request.id, [RoleType.DEPARTMENT_HEAD], request.student.studentId);
 
     } else if (roleName === RoleType.DEPARTMENT_HEAD) {
-      // DEPARTMENT_HEAD → SCHOOL_DEAN
       await activatePendingRoles(request.id, [RoleType.SCHOOL_DEAN], request.student.studentId);
-
     } else if (roleName === RoleType.SCHOOL_DEAN) {
-      // SCHOOL_DEAN → all four parallel actors
       await activatePendingRoles(request.id, [...PARALLEL_ROLES], request.student.studentId);
 
     } else if (roleName === RoleType.CAFETERIA || roleName === RoleType.CAMPUS_POLICE) {
-      // Gate: STUDENT_DEAN activates only when CAFETERIA + CAMPUS_POLICE both approved
       const studentDeanGateMet = await allRoleApprovalsApproved(request.id, STUDENT_DEAN_GATE);
       if (studentDeanGateMet) {
         await activatePendingRoles(request.id, [RoleType.STUDENT_DEAN], request.student.studentId);
@@ -190,7 +176,6 @@ export async function processApprovalWorkflow(
       roleName === RoleType.DORMITORY  ||
       roleName === RoleType.STUDENT_DEAN
     ) {
-      // Gate: REGISTRAR activates only when LIBRARY + DORMITORY + STUDENT_DEAN all approved
       const registrarGateMet = await allRoleApprovalsApproved(request.id, REGISTRAR_GATE);
       if (registrarGateMet) {
         await activatePendingRoles(request.id, [RoleType.REGISTRAR], request.student.studentId);

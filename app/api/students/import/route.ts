@@ -1,17 +1,12 @@
-// app/api/students/import/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { RoleType } from "@prisma/client";
 import { requireAuth } from "@/lib/apiAuth";
 
-// ── Pre-hashed bcrypt of "12345678" (cost factor 10) ──────────────────────────
-// All imported students share this default password.
-// mustChangePassword: true forces them to reset on first login.
 const DEFAULT_PASSWORD_HASH =
   "$2b$10$ZE.x.0OWK6uYIUOEMX0gBeCNkeP34btVdDU6kqBy.gze3RLrnvAYe";
 
-// ── Validation Schema ──────────────────────────────────────────────────────────
 const StudentImportSchema = z.object({
   studentId:    z.string().min(1),
   firstName:    z.string().min(1),
@@ -44,7 +39,6 @@ interface ImportResult {
   error?: string;
 }
 
-// ── POST /api/students/import 
 export async function POST(req: Request) {
   const auth = await requireAuth(req, [RoleType.ADMIN, RoleType.REGISTRAR]);
   if (!auth.ok) return auth.response;
@@ -59,10 +53,7 @@ export async function POST(req: Request) {
         { status: 422 }
       );
     }
-
     const { students, source } = parsed.data;
-
-    // Sequential to avoid race conditions on email uniqueness checks
     const results: ImportResult[] = [];
     for (const student of students) {
       results.push(await importStudent(student));
@@ -87,7 +78,6 @@ export async function POST(req: Request) {
   }
 }
 
-// ── Core Import Logic (per student) ───────────────────────────────────────────
 async function importStudent(student: StudentInput): Promise<ImportResult> {
   const {
     studentId, firstName, lastName, middleName,
@@ -96,7 +86,6 @@ async function importStudent(student: StudentInput): Promise<ImportResult> {
   } = student;
 
   try {
-    // ── 1. Student already exists → update fields, skip user creation ─────────
     const existing = await prisma.student.findUnique({
       where:  { studentId },
       select: { id: true, userId: true },
@@ -128,7 +117,6 @@ async function importStudent(student: StudentInput): Promise<ImportResult> {
       };
     }
 
-    // ── 2. Guard: email must not already exist ─────────────────────────────────
     const emailTaken = await prisma.user.findUnique({ where: { email } });
     if (emailTaken) {
       return {
@@ -139,8 +127,7 @@ async function importStudent(student: StudentInput): Promise<ImportResult> {
       };
     }
 
-    // ── 3. Resolve STUDENT role ────────────────────────────────────────────────
-    const studentRole = await prisma.role.findFirst({ where: { name: "STUDENT" } });
+    const studentRole = await prisma.role.findFirst({ where: { name: RoleType.STUDENT } });
     if (!studentRole) {
       return {
         success: false,
@@ -150,15 +137,13 @@ async function importStudent(student: StudentInput): Promise<ImportResult> {
       };
     }
 
-    // ── 4. Atomic: create User → link to new Student ───────────────────────────
     const { user, newStudent } = await prisma.$transaction(async (tx) => {
-      // 4a. Create user with the pre-hashed default password
       const user = await tx.user.create({
         data: {
           name:                `${firstName} ${lastName}`,
           email,
-          password:            DEFAULT_PASSWORD_HASH, // "12345678" bcrypt hash
-          mustChangePassword:  true,                  // force reset on first login
+          password:            DEFAULT_PASSWORD_HASH, 
+          mustChangePassword:  true,                  
           roles: {
             create: [{ roleId: studentRole.id }],
           },
@@ -166,7 +151,6 @@ async function importStudent(student: StudentInput): Promise<ImportResult> {
         select: { id: true, email: true },
       });
 
-      // 4b. Create student record — userId taken from user created above
       const newStudent = await tx.student.create({
         data: {
           studentId,

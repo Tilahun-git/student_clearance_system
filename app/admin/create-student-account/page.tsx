@@ -79,14 +79,11 @@ function CreateStudentAccountContent() {
           roles: ["STUDENT"],
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         toast.error(data.error || "Failed to create account");
         return;
       }
-
       toast.success(data.message || "Account created successfully");
 
       setForm({
@@ -105,7 +102,7 @@ function CreateStudentAccountContent() {
   if (loadingStudent) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <p className="text-slate-500 text-sm">Loading student information...</p>
+        <p className="text-slate-500 text-center text-sm">Loading student information...</p>
       </div>
     );
   }
@@ -122,13 +119,11 @@ function CreateStudentAccountContent() {
             Create login credentials for the selected student
           </p>
         </div>
-
         <form onSubmit={handleCreateAccount} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-gray-600">
               Student ID
             </label>
-
             <input
               type="text"
               value={studentId || ""}
@@ -136,7 +131,6 @@ function CreateStudentAccountContent() {
               className="w-full mt-1 px-3 py-2 border rounded-lg bg-gray-100 text-gray-700"
             />
           </div>
-
           <div>
             <label className="text-sm font-medium text-gray-600">
               Full Name
@@ -156,12 +150,10 @@ function CreateStudentAccountContent() {
               }
             />
           </div>
-
           <div>
             <label className="text-sm font-medium text-gray-600">
               Email
             </label>
-
             <input
               type="email"
               value={form.email}
@@ -176,12 +168,10 @@ function CreateStudentAccountContent() {
               }
             />
           </div>
-
           <div>
             <label className="text-sm font-medium text-gray-600">
               Temporary Password
             </label>
-
             <input
               type="password"
               value={form.password}
@@ -209,7 +199,6 @@ function CreateStudentAccountContent() {
     </div>
   );
 }
-
 export default function CreateStudentAccount() {
   return (
     <Suspense

@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { buildRoleFilters } from "./approval.filter";
 import { ApprovalStatus, RoleType, Prisma } from "@prisma/client";
 
-// Roles that can work without a Staff record (e.g. DORMITORY proctors)
 const ROLE_ONLY_ROLES: RoleType[] = [
   RoleType.DORMITORY,
   RoleType.LIBRARY,
@@ -12,7 +11,6 @@ const ROLE_ONLY_ROLES: RoleType[] = [
   RoleType.REGISTRAR,
 ];
 
-// Prerequisites for each role-only role (must all be APPROVED in the same request)
 const ROLE_PREREQUISITES: Partial<Record<RoleType, RoleType[]>> = {
   [RoleType.CAFETERIA]:     [RoleType.ADVISOR, RoleType.DEPARTMENT_HEAD, RoleType.SCHOOL_DEAN],
   [RoleType.CAMPUS_POLICE]: [RoleType.ADVISOR, RoleType.DEPARTMENT_HEAD, RoleType.SCHOOL_DEAN],
@@ -37,15 +35,6 @@ function buildPrereqCondition(role: RoleType): Prisma.ClearanceRequestWhereInput
   };
 }
 
-/**
- * Fetch pending clearance approvals for a user.
- *
- * Handles two cases:
- *  A) User has a Staff record  → use buildRoleFilters (existing path)
- *  B) User has no Staff record but has a role-only role (e.g. DORMITORY proctor
- *     stored in the Proctor table) → build a direct filter, scoped to their
- *     assigned students when the role is DORMITORY.
- */
 export async function fetchApprovalsForStaff(
   userId: string,
   activeRole?: RoleType,
@@ -59,7 +48,6 @@ export async function fetchApprovalsForStaff(
     },
   });
 
-  // ── Path B: no Staff record ───────────────────────────────────────────────
   if (!staff) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -83,7 +71,6 @@ export async function fetchApprovalsForStaff(
     let filter: Prisma.ClearanceApprovalWhereInput;
 
     if (effectiveRole === RoleType.DORMITORY) {
-      // Scope to students assigned to this specific proctor + enforce prerequisites
       const proctor = await prisma.proctor.findUnique({ where: { userId } });
       const prereqCondition = buildPrereqCondition(RoleType.DORMITORY);
 
@@ -116,15 +103,12 @@ export async function fetchApprovalsForStaff(
     });
   }
 
-  // ── Path A: Staff record exists ───────────────────────────────────────────
   const allRoleNames = staff.user.roles.map((r) => r.role.name as RoleType);
   const roleNames =
     activeRole && allRoleNames.includes(activeRole)
       ? [activeRole]
       : allRoleNames;
 
-  // If this staff user also has a Proctor record (edge case: DORMITORY staff
-  // who was also registered as a proctor), pass the proctorId for scoping.
   let proctorId: string | undefined;
   if (roleNames.includes(RoleType.DORMITORY)) {
     const proctor = await prisma.proctor.findUnique({ where: { userId } });

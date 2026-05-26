@@ -64,12 +64,10 @@ export default function StudentDashboard() {
     },
     [applyProgress, router],
   );
-
   useEffect(() => {
     if (status !== "authenticated") return;
     loadProgress(false);
   }, [status, loadProgress]);
-
   useClearanceSync(() => loadProgress(true), {
     enabled: status === "authenticated",
   });
@@ -122,7 +120,6 @@ export default function StudentDashboard() {
             <ClearanceTable data={data} />
           )}
         </div>
-
         <div className="flex flex-col gap-3">
           <button
             onClick={() => {

@@ -10,7 +10,7 @@ import {
   sendStudentPendingEmail,
 } from "@/lib/clearance/approval.notification";
 import { emitClearanceRealtime } from "@/lib/clearance/clearanceSocketIo";
-import { getEthiopianAcademicContext } from "@/lib/clearance/academicCalendar";
+import { resolveAcademicContext } from "@/lib/clearance/academicCalendar";
 import { canStudentSubmitClearanceRequest } from "@/lib/clearance/requestEligibility";
 import { getNextRoles, getOfficeCodeByRole } from "@/lib/workflow";
 
@@ -81,12 +81,10 @@ async function resumeRejectedRequest(
     }
   }
 
-  const resolvedAcademicContext = payload.academicYear && payload.semester
-    ? {
-        academicYear: payload.academicYear,
-        semester: payload.semester,
-      }
-    : getEthiopianAcademicContext();
+  const resolvedAcademicContext = resolveAcademicContext({
+    academicYear: payload.academicYear,
+    semester: payload.semester,
+  });
 
   await prisma.$transaction(async (tx) => {
     await tx.clearanceRequest.update({
@@ -180,12 +178,10 @@ export async function createClearanceRequest(userId: string, body: any) {
     },
   });
 
-  const resolvedAcademicContext = body.academicYear && body.semester
-    ? {
-        academicYear: body.academicYear,
-        semester: body.semester,
-      }
-    : getEthiopianAcademicContext();
+  const resolvedAcademicContext = resolveAcademicContext({
+    academicYear: body.academicYear,
+    semester: body.semester,
+  });
 
   if (rejectedRequest) {
     const resumed = await resumeRejectedRequest(rejectedRequest.id, student.studentId, {

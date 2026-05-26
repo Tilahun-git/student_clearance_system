@@ -55,10 +55,7 @@ function useClearanceRealtimeContext() {
   return ctx;
 }
 
-/**
- * Subscribe to clearance updates from other users/sessions.
- * Skips events triggered by the current user (they already updated UI locally).
- */
+
 export function useClearanceSync(
   onUpdate: (payload: ClearanceRealtimePayload) => void,
   options: { enabled?: boolean } = {},

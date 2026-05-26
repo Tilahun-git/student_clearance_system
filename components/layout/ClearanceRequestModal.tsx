@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { fetchClearanceProgress, fetchStudentProfile, submitClearanceRequest } from "@/lib/api/student";
 import { Reasons } from "@/lib/constants/reasons";
-import { getEthiopianAcademicContext } from "@/lib/clearance/academicCalendar";
+import {
+  ETHIOPIAN_SEMESTERS,
+  getEthiopianAcademicContext,
+  getEthiopianSemesterLabel,
+} from "@/lib/clearance/academicCalendar";
 import { X } from "lucide-react";
 
 const DEFAULT_CONTEXT = getEthiopianAcademicContext();
-
 export default function ClearanceRequestModal({
   onClose,
   onSuccess,
@@ -123,16 +126,19 @@ export default function ClearanceRequestModal({
                   <select
                     name="semester"
                     value={form.semester}
+                    onChange={handleChange}
                     className="input"
-                    disabled
                     required
                   >
-                    <option value={form.semester}>{form.semester === "1st" ? "First Semester" : "Second Semester"}</option>
+                    <option value="">Select Semester</option>
+                    {ETHIOPIAN_SEMESTERS.map((semester) => (
+                      <option key={semester} value={semester}>
+                        {getEthiopianSemesterLabel(semester)}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </section>
-
-              {/* Actions */}
               <div className="flex justify-end gap-3 pt-1">
                 <button
                   type="button"

@@ -1,4 +1,3 @@
-// fetch Stats for admin stats cards
 
 export async function fetchAdminStats() {
   const res = await fetch("/api/admin/stats");

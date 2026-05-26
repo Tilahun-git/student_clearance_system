@@ -13,7 +13,6 @@ export async function fetchNotifications(): Promise<Notification[]> {
   return data.notifications ?? [];
 }
 
-// Mark a single notification as read
 export async function markNotificationRead(id: string): Promise<void> {
   await fetch("/api/notifications/mark-read", {
     method: "PATCH",
@@ -22,7 +21,6 @@ export async function markNotificationRead(id: string): Promise<void> {
   });
 }
 
-// Mark all notifications as read
 export async function markAllNotificationsRead(): Promise<void> {
   await fetch("/api/notifications/mark-read", {
     method: "PATCH",

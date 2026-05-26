@@ -16,8 +16,6 @@ function hexToRgb(hex: string) {
 export async function generateCertificate(requestId: string) {
   
   console.log("========== CERTIFICATE GENERATION STARTED ==========");
-
-  // ── 1. Fetch request with full student details 
   const request = await prisma.clearanceRequest.findUnique({
     where: { id: requestId },
     include: {
@@ -32,7 +30,6 @@ export async function generateCertificate(requestId: string) {
 
   if (!request) throw new Error("Request not found");
 
-  // ── 2. Skip if certificate already exists (idempotent) 
   const existing = await prisma.clearanceCertificate.findUnique({
     where: { requestId },
   });
@@ -41,15 +38,13 @@ export async function generateCertificate(requestId: string) {
     return existing;
   }
 
-  // ── 3. Resolve reason label 
   const reasonLabel =
     Reasons.find((r) => r.id === request.reason)?.name ||
     request.reason ||
     "Clearance";
 
-  // ── 4. Build PDF 
   const pdfDoc = await PDFDocument.create();
-  const page = pdfDoc.addPage([595, 842]); // A4
+  const page = pdfDoc.addPage([595, 842]); 
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const { width, height } = page.getSize();
@@ -106,7 +101,6 @@ export async function generateCertificate(requestId: string) {
     color: rgb(0.75, 0.75, 0.95),
   });
 
-  // "VERIFIED" stamp
 page.drawText("VERIFIED", {
   x: width - 130,
   y: height - 75,
@@ -115,7 +109,6 @@ page.drawText("VERIFIED", {
   color: hexToRgb("#86EFAC"),
 });
 
-  // ── Certification statement 
   page.drawText("This is to certify that", {
     x: 50, y: height - 175,
     size: 12, font,
@@ -146,7 +139,6 @@ page.drawText("VERIFIED", {
     color: rgb(0.35, 0.35, 0.35),
   });
 
-  // Divider
   page.drawLine({
     start: { x: 50, y: height - 270 },
     end: { x: width - 50, y: height - 270 },
@@ -154,7 +146,6 @@ page.drawText("VERIFIED", {
     color: hexToRgb("#C7D2FE"),
   });
 
-  // ── Student details grid 
   const col1x = 50;
   const col2x = 310;
   let rowY = height - 300;
@@ -199,7 +190,6 @@ page.drawText("VERIFIED", {
     });
   });
 
-  // Clearance details row
   const detailY = rowY - leftDetails.length * rowGap - 20;
 
   page.drawLine({
@@ -230,7 +220,6 @@ page.drawText("VERIFIED", {
     });
   });
 
-  // ── Signature section 
   const sigY = 120;
 
   page.drawLine({
@@ -257,7 +246,6 @@ page.drawText("VERIFIED", {
     color: rgb(0.4, 0.4, 0.4),
   });
 
-  // Official stamp circle
   page.drawEllipse({
     x: width - 90, y: sigY + 30,
     xScale: 45, yScale: 45,
@@ -275,7 +263,6 @@ page.drawText("VERIFIED", {
     color: hexToRgb("#4F46E5"),
   });
 
-  // Footer
   page.drawText(
     "This document is an official record of Woldia University. Any alteration renders it invalid.",
     {
@@ -286,14 +273,9 @@ page.drawText("VERIFIED", {
   );
 
   console.log("PDF CREATED SUCCESSFULLY");
-
-  // ── 5. Upload to Cloudinary 
   const pdfBytes = await pdfDoc.save();
   const pdfBuffer = Buffer.from(pdfBytes);
-
-  console.log("PDF BUFFER SIZE:", pdfBuffer.length, "bytes");
   console.log("UPLOADING TO CLOUDINARY...");
-
   const uploaded = await new Promise<any>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
       {
@@ -316,7 +298,6 @@ page.drawText("VERIFIED", {
 
   console.log("CLOUDINARY UPLOAD SUCCESS:", uploaded.secure_url);
 
-  // ── 6. Save certificate record to database 
   const certificate = await prisma.clearanceCertificate.create({
     data: {
       studentId: request.student.id,

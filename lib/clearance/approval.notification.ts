@@ -55,9 +55,6 @@ async function sendSingleEmailByUserId(userId: string, subject: string, html: st
   }
 }
 
-/**
- * Notify all staff members who hold the given role.
- */
 export async function notifyNextRoleStaff(nextRole: RoleType, message: string) {
   const staffList = await prisma.staff.findMany({
     where: {
@@ -92,7 +89,6 @@ export async function notifyNextRoleStaffByEmail(nextRole: RoleType, studentId: 
   );
 }
 
-// Notify only the specific dept head / school dean responsible for a student.
 export async function notifyScopedRoleStaff(
   nextRole: RoleType,
   message: string,
@@ -123,7 +119,6 @@ export async function notifyScopedRoleStaff(
   }
 }
 
-/** Notify a specific user (student) by their userId. */
 export async function notifyStudent(userId: string, message: string) {
   await sendNotification({ userId, message });
 }
