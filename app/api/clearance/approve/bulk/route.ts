@@ -45,7 +45,6 @@ export async function PATCH(req: Request) {
       if (!hasRoleAccess(roleNames, approval.role.name)) continue;
       if (approval.status !== ApprovalStatus.PENDING) continue;
 
-      // Library borrow check — skip students with unreturned books
       if (activeRole === "LIBRARY") {
         const studentId = approval.clearanceRequest.student.id;
         const blocked = await prisma.libraryBorrow.findFirst({
@@ -59,7 +58,7 @@ export async function PATCH(req: Request) {
 
       await processApprovalWorkflow(
         id,
-        staff.id,
+        staff.isProctor ? null : staff.id,
         ApprovalStatus.APPROVED,
         undefined,
         session.user.id,

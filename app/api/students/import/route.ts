@@ -70,7 +70,7 @@ export async function POST(req: Request) {
         summary: { total: students.length, created, updated, failed },
         results,
       },
-      { status: 207 }
+      { status: 207 } 
     );
   } catch (error: any) {
     console.error("[students/import] Unexpected error:", error);

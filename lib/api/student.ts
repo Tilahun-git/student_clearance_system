@@ -104,6 +104,22 @@ export async function submitClearanceRequest(payload: {
   return data;
 }
 
+export async function bulkRegisterStudents(formData: FormData) {
+  const res = await fetch("/api/registrar/register-students/bulk", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    throw new ApiFetchError(
+      typeof data?.error === "string" ? data.error : "Failed to import students",
+      res.status,
+      data,
+    );
+  }
+  return data;
+}
+
 export async function registerStudent(form: RegisterStudentData) {
   const res = await fetch("/api/registrar/register-student", {
     method: "POST",
