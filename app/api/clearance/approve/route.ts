@@ -8,26 +8,22 @@ import { processApprovalWorkflow } from "@/lib/clearance/approval.workflow";
 import { fetchApprovalsForStaff } from "@/lib/clearance/approval.fetch";
 import { RoleType } from "@prisma/client";
 
-export async function GET(req: Request) {
+
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const requestedRole = searchParams.get("role") as RoleType | null;
-    const activeRole = requestedRole ?? (session.user.activeRole as RoleType | undefined);
-
-    const approvals = await fetchApprovalsForStaff(session.user.id, activeRole);
-    return NextResponse.json(approvals);
-  } catch (error: any) {
-    console.error("FETCH_APPROVALS_ERROR:", error?.message ?? error);
-    // Return the descriptive message so the client can show it
-    return NextResponse.json(
-      { error: error?.message ?? "Failed to fetch approvals" },
-      { status: error?.message?.includes("not found") ? 404 : 500 },
+    const approvals = await fetchApprovalsForStaff(
+      session.user.id,
+      session.user.activeRole as RoleType,
     );
+    return NextResponse.json(approvals);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Failed to fetch approvals" }, { status: 500 });
   }
 }
 
@@ -86,19 +82,17 @@ export async function PATCH(req: Request) {
 
     const result = await processApprovalWorkflow(
       approvalId,
-      // Proctor-based users have no Staff record — pass null so the FK is not violated.
-      // Staff-based users pass their real Staff.id.
-      staff.isProctor ? null : staff.id,
+      staff.id,
       status,
       comment,
       session.user.id,
     );
     return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("PATCH_APPROVAL_ERROR:", error?.message ?? error);
+  } catch (error) {
+    console.error(error);
     return NextResponse.json(
-      { error: error?.message ?? "Internal server error" },
-      { status: 500 },
+      { error: "Internal server error" },
+      { status: 500 }
     );
   }
 }

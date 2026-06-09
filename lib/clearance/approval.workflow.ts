@@ -1,226 +1,289 @@
-import {
-  ApprovalStatus,
-  ClearanceStatus,
-  RoleType,
-} from "@prisma/client";
-
+import { ApprovalStatus, ClearanceStatus, RoleType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getNextRoles, getOfficeCodeByRole } from "@/lib/workflow";
 import { getApprovalById } from "./approval.query";
-import {
-  notifyNextRoleStaff,
-  notifyNextRoleStaffByEmail,
-  notifyStudent,
-  sendStaffRejectionEmail,
-  sendStudentRejectionEmail,
-} from "./approval.notification";
+import { notifyNextRoleStaff, notifyScopedRoleStaff, notifyStudent } from "./approval.notification";
 import { generateCertificate } from "@/lib/certificate/certificate.service";
-import { sendEmail } from "@/lib/email";
-import { finalApprovalTemplate } from "@/lib/emailTemplates";
 import {
   emitClearanceRealtime,
   type ClearanceRealtimeAction,
 } from "@/lib/clearance/clearanceSocketIo";
+import {
+  notifyStudentApproved,
+  notifyStudentRejected,
+  notifyFinalApproval,
+} from "@/lib/notification/notification.service";
+import { CloudCog } from "lucide-react";
 
-const PARALLEL_ROLES   = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE, RoleType.LIBRARY, RoleType.DORMITORY] as const;
-const STUDENT_DEAN_GATE = [RoleType.CAFETERIA, RoleType.CAMPUS_POLICE] as const;
-const REGISTRAR_GATE    = [RoleType.LIBRARY, RoleType.DORMITORY, RoleType.STUDENT_DEAN] as const;
 
-async function getRoleApprovals(requestId: string, roleNames: readonly RoleType[]) {
-  return prisma.clearanceApproval.findMany({
-    where: {
-      clearanceRequestId: requestId,
-      role: { name: { in: [...roleNames] } },
-    },
-    include: { role: true },
-  });
-}
+const BEFORE_STUDENT_DEAN: RoleType[] = [
+  RoleType.CAFETERIA,
+  RoleType.CAMPUS_POLICE,
+];
 
-async function allRoleApprovalsApproved(requestId: string, roleNames: readonly RoleType[]) {
-  const approvals = await getRoleApprovals(requestId, roleNames);
-  return roleNames.every((roleName) =>
-    approvals.some(
-      (approval) =>
-        approval.role.name === roleName &&
-        approval.status === ApprovalStatus.APPROVED,
-    ),
-  );
-}
-async function activatePendingRoles(
-  requestId: string,
-  roleNames: readonly RoleType[],
-  studentId: string,
-) {
-  await prisma.clearanceApproval.updateMany({
-    where: {
-      clearanceRequestId: requestId,
-      role: { name: { in: [...roleNames] } },
-      status: ApprovalStatus.WAITING,
-    },
-    data: {
-      status: ApprovalStatus.PENDING,
-    },
-  });
+const BEFORE_REGISTRAR: RoleType[] = [
+  RoleType.LIBRARY,
+  RoleType.DORMITORY,
+  RoleType.CAFETERIA,
+  RoleType.CAMPUS_POLICE,
+  RoleType.STUDENT_DEAN,
+];
 
-  for (const roleName of roleNames) {
-    await notifyNextRoleStaff(
-      roleName,
-      `New clearance request from ${studentId}`,
-    );
-    await notifyNextRoleStaffByEmail(roleName, studentId);
-  }
-}
-async function sendCompletionEmail(studentUserId: string | null, studentId: string) {
-  if (!studentUserId) {
-    return;
-  }
-  const studentUser = await prisma.user.findUnique({
-    where: { id: studentUserId },
-    select: { email: true },
-  });
-
-  if (!studentUser?.email) {
-    console.warn("Missing student email for clearance completion", {
-      studentUserId,
-    });
-    return;
-  }
-
-  try {
-    await sendEmail({
-      to: studentUser.email,
-      subject: "Clearance Completed",
-      html: finalApprovalTemplate(studentId),
-    });
-  } catch (error) {
-    console.error("CLEARANCE_COMPLETION_EMAIL_ERROR", error);
-  }
-}
 
 export async function processApprovalWorkflow(
   approvalId: string,
-  staffId: string | null,   
+  staffId: string,
   status: ApprovalStatus,
   comment?: string,
   triggeredByUserId?: string,
 ) {
+  
   const approval = await getApprovalById(approvalId);
-
   if (!approval) throw new Error("Approval not found");
 
-  if (approval.status !== ApprovalStatus.PENDING) {
-    throw new Error("This step is not active yet");
-  }
-
   const request = approval.clearanceRequest;
-  const roleName = approval.role.name as RoleType;
 
-  let realtimeAction: "approved" | "rejected" =
+
+   const user = await prisma.user.findUnique({
+    where:{id:request.student.userId!}
+  })
+  const roleName = approval.role.name as RoleType;
+  const studentUserId = request.student.userId ?? undefined;
+ 
+  let realtimeAction: ClearanceRealtimeAction =
     status === ApprovalStatus.REJECTED ? "rejected" : "approved";
 
   try {
-    await prisma.clearanceApproval.update({
-      where: { id: approvalId },
-      data: {
-        status,
-        staffId,
-        comment,
-        approvedAt: status === ApprovalStatus.APPROVED ? new Date() : null,
-      },
-    });
+  await prisma.clearanceApproval.update({
+    where: { id: approvalId },
+    data: {
+      status,
+      comment,
+      staffId,
+      approvedAt: status === ApprovalStatus.APPROVED ? new Date() : null,
+    },
+  });
 
-    if (status === ApprovalStatus.REJECTED) {
-      await prisma.clearanceRequest.update({
-        where: { id: request.id },
-        data: {
-          status: ClearanceStatus.REJECTED,
-          rejectedByRole: roleName,
-        },
-      });
 
-      await notifyStudent(
-        request.student.userId!,
-        `Rejected by ${roleName.replace(/_/g, " ")}`
-      );
-      await sendStudentRejectionEmail(
-        request.student.userId!,
-        request.student.studentId,
-        roleName.replace(/_/g, " "),
-        comment,
-      );
-      if (staffId) {
-        await sendStaffRejectionEmail(
-          staffId,
-          request.student.studentId,
-          roleName.replace(/_/g, " "),
-          comment,
-        );
-      }
-      return { message: "Rejected" };
-    }
-    if (roleName === RoleType.ADVISOR) {
-      await activatePendingRoles(request.id, [RoleType.DEPARTMENT_HEAD], request.student.studentId);
-
-    } else if (roleName === RoleType.DEPARTMENT_HEAD) {
-      await activatePendingRoles(request.id, [RoleType.SCHOOL_DEAN], request.student.studentId);
-    } else if (roleName === RoleType.SCHOOL_DEAN) {
-      await activatePendingRoles(request.id, [...PARALLEL_ROLES], request.student.studentId);
-
-    } else if (roleName === RoleType.CAFETERIA || roleName === RoleType.CAMPUS_POLICE) {
-      const studentDeanGateMet = await allRoleApprovalsApproved(request.id, STUDENT_DEAN_GATE);
-      if (studentDeanGateMet) {
-        await activatePendingRoles(request.id, [RoleType.STUDENT_DEAN], request.student.studentId);
-      }
-
-    } else if (
-      roleName === RoleType.LIBRARY    ||
-      roleName === RoleType.DORMITORY  ||
-      roleName === RoleType.STUDENT_DEAN
-    ) {
-      const registrarGateMet = await allRoleApprovalsApproved(request.id, REGISTRAR_GATE);
-      if (registrarGateMet) {
-        await activatePendingRoles(request.id, [RoleType.REGISTRAR], request.student.studentId);
-      }
-    }
-
-    if (roleName === RoleType.REGISTRAR) {
-      await prisma.clearanceRequest.update({
-        where: { id: request.id },
-        data: { status: ClearanceStatus.APPROVED },
-      });
-
-      const cert = await generateCertificate(request.id);
-      await sendCompletionEmail(request.student.userId, request.student.studentId);
-      await notifyStudent(request.student.userId!, "Clearance completed");
-
-      return {
-        message: "Completed",
-        certificate: cert,
-      };
-    }
-
+  if (status === ApprovalStatus.REJECTED) {
     await prisma.clearanceRequest.update({
       where: { id: request.id },
       data: {
-        status: ClearanceStatus.IN_PROGRESS,
+        status: ClearanceStatus.REJECTED,
+        rejectedByRole: roleName,
       },
     });
 
+    await notifyStudentRejected(
+    user?.email!,
+      request.student.studentId,
+      roleName,
+      comment
+    );
     await notifyStudent(
       request.student.userId!,
-      `${roleName.replace(/_/g, " ")} approved`,
+      `Your clearance request was rejected by ${roleName.replace(/_/g, " ")}`
     );
 
-    return { message: "Processed" };
+    return { message: "Request rejected" };
+  }
 
+  if (BEFORE_STUDENT_DEAN.includes(roleName)) {
+    await notifyStudent(
+      request.student.userId!,
+      `${roleName.replace(/_/g, " ")} approved your clearance request`
+    );
+
+    const cafe_and_campusPoliceApprovals = await prisma.clearanceApproval.findMany({
+      where: {
+        clearanceRequestId: request.id,
+        role: { name: { in: BEFORE_STUDENT_DEAN } },
+      },
+    });
+
+    const cafe_and_campusPoliceApprovalsComplete = cafe_and_campusPoliceApprovals.length === BEFORE_STUDENT_DEAN.length &&
+      cafe_and_campusPoliceApprovals.every((a) => a.status === ApprovalStatus.APPROVED);
+
+    if (!cafe_and_campusPoliceApprovalsComplete) {
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: { status: ClearanceStatus.IN_PROGRESS },
+      });
+
+      return { message: "Waiting for cafeteria and campus police completion" };
+    }
+    await upsertNextApproval(request.id, RoleType.STUDENT_DEAN);
+    await notifyNextRoleStaff(
+      RoleType.STUDENT_DEAN,
+      `Clearance request from ${request.student.studentId} is ready for review`
+    );
+  }
+
+  if (BEFORE_REGISTRAR.includes(roleName)) {
+    if (!BEFORE_STUDENT_DEAN.includes(roleName)) {
+      await notifyStudent(
+        request.student.userId!,
+        `${roleName.replace(/_/g, " ")} approved your clearance request`
+      );
+    }
+    const finalApprovals = await prisma.clearanceApproval.findMany({
+      where: {
+        clearanceRequestId: request.id,
+        role: { name: { in: BEFORE_REGISTRAR } },
+      },
+    });
+    const finalComplete =
+      finalApprovals.length === BEFORE_REGISTRAR.length &&
+      finalApprovals.every((a) => a.status === ApprovalStatus.APPROVED);
+
+    if (!finalComplete) {
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: { status: ClearanceStatus.IN_PROGRESS },
+      });
+
+      return { message: "Waiting for final stage completion" };
+    }
+    await upsertNextApproval(request.id, RoleType.REGISTRAR);
+    await notifyNextRoleStaff(
+      RoleType.REGISTRAR,
+      `Final clearance ready for registrar: ${request.student.studentId}`
+    );
+  }
+
+  if (roleName === RoleType.REGISTRAR) {
+    try {
+      const result = await prisma.$transaction(async (tx) => {
+        const updatedRequest = await tx.clearanceRequest.update({
+          where: { id: request.id },
+          data: { status: ClearanceStatus.APPROVED },
+        });
+
+        return updatedRequest;
+      });
+
+      console.log("Request marked APPROVED:", result.id);
+    } catch (err) {
+      console.error("REGISTRAR TRANSACTION FAILED:", err);
+      throw new Error("Failed to approve clearance request");
+    }
+
+    let cert = null;
+
+    try {
+      cert = await generateCertificate(request.id);
+      console.log("Certificate generated:", cert?.id);
+    } catch (certError) {
+      console.error("CERT GENERATION FAILED:", certError);
+
+      await prisma.clearanceRequest.update({
+        where: { id: request.id },
+        data: { status: ClearanceStatus.IN_PROGRESS },
+      });
+
+      return {
+        message: "Approval succeeded but certificate generation failed",
+        certificate: null,
+      };
+    }
+      await notifyFinalApproval(
+        user?.email!,
+        request.student.studentId
+      );
+
+      console.log("the email for email notification is :",user?.email)
+
+      console.log("email send to : ", user?.email)
+
+    await notifyStudent(
+      request.student.userId!,
+      "Your clearance is complete! Certificate is ready."
+    );
+    realtimeAction = "completed";
+    return {
+      message: "Clearance fully completed",
+      certificate: cert,
+    };
+  }
+
+  const nextRoles = getNextRoles(roleName);
+
+  for (const nextRole of nextRoles) {
+    if (nextRole === RoleType.STUDENT_DEAN) continue;
+    await upsertNextApproval(request.id, nextRole as RoleType);
+    if (nextRole === RoleType.DEPARTMENT_HEAD || nextRole === RoleType.SCHOOL_DEAN) {
+      await notifyScopedRoleStaff(
+        nextRole,
+        `New clearance request from student ${request.student.studentId}`,
+        request.student.id,
+      );
+    } else {
+      await notifyNextRoleStaff(
+        nextRole,
+        `New clearance request from ${request.student.studentId}`,
+      );
+    }
+  }
+
+  const alreadyHandled = BEFORE_STUDENT_DEAN.includes(roleName) || BEFORE_REGISTRAR.includes(roleName);
+
+  await prisma.clearanceRequest.update({
+    where: { id: request.id },
+    data: { status: ClearanceStatus.IN_PROGRESS },
+  });
+
+  if (!alreadyHandled) {
+    await notifyStudent(
+      request.student.userId!,
+      `${roleName.replace(/_/g, " ")} approved your clearance request`
+    );
+    await notifyStudentApproved(
+      user?.email!,
+      request.student.studentId,
+      roleName
+    );
+  }
+
+  return { message: "Approval processed successfully" };
   } finally {
     emitClearanceRealtime(
       {
         requestId: request.id,
-        action: realtimeAction as ClearanceRealtimeAction,
+        action: realtimeAction,
         actorRole: roleName,
         triggeredByUserId,
       },
-      { studentUserId: request.student.userId ?? undefined },
+      { studentUserId },
     );
   }
+}
+
+async function upsertNextApproval(requestId: string, nextRole: RoleType) {
+  const role = await prisma.role.findUnique({
+    where: { name: nextRole },
+  });
+
+  if (!role) return;
+
+  const officeCode = getOfficeCodeByRole(nextRole);
+  const office = officeCode ? await prisma.clearanceStaffOffice.findUnique({
+        where: { code: officeCode },
+      })
+    : null;
+
+  await prisma.clearanceApproval.upsert({
+    where: {
+      clearanceRequestId_roleId: {
+        clearanceRequestId: requestId,
+        roleId: role.id,
+      },
+    },
+    update: {},
+    create: {
+      clearanceRequestId: requestId,
+      roleId: role.id,
+      officeId: office?.id ?? null,
+      status: ApprovalStatus.PENDING,
+    },
+  });
 }
