@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import logo from "../public/wldu_logo.jpg"
 import { useEffect } from "react"
+import Footer from "@/components/layout/Footer"
 
 export default function Home() {
 const router = useRouter()
@@ -79,6 +80,7 @@ const router = useRouter()
 
         </div>
       </main>
+      <Footer/>
     </div>
   )
 }

@@ -1,10 +1,9 @@
 import Footer from "@/components/layout/Footer";
 
-// app/about/page.tsx
 export default function AboutPage() {
   return (
     <main className="bg-white text-gray-800">
-      <section className="relative bg-linear-to-r from-gray-800 to-gray-700 text-white py-20">
+      <section className="relative bg-linear-to-r from-blue-500 to-blue-400 text-white py-20">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-5xl font-bold mb-4">Woldia University</h1>
           <p className="text-xl italic">Open Mind, Open Eyes</p>
