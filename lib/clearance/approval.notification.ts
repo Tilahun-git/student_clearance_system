@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/prisma";
 import { sendNotification } from "@/lib/notify";
+import { sendEmail } from "@/lib/email";
+import {
+  pendingApprovalEmailTemplate,
+  studentPendingApprovalTemplate,
+} from "@/lib/emailTemplates";
 import { RoleType } from "@prisma/client";
 
 export async function notifyNextRoleStaff(nextRole: RoleType, message: string) {
@@ -48,4 +53,44 @@ export async function notifyScopedRoleStaff(nextRole: RoleType,message: string,s
 
 export async function notifyStudent(userId: string, message: string) {
   await sendNotification({ userId, message });
+}
+
+export async function notifyNextRoleStaffByEmail(
+  nextRole: RoleType,
+  studentId: string,
+) {
+  const staffList = await prisma.staff.findMany({
+    where: {
+      user: {
+        roles: { some: { role: { name: nextRole as RoleType } } },
+      },
+    },
+    include: { user: true },
+  });
+
+  await Promise.allSettled(
+    staffList
+      .filter((staff) => staff.user?.email)
+      .map((staff) =>
+        sendEmail({
+          to: staff.user.email!,
+          subject: "Clearance Request Pending Your Review",
+          html: pendingApprovalEmailTemplate(studentId),
+        }),
+      ),
+  );
+}
+
+export async function sendStudentPendingEmail(
+  userId: string,
+  studentId: string,
+) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user?.email) return;
+
+  await sendEmail({
+    to: user.email,
+    subject: "Clearance Request Submitted",
+    html: studentPendingApprovalTemplate(studentId),
+  });
 }
