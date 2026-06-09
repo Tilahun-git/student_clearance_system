@@ -32,7 +32,7 @@ const BEFORE_REGISTRAR: RoleType[] = [
 
 export async function processApprovalWorkflow(
   approvalId: string,
-  staffId: string,
+  staffId: string | null,
   status: ApprovalStatus,
   comment?: string,
   triggeredByUserId?: string,
